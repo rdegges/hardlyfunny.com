@@ -1,8 +1,8 @@
 // Shared comic-reader behaviour for the design mockups.
 // Each design owns its markup and styling; this file owns state and navigation:
 //   - elements with data-nav="first|prev|random|next|last" navigate
-//   - elements with data-view="comic|archive" switch views (body[data-view])
-//   - ← / → (and h / l), Home / End, r = random, a = archive, Esc = back
+//   - elements with data-show="comic|archive|about" switch views (sets body[data-view])
+//   - ← / → (and h / l), Home / End, r = random, a = archive, i = about, Esc = back
 //   - #82 in the URL opens comic 82 when a design is opened on its own
 (function () {
   const data = window.HARDLY_FUNNY;
@@ -45,14 +45,16 @@
     return groups;
   }
 
-  function reader({ render, renderArchive }) {
+  function reader({ render, renderArchive, renderAbout }) {
     let index = comics.length - 1;
     const fromHash = Number((location.hash || "").replace("#", ""));
     if (fromHash >= 1 && fromHash <= comics.length) index = fromHash - 1;
 
     function setView(view) {
       document.body.dataset.view = view;
-      if (view === "archive") window.scrollTo({ top: 0 });
+      if (view !== "comic") window.scrollTo({ top: 0 });
+      document.querySelectorAll("[data-show]").forEach((el) =>
+        el.setAttribute("aria-current", String(el.dataset.show === view)));
     }
 
     function syncNav() {
@@ -102,10 +104,10 @@
         else actions[nav.dataset.nav]();
         return;
       }
-      const view = e.target.closest("[data-view]");
-      if (view) { e.preventDefault(); setView(view.dataset.view); return; }
       const pick = e.target.closest("[data-goto]");
-      if (pick) { e.preventDefault(); go(Number(pick.dataset.goto)); window.scrollTo({ top: 0 }); }
+      if (pick) { e.preventDefault(); go(Number(pick.dataset.goto)); window.scrollTo({ top: 0 }); return; }
+      const show = e.target.closest("[data-show]");
+      if (show) { e.preventDefault(); setView(show.dataset.show); }
     });
 
     document.addEventListener("keydown", (e) => {
@@ -117,12 +119,14 @@
       else if (key === "End") actions.last();
       else if (key === "r") actions.random();
       else if (key === "a") setView("archive");
+      else if (key === "i") setView("about");
       else if (key === "Escape") setView("comic");
       else return;
       e.preventDefault();
     });
 
     if (renderArchive) renderArchive(comics);
+    if (renderAbout) renderAbout(data.about_html || "");
     go(index);
     return { go, actions, get index() { return index; } };
   }

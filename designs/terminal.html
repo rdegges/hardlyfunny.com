@@ -141,6 +141,19 @@
   .help kbd { font: inherit; color: var(--fg); border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; }
 
   .only-mobile { display: none; }
+  button.tab { font: inherit; font-size: 12.5px; background: transparent; border: 0; border-right: 1px solid var(--line); cursor: pointer; }
+  button.tab:hover { color: var(--fg); }
+  .tab[aria-current="true"] { color: var(--fg); background: var(--window); box-shadow: inset 0 2px 0 var(--lime); }
+  body[data-view="about"] .comic-pane, body:not([data-view="about"]) .about-pane { display: none; }
+  .about-pane { padding: 22px; }
+  .about-pane .cmd { margin: 0 0 16px; color: var(--dim); }
+  .about-pane .cmd span { color: var(--lime); }
+  .readme { max-width: 72ch; color: #d9d3e0; }
+  .readme h1 { font: 600 18px/1.4 var(--mono); color: var(--lime); margin: 0 0 14px; }
+  .readme h1::before { content: "# "; color: var(--pink); }
+  .readme p { margin: 0 0 14px; }
+  .readme strong { color: var(--peach); font-weight: 500; }
+  .readme em { color: var(--purple); }
 
   @media (max-width: 820px) {
     body { padding: 8px 16px; }
@@ -148,6 +161,7 @@
     .log { border-right: 0; }
     body[data-view="comic"] .log { display: none; }
     body[data-view="archive"] .main { display: none; }
+    .about-pane { padding: 16px 14px; }
     .log ol { max-height: none; }
     .only-mobile { display: inline-block; }
     .ascii { font-size: 8px; }
@@ -183,10 +197,10 @@
 
       <section class="main">
         <div class="tabs" role="presentation">
-          <div class="tab active" id="tab-file"></div>
-          <div class="tab">README.md</div>
-          <div class="tab">scribbles.png</div>
+          <button type="button" class="tab" id="tab-file" data-show="comic"></button>
+          <button type="button" class="tab" data-show="about">README.md</button>
         </div>
+        <div class="comic-pane">
 
         <div class="viewer" id="comic"></div>
 
@@ -197,10 +211,16 @@
           <button type="button" data-nav="next">HEAD+1 <span class="k">→</span></button>
           <button type="button" data-nav="last"><span class="k">git</span> checkout main</button>
           <span class="spacer"></span>
-          <button type="button" class="only-mobile" data-view="archive"><span class="k">git</span> log</button>
+          <button type="button" class="only-mobile" data-show="archive"><span class="k">git</span> log</button>
         </div>
 
         <div class="show" id="show"></div>
+        </div>
+        <div class="about-pane">
+          <p class="cmd"><span>$</span> cat README.md</p>
+          <div class="readme"><h1>Hardly Funny</h1><div id="about"></div></div>
+          <p class="cmd"><span>$</span> <button type="button" class="tab" data-show="comic" style="border:1px solid var(--line);border-radius:5px;padding:6px 10px">cd ../comics</button></p>
+        </div>
       </section>
     </div>
 
@@ -213,7 +233,7 @@
       <img src="../archive/brand/scribbles.png" width="122" height="85" alt="Scribbles, asleep in the status bar">
     </div>
   </div>
-  <p class="help"><kbd>h</kbd>/<kbd>l</kbd> or <kbd>←</kbd>/<kbd>→</kbd> navigate · <kbd>r</kbd> random · <kbd>Home</kbd>/<kbd>End</kbd> first/latest</p>
+  <p class="help"><kbd>h</kbd>/<kbd>l</kbd> or <kbd>←</kbd>/<kbd>→</kbd> navigate · <kbd>r</kbd> random · <kbd>Home</kbd>/<kbd>End</kbd> first/latest · <kbd>i</kbd> README</p>
 
 <script src="../archive/comics.js"></script>
 <script src="reader.js"></script>
@@ -248,6 +268,7 @@
       });
       document.title = `${file} · Hardly Funny`;
     },
+    renderAbout(html) { $("about").innerHTML = html; },
     renderArchive(comics) {
       let html = "", year = "";
       for (let i = comics.length - 1; i >= 0; i--) {

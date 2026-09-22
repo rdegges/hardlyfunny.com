@@ -163,7 +163,18 @@
   .grid span { font-size: 14px; line-height: 1.3; }
   .grid small { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
 
-  body[data-view="archive"] main, body:not([data-view="archive"]) .archive { display: none; }
+  body:not([data-view="comic"]) main,
+  body:not([data-view="archive"]) .archive,
+  body:not([data-view="about"]) .about { display: none; }
+
+  /* About */
+  .about { max-width: 620px; margin: 0 auto; padding-block: 12px 48px; }
+  .about h2 { font: 800 30px/1.1 "Sniglet", sans-serif; text-align: center; margin: 18px 0 20px; }
+  .about figure { margin: 0 0 24px; text-align: center; }
+  .about figure img { width: min(260px, 70%); height: auto; }
+  .about p { margin: 0 0 16px; }
+  .about p strong { font-weight: 700; }
+  .about .back { text-align: center; margin-top: 28px; }
 
   footer {
     border-top: 1px solid var(--line);
@@ -190,9 +201,9 @@
       <img src="../archive/brand/banner.png" width="1000" height="280" alt="Hardly Funny: a webcomic about being married to a computer programmer">
     </a>
     <nav class="site-nav" aria-label="Site">
-      <a href="#" data-view="archive">Archive</a>
+      <a href="#" data-show="archive">Archive</a>
       <a href="#" data-nav="random">Random</a>
-      <a href="#about">About</a>
+      <a href="#" data-show="about">About</a>
       <a href="#rss">RSS</a>
     </nav>
   </header>
@@ -242,10 +253,17 @@
     <div id="archive"></div>
   </section>
 
+  <section class="about" aria-labelledby="about-heading">
+    <h2 id="about-heading">About Hardly Funny</h2>
+    <figure><img src="../archive/brand/couple.png" width="250" height="217" alt="Samantha and Randall"></figure>
+    <div id="about"></div>
+    <p class="back"><a href="#" data-show="comic">← Back to the comic</a></p>
+  </section>
+
   <footer>
     <p>Drawn by Samantha. Material provided, inadvertently, by Randall.</p>
     <p>In memory of Scribbles the chihuahua (2005–2014), who always took a side.</p>
-    <p><span class="kbd">←</span> <span class="kbd">→</span> to read · <span class="kbd">r</span> random · <span class="kbd">a</span> archive</p>
+    <p><span class="kbd">←</span> <span class="kbd">→</span> to read · <span class="kbd">r</span> random · <span class="kbd">a</span> archive · <span class="kbd">i</span> about</p>
   </footer>
 </div>
 
@@ -265,6 +283,7 @@
       $("tags").innerHTML = c.tags.map((t) => `<span>${HF.escapeHtml(t)}</span>`).join("");
       document.title = `Hardly Funny: ${c.title}`;
     },
+    renderAbout(html) { $("about").innerHTML = html; },
     renderArchive(comics) {
       $("archive-count").textContent = `${comics.length} comics, August 2012 to January 2014.`;
       let html = "";

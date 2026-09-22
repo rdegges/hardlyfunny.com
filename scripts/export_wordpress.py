@@ -175,6 +175,13 @@ def build() -> list[dict]:
     return comics
 
 
+def fetch_about() -> str:
+    """Her About page, kept as the same tiny safe HTML as the comic notes."""
+    data = fetch_json(f"{API}?type=page&number=20&fields=slug,content")
+    page = next(p for p in data["posts"] if p["slug"] == "about")
+    return clean_note(page["content"])
+
+
 def main() -> int:
     comics = build()
     manifest = {
@@ -182,6 +189,7 @@ def main() -> int:
         "tagline": "A webcomic about being married to a computer programmer",
         "author": "Samantha Degges",
         "source": f"https://{SITE}",
+        "about_html": fetch_about(),
         "comics": comics,
     }
     (ARCHIVE / "comics.json").write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + "\n")

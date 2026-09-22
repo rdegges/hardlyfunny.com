@@ -38,7 +38,7 @@
     --shadow: 0 18px 40px -18px rgba(177, 18, 124, .35);
     --scribbles-x: 0px;
     --scribbles-flip: 1;
-    --track-fill: linear-gradient(90deg, #ffd6f0 0 50%, transparent 50%);
+    --track-fill: linear-gradient(90deg, #ffd6f0 0 50%, #19191b 50%);
   }
   /* Randall mode, declared twice so both the OS setting and the switch can pick it. */
   @media (prefers-color-scheme: dark) {
@@ -53,7 +53,7 @@
       --thumb: none; --archive-cols: 1fr;
       --shadow: 0 0 0 1px #34343a;
       --scribbles-x: 62px; --scribbles-flip: -1;
-      --track-fill: linear-gradient(90deg, transparent 0 50%, #2f3a25 50%);
+      --track-fill: linear-gradient(90deg, #3a2a35 0 50%, #0b0b0c 50%);
     }
   }
   :root[data-mode="randall"] {
@@ -67,7 +67,7 @@
     --thumb: none; --archive-cols: 1fr;
     --shadow: 0 0 0 1px #34343a;
     --scribbles-x: 62px; --scribbles-flip: -1;
-      --track-fill: linear-gradient(90deg, transparent 0 50%, #2f3a25 50%);
+      --track-fill: linear-gradient(90deg, #3a2a35 0 50%, #0b0b0c 50%);
   }
 
   * { box-sizing: border-box; }
@@ -82,8 +82,8 @@
   .wrap { max-width: 940px; margin: 0 auto; }
 
   header {
-    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px;
-    padding-block: 22px 8px;
+    display: flex; flex-direction: column; align-items: center; gap: 14px;
+    padding-block: 22px 8px; text-align: center;
   }
   .brand { display: flex; align-items: center; gap: 14px; text-decoration: none; color: inherit; min-width: 0; }
   .brand img { width: 84px; height: auto; border-radius: var(--r); transition: border-radius .35s; }
@@ -107,7 +107,7 @@
   .switch-row span { color: var(--muted); transition: color .3s; }
   .switch-row span.on { color: var(--ink); }
   .track {
-    position: relative; width: 132px; height: 50px; padding: 0; cursor: pointer;
+    position: relative; width: 132px; height: 50px; padding: 0; cursor: pointer; overflow: hidden;
     border: 2px solid var(--ink); border-radius: 999px; background: var(--surface);
     transition: background .35s, border-color .35s;
   }
@@ -180,16 +180,32 @@
     :root:not([data-mode="samantha"]) .shelf a::after { content: attr(data-n); order: 2; color: var(--muted); text-align: right; }
   }
 
-  body[data-view="archive"] main, body:not([data-view="archive"]) .archive { display: none; }
+  body:not([data-view="comic"]) main,
+  body:not([data-view="archive"]) .archive,
+  body:not([data-view="about"]) .about { display: none; }
+  .topnav a[aria-current="true"] { color: var(--ink); }
+
+  /* About */
+  .about { padding-block: 16px 40px; max-width: 660px; margin: 0 auto; }
+  .about h2 { font: 600 30px/1.1 var(--display); margin: 18px 0 16px; text-align: center; }
+  .about .card { justify-items: stretch; padding: 24px 28px; }
+  .about .card > img { justify-self: center; width: min(240px, 70%); height: auto; border-radius: var(--r); background: transparent; }
+  .about .body p { margin: 0 0 14px; }
+  .about .body strong { color: var(--accent-ink); }
+  .about .body::before { content: var(--note-open); display: block; color: var(--muted); }
+  .about .body::after { content: var(--note-close); display: block; color: var(--muted); }
+  .about .back { text-align: center; margin-top: 20px; }
   .topnav { display: flex; gap: 18px; justify-content: center; font: 600 15px/1 var(--display); padding-block: 6px; }
   .topnav a { color: var(--muted); text-decoration: none; }
   .topnav a:hover { color: var(--ink); }
 
   footer { border-top: 2px dashed var(--line); padding-block: 22px 40px; color: var(--muted); font-size: 14px; text-align: center; }
   footer p { margin: 4px 0; }
+  footer .keys { margin-top: 12px; display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 16px; }
+  footer .keys span { white-space: nowrap; }
+  kbd { font: 600 12px/1 var(--display); color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 6px; padding: 3px 6px; }
 
   @media (max-width: 560px) {
-    header { justify-content: center; text-align: center; }
     .brand { flex-direction: column; gap: 8px; }
     .note { grid-template-columns: 1fr; }
     .note .who { display: none; }
@@ -228,8 +244,8 @@
   </header>
 
   <nav class="topnav" aria-label="Site">
-    <a href="#" data-view="archive" data-s="Archive" data-r="ls ./comics">Archive</a>
-    <a href="#about" data-s="About us" data-r="cat ABOUT.md">About us</a>
+    <a href="#" data-show="archive" data-s="Archive" data-r="ls ./comics">Archive</a>
+    <a href="#" data-show="about" data-s="About us" data-r="cat ABOUT.md">About us</a>
     <a href="#rss" data-s="RSS" data-r="curl /feed">RSS</a>
   </nav>
 
@@ -262,9 +278,26 @@
     <div class="shelf" id="shelf"></div>
   </section>
 
+  <section class="about" aria-labelledby="about-h">
+    <h2 id="about-h" data-s="About us" data-r="$ cat ABOUT.md">About us</h2>
+    <div class="card">
+      <img src="../archive/brand/couple.png" width="250" height="217" alt="Samantha and Randall">
+      <div class="body" id="about"></div>
+    </div>
+    <ul class="nav back"><li><button type="button" data-show="comic" data-s="← Back to the comic" data-r="cd ..">← Back to the comic</button></li></ul>
+  </section>
+
   <footer>
     <p data-s="Drawn by Samantha. Inspired by Randall, whether he likes it or not." data-r="/* Drawn by Samantha. Randall is not responsible for the content. Randall is the content. */">Drawn by Samantha. Inspired by Randall, whether he likes it or not.</p>
     <p data-s="Randall mode is also our dark mode." data-r="Samantha mode is also our light mode.">Randall mode is also our dark mode.</p>
+    <p class="keys" aria-label="Keyboard shortcuts">
+      <span><kbd>←</kbd> <kbd>→</kbd> <span data-s="previous / next" data-r="i-- / i++">previous / next</span></span>
+      <span><kbd>r</kbd> <span data-s="surprise me" data-r="rand()">surprise me</span></span>
+      <span><kbd>a</kbd> <span data-s="archive" data-r="ls ./comics">archive</span></span>
+      <span><kbd>i</kbd> <span data-s="about us" data-r="cat ABOUT.md">about us</span></span>
+      <span><kbd>m</kbd> <span data-s="switch sides" data-r="toggle --mode">switch sides</span></span>
+      <span><kbd>Esc</kbd> <span data-s="back to the comic" data-r="cd ..">back to the comic</span></span>
+    </p>
   </footer>
 </div>
 
@@ -298,6 +331,9 @@
   }
 
   try { const saved = localStorage.getItem("hf-mode"); if (saved) root.dataset.mode = saved; } catch (e) {}
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "m" && !e.metaKey && !e.ctrlKey && !e.altKey) $("mode").click();
+  });
   $("mode").addEventListener("click", () => {
     root.dataset.mode = mode() === "randall" ? "samantha" : "randall";
     try { localStorage.setItem("hf-mode", root.dataset.mode); } catch (e) {}
@@ -316,6 +352,7 @@
       $("tags").innerHTML = c.tags.map((t) => `<span>${esc(t.toLowerCase().replace(/\s+/g, "-"))}</span>`).join("");
       document.title = `${c.title} · Hardly Funny`;
     },
+    renderAbout(html) { $("about").innerHTML = html; },
     renderArchive(comics) {
       $("shelf").innerHTML = [...comics].reverse().map((c) => {
         const i = c.number - 1;
