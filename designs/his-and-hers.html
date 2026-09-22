@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Hardly Funny · His &amp; Hers</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=JetBrains+Mono:ital,wght@0,400;0,600;1,400&family=Nunito:ital,wght@0,400;0,700;1,400&display=swap">
+<style>
+  /* Direction 4 — His & Hers.
+     The site has two personalities, like the house it's about. Samantha mode is soft,
+     round and pink; Randall mode is the black T-shirt: monospace, square, and counting
+     from zero. Randall mode doubles as dark mode (it follows the OS until you pick).
+     Scribbles, who "often took sides", walks to whoever's side you pick. */
+  :root {
+    color-scheme: light;
+    --ground: #fff4fa;
+    --surface: #ffffff;
+    --ink: #3b2440;
+    --muted: #8b6f92;
+    --line: #f6d3ea;
+    --accent: #ff66cc;
+    --accent-ink: #b1127c;
+    --accent-2: #cc66ff;
+    --hi: #ccff99;
+    --r: 28px;
+    --r-sm: 999px;
+    --display: "Fredoka", "Nunito", system-ui, sans-serif;
+    --body: "Nunito", system-ui, sans-serif;
+    --word-fill: #ccff99;
+    --word-stroke: #669933;
+    --note-open: "";
+    --note-close: "";
+    --tag-prefix: "#";
+    --thumb: block;
+    --archive-cols: repeat(auto-fill, minmax(150px, 1fr));
+    --shadow: 0 18px 40px -18px rgba(177, 18, 124, .35);
+    --scribbles-x: 0px;
+    --scribbles-flip: 1;
+    --track-fill: linear-gradient(90deg, #ffd6f0 0 50%, transparent 50%);
+  }
+  /* Randall mode, declared twice so both the OS setting and the switch can pick it. */
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-mode="samantha"]) {
+      color-scheme: dark;
+      --ground: #19191b; --surface: #222225; --ink: #e8e8ec; --muted: #8e8e98; --line: #34343a;
+      --accent: #ccff99; --accent-ink: #ccff99; --accent-2: #99cc66; --hi: #333;
+      --r: 3px; --r-sm: 3px;
+      --display: "JetBrains Mono", ui-monospace, monospace; --body: "JetBrains Mono", ui-monospace, monospace;
+      --word-fill: #19191b; --word-stroke: #ccff99;
+      --note-open: "/*"; --note-close: "*/"; --tag-prefix: "--tag=";
+      --thumb: none; --archive-cols: 1fr;
+      --shadow: 0 0 0 1px #34343a;
+      --scribbles-x: 62px; --scribbles-flip: -1;
+      --track-fill: linear-gradient(90deg, transparent 0 50%, #2f3a25 50%);
+    }
+  }
+  :root[data-mode="randall"] {
+    color-scheme: dark;
+    --ground: #19191b; --surface: #222225; --ink: #e8e8ec; --muted: #8e8e98; --line: #34343a;
+    --accent: #ccff99; --accent-ink: #ccff99; --accent-2: #99cc66; --hi: #333;
+    --r: 3px; --r-sm: 3px;
+    --display: "JetBrains Mono", ui-monospace, monospace; --body: "JetBrains Mono", ui-monospace, monospace;
+    --word-fill: #19191b; --word-stroke: #ccff99;
+    --note-open: "/*"; --note-close: "*/"; --tag-prefix: "--tag=";
+    --thumb: none; --archive-cols: 1fr;
+    --shadow: 0 0 0 1px #34343a;
+    --scribbles-x: 62px; --scribbles-flip: -1;
+      --track-fill: linear-gradient(90deg, transparent 0 50%, #2f3a25 50%);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--ground); color: var(--ink);
+    font: 400 17px/1.6 var(--body);
+    padding: 0 16px;
+    transition: background-color .35s ease, color .35s ease;
+  }
+  a { color: var(--accent-ink); }
+  :focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+  .wrap { max-width: 940px; margin: 0 auto; }
+
+  header {
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px;
+    padding-block: 22px 8px;
+  }
+  .brand { display: flex; align-items: center; gap: 14px; text-decoration: none; color: inherit; min-width: 0; }
+  .brand img { width: 84px; height: auto; border-radius: var(--r); transition: border-radius .35s; }
+  .wordmark {
+    font: 700 clamp(30px, 6vw, 44px)/1 var(--display);
+    color: var(--word-fill);
+    -webkit-text-stroke: 2px var(--word-stroke);
+    paint-order: stroke fill;
+    text-shadow: 3px 3px 0 var(--word-stroke);
+    letter-spacing: -.01em;
+  }
+  :root[data-mode="randall"] .wordmark { text-shadow: 0 0 18px rgba(204, 255, 153, .25); -webkit-text-stroke: 0; color: var(--accent); }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-mode="samantha"]) .wordmark { text-shadow: 0 0 18px rgba(204, 255, 153, .25); -webkit-text-stroke: 0; color: var(--accent); }
+  }
+  .tagline { margin: 4px 0 0; color: var(--muted); font-size: 14px; }
+
+  /* The switch */
+  .switch { display: grid; justify-items: center; gap: 6px; }
+  .switch-row { display: flex; align-items: center; gap: 10px; font: 600 14px/1 var(--display); }
+  .switch-row span { color: var(--muted); transition: color .3s; }
+  .switch-row span.on { color: var(--ink); }
+  .track {
+    position: relative; width: 132px; height: 50px; padding: 0; cursor: pointer;
+    border: 2px solid var(--ink); border-radius: 999px; background: var(--surface);
+    transition: background .35s, border-color .35s;
+  }
+  .track::before { content: ""; position: absolute; inset: 4px; border-radius: 999px;
+    background: var(--track-fill); }
+  .track img {
+    position: absolute; top: 4px; left: 8px; width: 54px; height: auto;
+    transform: translateX(var(--scribbles-x)) scaleX(var(--scribbles-flip));
+    transition: transform .6s cubic-bezier(.5, -0.3, .3, 1.4);
+  }
+  .switch small { font-size: 12px; color: var(--muted); }
+
+  /* Comic */
+  main { padding-block: 16px 40px; }
+  .meta { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 16px; margin: 18px 0 12px; }
+  .meta h1 { font: 600 clamp(26px, 5vw, 34px)/1.15 var(--display); margin: 0; text-wrap: balance; }
+  .meta .stamp { color: var(--muted); font-size: 15px; font-variant-numeric: tabular-nums; }
+  .card {
+    background: var(--surface); border-radius: var(--r); padding: clamp(10px, 2.5vw, 20px);
+    box-shadow: var(--shadow); display: grid; gap: 12px; justify-items: center;
+    transition: border-radius .35s, box-shadow .35s, background .35s;
+  }
+  .card img { display: block; max-width: 100%; height: auto; border-radius: calc(var(--r) * .45); background: #fff; }
+
+  .nav { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin: 18px 0 0; padding: 0; list-style: none; }
+  .nav button {
+    font: 600 16px/1 var(--display); color: var(--ink); cursor: pointer;
+    background: var(--surface); border: 2px solid var(--line); border-radius: var(--r-sm);
+    padding: 11px 18px; transition: border-color .15s, background .35s, border-radius .35s;
+  }
+  .nav button:hover { border-color: var(--accent); }
+  .nav button[disabled] { opacity: .4; cursor: default; border-color: var(--line); }
+  .nav .primary { background: var(--accent); border-color: var(--accent); color: #1d1020; }
+
+  .note { margin: 34px auto 0; max-width: 660px; display: grid; grid-template-columns: 56px 1fr; gap: 14px; align-items: start; }
+  .note .who { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; object-position: 12% 20%; background: #ffd6f0; border: 2px solid var(--line); }
+  .bubble { position: relative; background: var(--surface); border-radius: var(--r); padding: 16px 20px; box-shadow: var(--shadow); transition: border-radius .35s; }
+  .bubble::before { content: ""; position: absolute; left: -9px; top: 20px; width: 18px; height: 18px; background: var(--surface); transform: rotate(45deg); border-radius: 3px; }
+  .bubble h2 { font: 600 15px/1.2 var(--display); color: var(--accent-ink); margin: 0 0 8px; }
+  .bubble .body::before { content: var(--note-open); display: block; color: var(--muted); }
+  .bubble .body::after { content: var(--note-close); display: block; color: var(--muted); }
+  .bubble .body p { margin: 0 0 10px; }
+  .bubble .body p:last-child { margin-bottom: 0; }
+  .tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+  .tags span { font-size: 13px; padding: 3px 10px; border-radius: var(--r-sm); background: var(--ground); color: var(--muted); }
+  .tags span::before { content: var(--tag-prefix); }
+
+  /* Archive: cards for her, ls -la for him */
+  .archive { padding-block: 16px 40px; }
+  .archive h2 { font: 600 30px/1.1 var(--display); margin: 18px 0 16px; }
+  .shelf { display: grid; grid-template-columns: var(--archive-cols); gap: 14px; }
+  .shelf a { color: inherit; text-decoration: none; background: var(--surface); border-radius: calc(var(--r) * .6); padding: 8px; display: grid; gap: 6px; box-shadow: var(--shadow); }
+  .shelf a:hover { outline: 2px solid var(--accent); }
+  .shelf img { display: var(--thumb); width: 100%; aspect-ratio: 1; object-fit: cover; object-position: top; border-radius: calc(var(--r) * .4); background: #fff; }
+  .shelf .t { font: 600 14px/1.3 var(--display); }
+  .shelf .d { font-size: 12px; color: var(--muted); }
+  .shelf .perm { display: none; }
+  :root[data-mode="randall"] .shelf { gap: 0; }
+  :root[data-mode="randall"] .shelf a { grid-template-columns: auto 5ch 12ch 1fr; gap: 14px; box-shadow: none; padding: 4px 8px; font-size: 13px; background: transparent; border-radius: 0; }
+  :root[data-mode="randall"] .shelf .perm { display: block; color: var(--muted); }
+  :root[data-mode="randall"] .shelf .t { font: 400 13px/1.5 var(--body); color: var(--accent); order: 4; }
+  :root[data-mode="randall"] .shelf .d { font-size: 13px; order: 3; }
+  :root[data-mode="randall"] .shelf a::after { content: attr(data-n); order: 2; color: var(--muted); text-align: right; }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-mode="samantha"]) .shelf { gap: 0; }
+    :root:not([data-mode="samantha"]) .shelf a { grid-template-columns: auto 5ch 12ch 1fr; gap: 14px; box-shadow: none; padding: 4px 8px; font-size: 13px; background: transparent; border-radius: 0; }
+    :root:not([data-mode="samantha"]) .shelf .perm { display: block; color: var(--muted); }
+    :root:not([data-mode="samantha"]) .shelf .t { font: 400 13px/1.5 var(--body); color: var(--accent); order: 4; }
+    :root:not([data-mode="samantha"]) .shelf .d { font-size: 13px; order: 3; }
+    :root:not([data-mode="samantha"]) .shelf a::after { content: attr(data-n); order: 2; color: var(--muted); text-align: right; }
+  }
+
+  body[data-view="archive"] main, body:not([data-view="archive"]) .archive { display: none; }
+  .topnav { display: flex; gap: 18px; justify-content: center; font: 600 15px/1 var(--display); padding-block: 6px; }
+  .topnav a { color: var(--muted); text-decoration: none; }
+  .topnav a:hover { color: var(--ink); }
+
+  footer { border-top: 2px dashed var(--line); padding-block: 22px 40px; color: var(--muted); font-size: 14px; text-align: center; }
+  footer p { margin: 4px 0; }
+
+  @media (max-width: 560px) {
+    header { justify-content: center; text-align: center; }
+    .brand { flex-direction: column; gap: 8px; }
+    .note { grid-template-columns: 1fr; }
+    .note .who { display: none; }
+    .bubble::before { display: none; }
+    .nav button { padding: 10px 13px; font-size: 15px; }
+    :root[data-mode="randall"] .shelf a { grid-template-columns: 5ch 1fr; }
+    :root[data-mode="randall"] .shelf .perm, :root[data-mode="randall"] .shelf .d { display: none; }
+  }
+  @media (max-width: 560px) and (prefers-color-scheme: dark) {
+    :root:not([data-mode="samantha"]) .shelf a { grid-template-columns: 5ch 1fr; }
+    :root:not([data-mode="samantha"]) .shelf .perm, :root:not([data-mode="samantha"]) .shelf .d { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) { *, *::before { transition: none !important; } }
+</style>
+</head>
+<body data-view="comic">
+<div class="wrap">
+  <header>
+    <a class="brand" href="#" data-nav="last">
+      <img src="../archive/brand/couple.png" width="250" height="217" alt="Samantha and Randall">
+      <div>
+        <div class="wordmark" data-s="Hardly Funny" data-r="hardly_funny">Hardly Funny</div>
+        <p class="tagline" data-s="a webcomic about being married to a computer programmer" data-r="// a webcomic about being married to a computer programmer">a webcomic about being married to a computer programmer</p>
+      </div>
+    </a>
+    <div class="switch">
+      <div class="switch-row">
+        <span id="lbl-s">Samantha</span>
+        <button type="button" class="track" id="mode" role="switch" aria-checked="false" aria-label="Randall mode">
+          <img src="../archive/brand/scribbles.png" width="122" height="85" alt="">
+        </button>
+        <span id="lbl-r">Randall</span>
+      </div>
+      <small data-s="Scribbles is on my side." data-r="Scribbles.side = 'randall';">Scribbles is on my side.</small>
+    </div>
+  </header>
+
+  <nav class="topnav" aria-label="Site">
+    <a href="#" data-view="archive" data-s="Archive" data-r="ls ./comics">Archive</a>
+    <a href="#about" data-s="About us" data-r="cat ABOUT.md">About us</a>
+    <a href="#rss" data-s="RSS" data-r="curl /feed">RSS</a>
+  </nav>
+
+  <main>
+    <div class="meta">
+      <h1 id="title"></h1>
+      <span class="stamp" id="stamp"></span>
+    </div>
+    <div class="card" id="comic"></div>
+    <ul class="nav" aria-label="Comic navigation">
+      <li><button type="button" data-nav="first" data-s="First" data-r="[0]">First</button></li>
+      <li><button type="button" data-nav="prev" data-s="← Previous" data-r="i--">← Previous</button></li>
+      <li><button type="button" class="primary" data-nav="random" data-s="Surprise me" data-r="rand()">Surprise me</button></li>
+      <li><button type="button" data-nav="next" data-s="Next →" data-r="i++">Next →</button></li>
+      <li><button type="button" data-nav="last" data-s="Newest" data-r="[-1]">Newest</button></li>
+    </ul>
+
+    <section class="note" aria-labelledby="note-h">
+      <img class="who" src="../archive/brand/couple.png" alt="">
+      <div class="bubble">
+        <h2 id="note-h" data-s="Samantha says…" data-r="// commit message from samantha">Samantha says…</h2>
+        <div class="body" id="note"></div>
+        <div class="tags" id="tags"></div>
+      </div>
+    </section>
+  </main>
+
+  <section class="archive" aria-labelledby="arch-h">
+    <h2 id="arch-h" data-s="Every comic, ever" data-r="$ ls -la ./comics">Every comic, ever</h2>
+    <div class="shelf" id="shelf"></div>
+  </section>
+
+  <footer>
+    <p data-s="Drawn by Samantha. Inspired by Randall, whether he likes it or not." data-r="/* Drawn by Samantha. Randall is not responsible for the content. Randall is the content. */">Drawn by Samantha. Inspired by Randall, whether he likes it or not.</p>
+    <p data-s="Randall mode is also our dark mode." data-r="Samantha mode is also our light mode.">Randall mode is also our dark mode.</p>
+  </footer>
+</div>
+
+<script src="../archive/comics.js"></script>
+<script src="reader.js"></script>
+<script>
+  const $ = (id) => document.getElementById(id);
+  const esc = HF.escapeHtml;
+  const root = document.documentElement;
+  const darkQuery = matchMedia("(prefers-color-scheme: dark)");
+  let current = null;
+
+  function mode() {
+    return root.dataset.mode || (darkQuery.matches ? "randall" : "samantha");
+  }
+
+  function applyMode() {
+    const m = mode();
+    const r = m === "randall";
+    document.querySelectorAll("[data-s]").forEach((el) => { el.textContent = r ? el.dataset.r : el.dataset.s; });
+    $("mode").setAttribute("aria-checked", String(r));
+    $("lbl-s").classList.toggle("on", !r);
+    $("lbl-r").classList.toggle("on", r);
+    if (current) renderStamp(current);
+  }
+
+  function renderStamp(c) {
+    $("stamp").textContent = mode() === "randall"
+      ? `comics[0x${(c.number - 1).toString(16)}] · ${HF.format.epoch(c.date)}`
+      : `No. ${c.number} · ${HF.format.long(c.date)}`;
+  }
+
+  try { const saved = localStorage.getItem("hf-mode"); if (saved) root.dataset.mode = saved; } catch (e) {}
+  $("mode").addEventListener("click", () => {
+    root.dataset.mode = mode() === "randall" ? "samantha" : "randall";
+    try { localStorage.setItem("hf-mode", root.dataset.mode); } catch (e) {}
+    applyMode();
+  });
+  darkQuery.addEventListener("change", applyMode);
+
+  HF.reader({
+    render(c) {
+      current = c;
+      $("title").textContent = c.title;
+      renderStamp(c);
+      $("comic").innerHTML = c.images.map((img) =>
+        `<img src="${HF.src(img)}" width="${img.width}" height="${img.height}" alt="${esc(c.title)}">`).join("");
+      $("note").innerHTML = c.note_html || "<p><em>No words needed for this one.</em></p>";
+      $("tags").innerHTML = c.tags.map((t) => `<span>${esc(t.toLowerCase().replace(/\s+/g, "-"))}</span>`).join("");
+      document.title = `${c.title} · Hardly Funny`;
+    },
+    renderArchive(comics) {
+      $("shelf").innerHTML = [...comics].reverse().map((c) => {
+        const i = c.number - 1;
+        return `<a href="#${c.number}" data-goto="${i}" data-n="${c.number}">
+          <span class="perm">-rw-r--r--</span>
+          <img src="${HF.src(c.images[0])}" alt="" loading="lazy">
+          <span class="t">${esc(c.title)}</span>
+          <span class="d">${c.date}</span></a>`;
+      }).join("");
+    },
+  });
+  applyMode();
+</script>
+</body>
+</html>
