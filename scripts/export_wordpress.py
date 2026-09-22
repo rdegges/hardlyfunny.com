@@ -33,6 +33,8 @@ IMAGES = ARCHIVE / "comics"
 
 # Known data quirks in the WordPress export, fixed here rather than by hand.
 TITLE_FIXES = {"404": "404"}  # 2013-02-04 post has an empty title; its slug is the joke.
+# Corrections to her About page text (applied after sanitising).
+ABOUT_FIXES = {"Scribbles(2005-2014)": "Scribbles (2003–2014)"}
 DATE_FLAGS = {
     "engineers": (
         "Dated 2012-01-02 in WordPress, but the image was uploaded in 2012/12 "
@@ -179,7 +181,10 @@ def fetch_about() -> str:
     """Her About page, kept as the same tiny safe HTML as the comic notes."""
     data = fetch_json(f"{API}?type=page&number=20&fields=slug,content")
     page = next(p for p in data["posts"] if p["slug"] == "about")
-    return clean_note(page["content"])
+    about = clean_note(page["content"])
+    for wrong, right in ABOUT_FIXES.items():
+        about = about.replace(wrong, right)
+    return about
 
 
 def main() -> int:
