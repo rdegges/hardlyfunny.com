@@ -10,7 +10,7 @@ python -m hardlyfunny serve        # builds into _site/ and serves http://localh
 python -m pytest                   # checks content, SEO tags, accessibility basics, links and the feed
 ```
 
-`python -m hardlyfunny build` only builds. Pass `--site-url https://preview.example.com` for a preview deploy, so canonical URLs and OG tags point at the preview.
+`python -m hardlyfunny build --portable` makes a preview with relative links that works opened straight from disk (open `_site/index.html`). It skips the thumbnails and social cards. `python -m hardlyfunny build` only builds. Pass `--site-url https://preview.example.com` for a preview deploy, so canonical URLs and OG tags point at the preview.
 
 ## What the site includes
 

@@ -66,16 +66,14 @@
   });
   renderKeysToggle();
 
-  var pages = { a: "/archive/", i: "/about/" };
   document.addEventListener("keydown", function (e) {
     if (!keysOn || e.defaultPrevented || e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return;
     var t = e.target;
     if (t.isContentEditable || /^(input|textarea|select)$/i.test(t.tagName)) return;
     if (e.key === "m") { toggleMode(); return; }
+    // Shortcut targets are ordinary links marked with data-key, so they work wherever the site is hosted.
     var link = document.querySelector('a[data-key="' + e.key + '"]');
-    var href = link ? link.getAttribute("href") : pages[e.key];
-    if (e.key === "r" && !link) href = "/random/";
-    if (href) { e.preventDefault(); location.href = href; }
+    if (link) { e.preventDefault(); location.href = link.href; }
   });
 
   // ---- Sharing -------------------------------------------------------------
@@ -116,7 +114,7 @@
         if (err && err.name === "AbortError") return; // they closed the share sheet
         copy(url).catch(function () {});
         say("Instagram can only share from its app. We copied the link. Save the comic image (" +
-          location.origin + image + ") and post it from Instagram.");
+          new URL(image, location.href).href + ") and post it from Instagram.");
       });
   });
 })();

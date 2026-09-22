@@ -2,11 +2,13 @@
 {% block main %}
 <h1 class="page-title">Finding you a random comic…</h1>
 <p class="page-lede">If nothing happens, <a href="{{ urls.ARCHIVE }}">pick one from the archive</a>.</p>
+<ul id="random-pool" hidden>
+  {% for comic in site.comics %}<li><a href="{{ urls.comic(comic) }}">{{ comic.title }}</a></li>{% endfor %}
+</ul>
 <script>
   (function () {
-    var comics = {{ site.comics | map(attribute="slug") | list | tojson }};
-    var slug = comics[Math.floor(Math.random() * comics.length)];
-    location.replace("/comics/" + slug + "/");
+    var links = document.querySelectorAll("#random-pool a");
+    location.replace(links[Math.floor(Math.random() * links.length)].href);
   })();
 </script>
 {% endblock %}

@@ -1,4 +1,4 @@
-"""python -m hardlyfunny build | serve"""
+"""python -m hardlyfunny build | serve [--portable]"""
 
 from __future__ import annotations
 
@@ -16,9 +16,11 @@ def main() -> None:
     parser.add_argument("--out", type=Path, default=ROOT / "_site", help="output directory (default: _site)")
     parser.add_argument("--site-url", help="override the canonical site URL, e.g. for a preview deploy")
     parser.add_argument("--port", type=int, default=8000)
+    parser.add_argument("--portable", action="store_true",
+                        help="relative links, so the build also works opened straight from disk")
     args = parser.parse_args()
 
-    site = build(args.out, args.site_url)
+    site = build(args.out, args.site_url, portable=args.portable)
     print(f"Built {len(site.comics)} comics into {args.out}")
     if args.command == "serve":
         handler = functools.partial(http.server.SimpleHTTPRequestHandler, directory=str(args.out))

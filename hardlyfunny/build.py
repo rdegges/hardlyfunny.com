@@ -90,17 +90,40 @@ def comic_page(site: Site, comic: Comic, *, home: bool = False) -> Page:
     )
 
 
+# Root-relative references in src/href/data-image attributes, e.g. href="/archive/".
+ROOT_RELATIVE = re.compile(r'(\b(?:href|src|data-image)=")/(?!/)([^"#?]*)')
+
+
+def make_portable(out: Path) -> None:
+    """Rewrite root-relative links as relative ones with explicit index.html, so the
+    built site works opened from disk or hosted under any path. Canonical and OG URLs
+    stay absolute."""
+    for page in out.rglob("*.html"):
+        prefix = "../" * (len(page.relative_to(out).parts) - 1)
+
+        def rel(m: re.Match) -> str:
+            path = m.group(2)
+            if path == "" or path.endswith("/"):
+                path += "index.html"
+            return f"{m.group(1)}{prefix}{path}"
+
+        page.write_text(ROOT_RELATIVE.sub(rel, page.read_text()))
+
+
 def write(out: Path, path: str, text: str) -> None:
     dest = out / urls.output_path(path)
     dest.parent.mkdir(parents=True, exist_ok=True)
     dest.write_text(text)
 
 
-def build(out: Path, site_url: str | None = None, content: Path = CONTENT) -> Site:
+def build(out: Path, site_url: str | None = None, content: Path = CONTENT, portable: bool = False) -> Site:
+    """Build the site into out/. portable=True makes a preview that runs from disk: relative
+    links, and no generated thumbnails or social cards (the archive shows the originals)."""
     site = load(content / "comics.json")
     if site_url:
         site = replace(site, url=site_url.rstrip("/"))
     env = environment(site)
+    env.globals["thumbnail"] = (lambda c: urls.comic_image(c.image)) if portable else urls.thumbnail
 
     if out.exists():
         shutil.rmtree(out)
@@ -141,6 +164,9 @@ def build(out: Path, site_url: str | None = None, content: Path = CONTENT) -> Si
     shutil.copytree(content / "brand", out / "images" / "brand")
     images.copy_originals(site.comics, content, out)
     images.favicons(content, out)
+    if portable:
+        make_portable(out)
+        return site
     images.social_card(None, content, out / urls.social_card(None).lstrip("/"))
     for comic in site.comics:
         images.thumbnail(comic, content, out / urls.thumbnail(comic).lstrip("/"))
