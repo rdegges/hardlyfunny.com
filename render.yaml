@@ -1,0 +1,23 @@
+# Render Blueprint: https://render.com/docs/blueprint-spec
+services:
+  - type: web
+    name: hardlyfunny
+    runtime: static
+    buildCommand: pip install -r requirements.txt && python -m hardlyfunny build
+    staticPublishPath: _site
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.7"
+    headers:
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: Referrer-Policy
+        value: strict-origin-when-cross-origin
+      - path: /images/*
+        name: Cache-Control
+        value: public, max-age=604800
+      - path: /feed.xml
+        name: Content-Type
+        value: application/atom+xml; charset=utf-8

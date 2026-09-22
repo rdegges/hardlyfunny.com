@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block main %}
+<h1 class="page-title">Finding you a random comic…</h1>
+<p class="page-lede">If nothing happens, <a href="{{ urls.ARCHIVE }}">pick one from the archive</a>.</p>
+<script>
+  (function () {
+    var comics = {{ site.comics | map(attribute="slug") | list | tojson }};
+    var slug = comics[Math.floor(Math.random() * comics.length)];
+    location.replace("/comics/" + slug + "/");
+  })();
+</script>
+{% endblock %}

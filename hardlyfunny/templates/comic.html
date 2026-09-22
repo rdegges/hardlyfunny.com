@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% macro nav_link(target, key, label, randall, rel=None, primary=False) %}
+  {% if target %}
+<li><a class="button{% if primary %} primary{% endif %}" href="{{ target }}"{% if rel %} rel="{{ rel }}"{% endif %} data-key="{{ key }}" data-r="{{ randall }}" data-label="{{ label }}">{{ label }}</a></li>
+  {% else %}
+<li><span class="button" aria-disabled="true" data-r="{{ randall }}" data-label="{{ label }}">{{ label }}</span></li>
+  {% endif %}
+{% endmacro %}
+{% block main %}
+{% set permalink = urls.comic(comic) %}
+<article class="comic" aria-labelledby="comic-title">
+  <header class="comic-head">
+    {% if home %}
+    <div>
+      <p class="eyebrow" data-r="comics[-1]">Latest comic</p>
+      <h2 class="comic-title" id="comic-title"><a href="{{ permalink }}">{{ comic.title }}</a></h2>
+    </div>
+    {% else %}
+    <h1 class="comic-title" id="comic-title">{{ comic.title }}</h1>
+    {% endif %}
+    <p class="stamp">
+      <span data-r="comics[0x{{ '%x' % (comic.number - 1) }}]" data-label="Comic number {{ comic.number }}">No. {{ comic.number }}</span> ·
+      <time datetime="{{ comic.published.isoformat() }}" data-r="{{ comic.published | epoch }}" data-label="{{ comic.published | long_date }}">{{ comic.published | long_date }}</time>
+    </p>
+  </header>
+
+  <figure class="comic-art">
+    {% for img in comic.images %}
+    <img src="{{ urls.comic_image(img) }}" width="{{ img.width }}" height="{{ img.height }}" alt="{{ img.alt }}"{% if loop.first %} fetchpriority="high"{% else %} loading="lazy"{% endif %} decoding="async">
+    {% endfor %}
+  </figure>
+
+  <nav class="comic-nav" aria-label="Comic navigation">
+    <ul>
+      {{ nav_link(urls.comic(site.comics[0]) if comic.number > 1 else None, "Home", "First", "[0]") }}
+      {{ nav_link(urls.comic(prev) if prev else None, "ArrowLeft", "← Previous", "i--", rel="prev") }}
+      {{ nav_link(urls.RANDOM, "r", "Surprise me", "rand()", primary=True) }}
+      {{ nav_link(urls.comic(next) if next else None, "ArrowRight", "Next →", "i++", rel="next") }}
+      {{ nav_link(urls.comic(site.latest) if comic != site.latest else None, "End", "Newest", "[-1]") }}
+    </ul>
+  </nav>
+
+  {% if comic.transcript %}
+  <details class="transcript">
+    <summary><h2>Transcript</h2></summary>
+    <ol>
+      {% for line in comic.transcript %}
+      {% set speaker, _, words = line.partition(": ") %}
+      {% if line.startswith("[") %}
+      <li class="direction">{{ line }}</li>
+      {% elif words and speaker | length <= 40 %}
+      <li><b>{{ speaker }}:</b> {{ words }}</li>
+      {% else %}
+      <li>{{ line }}</li>
+      {% endif %}
+      {% endfor %}
+    </ol>
+  </details>
+  {% endif %}
+
+  {% if comic.note_html %}
+  <section class="note" aria-labelledby="note-title">
+    <img class="who" src="/images/brand/couple.png" width="250" height="217" alt="">
+    <div class="bubble">
+      <h2 id="note-title" data-r="// commit message from samantha">Samantha says…</h2>
+      <div class="body">{{ comic.note_html | safe }}</div>
+      {% if comic.tags %}
+      <ul class="tags" aria-label="Topics">
+        {% for tag in comic.tags %}<li>{{ tag | lower | replace(" ", "-") }}</li>{% endfor %}
+      </ul>
+      {% endif %}
+    </div>
+  </section>
+  {% endif %}
+
+  <section class="share" aria-labelledby="share-title">
+    <h2 id="share-title" data-r="export --share">Share this comic</h2>
+    <ul>
+      {% for link in share_links %}
+      <li><a href="{{ link.href }}" target="_blank" rel="noopener noreferrer" aria-label="Share on {{ link.label }} (opens in a new tab)">{{ icons[link.network] }}<span>{{ link.label }}</span></a></li>
+      {% endfor %}
+      <li data-js-only><button type="button" data-share-instagram data-image="{{ urls.comic_image(comic.image) }}" data-url="{{ absolute(permalink) }}" data-title="{{ comic.title }}">{{ icons.instagram }}<span>Instagram</span></button></li>
+      <li data-js-only><button type="button" data-copy-link="{{ absolute(permalink) }}"><span>Copy link</span></button></li>
+    </ul>
+    <p class="share-status" role="status" aria-live="polite"></p>
+  </section>
+</article>
+{% endblock %}

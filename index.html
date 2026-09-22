@@ -240,7 +240,7 @@
         <ul class="checklist">
           <li class="bad"><span>The homepage is <b>176 KB of HTML</b> to show ten comics, plus a WordPress.com tracking pixel and Facebook, Twitter and Reddit share buttons on every post.</span></li>
           <li class="bad"><span>Comics are served resized through <code>?w=584</code>, so the 600–800px originals never appear at full size.</span></li>
-          <li class="keep"><span>Keep every old link working: all 82 <code>/2013/05/15/infinite-recursion/</code>-style URLs redirect to their new home, and <code>/feed/</code> keeps working for RSS readers.</span></li>
+          <li class="keep"><span>Move to clean, permanent URLs like <code>/comics/infinite-recursion/</code> instead of WordPress's <code>/2013/05/15/…</code> dates, with an Atom feed at <code>/feed.xml</code>.</span></li>
           <li class="keep"><span>Keep her About page, and Scribbles (2003–2014) with it.</span></li>
           <li class="fix"><span>Two small data fixes: <b>"Engineers"</b> is dated 2012-01-02 but is drawn in her 600×600 style from a year later (probably 2013-01-02), and one post has no title. Its slug is <code>404</code>, so that's its title now.</span></li>
         </ul>
@@ -284,11 +284,11 @@
       <div class="panel">
         <h3>What the build looks like</h3>
         <ol class="steps">
-          <li class="done"><div><b>Export the archive</b><span><code>scripts/export_wordpress.py</code> has already pulled all 82 comics, the original images and her notes into <code>archive/comics.json</code>.</span></div></li>
-          <li><div><b>A small Python static generator</b><span>One page per comic at <code>/82/</code>, plus the archive, About, and an RSS feed at <code>/feed/</code>. Tailwind for styles.</span></div></li>
-          <li><div><b>Redirect every WordPress URL</b><span>82 redirects generated from the manifest, so old links and search results still land on the right comic.</span></div></li>
-          <li><div><b>Tests before launch</b><span>pytest checks that every comic renders, every old URL redirects, and the feed validates. GitHub Actions runs them on each PR.</span></div></li>
-          <li><div><b>Ship on Render</b><span>A Render static site deployed from GitHub. Point the domain at it when you're ready to surprise her.</span></div></li>
+          <li class="done"><div><b>Export the archive</b><span><code>scripts/export_wordpress.py</code> pulled all 82 comics, the original images and her notes out of WordPress.</span></div></li>
+          <li class="done"><div><b>Alt text and transcripts</b><span>Every comic has a written description and a full transcript of its speech bubbles, for screen readers, search engines and AI answer engines.</span></div></li>
+          <li class="done"><div><b>A small Python static generator</b><span><code>python -m hardlyfunny build</code>: one page per comic at <code>/comics/&lt;slug&gt;/</code>, archive, About, Atom feed, sitemap, llms.txt and social cards.</span></div></li>
+          <li class="done"><div><b>Tests</b><span>pytest checks every page's SEO tags, alt text, landmarks, links and feed. GitHub Actions runs them on each PR.</span></div></li>
+          <li><div><b>Ship on Render</b><span><code>render.yaml</code> is ready. Point the domain at it when you're ready to surprise her.</span></div></li>
         </ol>
       </div>
     </div>
