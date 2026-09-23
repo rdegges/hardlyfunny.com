@@ -26,3 +26,16 @@ def test_titles_are_prefilled_where_the_network_supports_it():
     assert "Infinite Recursion" in links["x"]["text"]
     assert links["reddit"]["title"] == "Hardly Funny: Infinite Recursion"
     assert links["ycombinator"]["t"] == "Hardly Funny: Infinite Recursion"
+
+
+def test_spaces_are_percent_encoded_not_plus_signs():
+    # Hacker News shows "Hardly+Funny:+Being+Thoughtful" when spaces are encoded as "+".
+    for link in share.links(URL, "Being Thoughtful", "Hardly Funny"):
+        query_string = urlparse(link.href).query
+        assert "+" not in query_string, link.href
+        assert "%20" in query_string or link.network in ("facebook", "linkedin"), link.href
+
+
+def test_hacker_news_title_round_trips():
+    link = next(l for l in share.links(URL, "Being Thoughtful", "Hardly Funny") if l.network == "ycombinator")
+    assert "t=Hardly%20Funny%3A%20Being%20Thoughtful" in link.href
