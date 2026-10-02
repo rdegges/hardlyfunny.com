@@ -27,7 +27,9 @@ def copy_originals(comics: tuple[Comic, ...], content: Path, out: Path) -> None:
 def thumbnail(comic: Comic, content: Path, dest: Path) -> None:
     dest.parent.mkdir(parents=True, exist_ok=True)
     with PILImage.open(content / comic.image.file) as im:
-        im = im.convert("RGB")
+        flat = PILImage.new("RGB", im.size, (255, 255, 255))  # transparency -> white, not black
+        flat.paste(im.convert("RGBA"), mask=im.convert("RGBA"))
+        im = flat
         ratio = THUMB_WIDTH / im.width
         im = im.resize((THUMB_WIDTH, round(im.height * ratio)), PILImage.LANCZOS)
         im.save(dest, "WEBP", quality=82, method=6)

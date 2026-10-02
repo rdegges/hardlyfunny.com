@@ -198,7 +198,7 @@
           "file": "comics/defying-logic.jpg",
           "width": 700,
           "height": 800,
-          "alt": "Walking Scribbles on a leash, Randall clutches his head in frustration at a jogger running in place at a red traffic light, while Samantha gestures toward the jogger."
+          "alt": "Randall raises his clenched hands beside his head in frustration at a jogger running in place by a traffic light, while Samantha, holding Scribbles on a leash, gestures toward the jogger."
         }
       ],
       "transcript": [
@@ -568,7 +568,7 @@
           "file": "comics/sassypants.png",
           "width": 600,
           "height": 600,
-          "alt": "Four panels: Scribbles sits in a pile of heart-print underwear, Randall stands smugly with hands on hips, a close-up shows his shorts, and Samantha closes her eyes, unamused."
+          "alt": "Four panels: Scribbles sits in laundry with heart-print underwear on his head, Randall stands smugly with hands on hips, a close-up shows his shorts, and Samantha closes her eyes, unamused."
         }
       ],
       "transcript": [
@@ -1317,7 +1317,7 @@
           "file": "comics/making-conversation.png",
           "width": 600,
           "height": 600,
-          "alt": "Samantha stands by Randall's desk and asks a question as he leans back in his chair with his feet up, typing on a laptop."
+          "alt": "Samantha stands by Randall's desk and asks a question as he leans back in his chair with his legs stretched out and crossed, typing on a laptop."
         }
       ],
       "transcript": [
@@ -1339,7 +1339,7 @@
           "file": "comics/quality-time.png",
           "width": 600,
           "height": 600,
-          "alt": "Randall sits on an open Newegg box, smiling, while Samantha sits on the floor with her arms reaching deep inside a computer tower case, looking unhappy. Parts and cables lie around them."
+          "alt": "Randall sits smiling behind an open Newegg box, while Samantha sits on the floor with her arms reaching deep inside a computer tower case, looking unhappy. Parts and cables lie around them."
         }
       ],
       "transcript": [
@@ -1369,7 +1369,7 @@
         "Samantha: Ok... I've got all the potential apartments listed by square footage and cost....",
         "Randall: The only thing that matters is the internet service provider!"
       ],
-      "note_html": "<p>I’ve learned that the internet service provider is the most important amenity when choosing a home. In Los Angeles, we couldn’t find <a href=\"http:/http://en.wikipedia.org/wiki/Fiber-optic_communication\">fiber </a>anywhere that we had lived but now that we’re moving to Walnut Creek/East Bay, I think there is hope for a home sweet home.</p>",
+      "note_html": "<p>I’ve learned that the internet service provider is the most important amenity when choosing a home. In Los Angeles, we couldn’t find <a href=\"https://en.wikipedia.org/wiki/Fiber-optic_communication\">fiber </a>anywhere that we had lived but now that we’re moving to Walnut Creek/East Bay, I think there is hope for a home sweet home.</p>",
       "tags": [
         "home life",
         "ISP",
@@ -1765,7 +1765,7 @@
           "file": "comics/randall-goes-outside.png",
           "width": 500,
           "height": 500,
-          "alt": "On a road trip, Randall stares suspiciously at a field full of golden haystacks, and Samantha gestures toward them to explain."
+          "alt": "Randall stares suspiciously at a field full of golden haystacks, and Samantha gestures toward them to explain."
         }
       ],
       "transcript": [
@@ -1899,7 +1899,7 @@
           "file": "comics/disconnected.png",
           "width": 500,
           "height": 500,
-          "alt": "Samantha holds hands with Randall at a concert, smiling, but Randall looks glum and admits something about how he feels away from his computer."
+          "alt": "Samantha smiles and holds hands with Randall, but Randall looks glum and admits something about how he feels away from his computer."
         }
       ],
       "transcript": [

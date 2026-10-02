@@ -11,6 +11,9 @@ from . import urls
 from .content import Comic, Site
 
 ATOM = "http://www.w3.org/2005/Atom"
+# Tag URIs (RFC 4151) keep entry IDs stable even if the site moves domains or a preview
+# build uses another URL. Never change this, or every reader re-shows every comic.
+TAG_AUTHORITY = "hardlyfunny.com,2012"
 
 
 def _timestamp(d: date) -> str:
@@ -18,9 +21,7 @@ def _timestamp(d: date) -> str:
 
 
 def entry_id(site: Site, comic: Comic) -> str:
-    # Tag URIs (RFC 4151) never change, even if the domain or slug ever does.
-    domain = site.url.split("://", 1)[-1]
-    return f"tag:{domain},2012:comic/{comic.number}"
+    return f"tag:{TAG_AUTHORITY}:comic/{comic.number}"
 
 
 def entry_html(site: Site, comic: Comic) -> str:
@@ -48,8 +49,7 @@ def render(site: Site) -> str:
             el.text = text
         return el
 
-    domain = site.url.split("://", 1)[-1]
-    sub(feed, "id", f"tag:{domain},2012:feed")
+    sub(feed, "id", f"tag:{TAG_AUTHORITY}:feed")
     sub(feed, "title", site.title)
     sub(feed, "subtitle", site.tagline)
     sub(feed, "updated", _timestamp(site.latest.published))

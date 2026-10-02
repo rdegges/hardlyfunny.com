@@ -4,6 +4,28 @@
    follows the OS until someone picks a side with the switch. Every text/ground
    pair here meets WCAG AA contrast. */
 
+/* Self-hosted Google Fonts (SIL Open Font License 1.1), latin subset, variable weights. */
+@font-face {
+  font-family: "Fredoka"; font-style: normal; font-weight: 500 700; font-display: swap;
+  src: url("fonts/fredoka.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "JetBrains Mono"; font-style: normal; font-weight: 400 600; font-display: swap;
+  src: url("fonts/jetbrains-mono.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Nunito"; font-style: italic; font-weight: 400 400; font-display: swap;
+  src: url("fonts/nunito-italic.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Nunito"; font-style: normal; font-weight: 400 700; font-display: swap;
+  src: url("fonts/nunito.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
 :root {
   color-scheme: light;
   --ground: #fff4fa;
@@ -62,6 +84,7 @@ body {
   margin: 0; background: var(--ground); color: var(--ink);
   font: 400 17px/1.6 var(--body);
   padding-inline: 16px;
+  overflow-wrap: break-word; /* long URLs in her notes must wrap on phones */
   transition: background-color .35s ease, color .35s ease;
 }
 a { color: var(--accent-ink); text-underline-offset: 3px; }
@@ -115,7 +138,7 @@ h1, h2, h3 { text-wrap: balance; }
 .no-js .switch { display: none; }
 
 .site-nav ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 20px; }
-.site-nav a { font: 600 15px/1 var(--display); color: var(--muted); text-decoration: none; padding: 8px 2px; display: inline-block; }
+.site-nav a { font: 600 15px/1 var(--display); color: var(--muted); text-decoration: none; padding: 0 4px; min-height: 44px; display: inline-flex; align-items: center; }
 .site-nav a:hover, .site-nav a[aria-current="page"] { color: var(--ink); text-decoration: underline; text-decoration-color: var(--accent); text-decoration-thickness: 2px; }
 
 main { padding-block: 16px 40px; }
@@ -138,7 +161,7 @@ main { padding-block: 16px 40px; }
 
 .comic-nav ul { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin: 18px 0 0; padding: 0; list-style: none; }
 .button {
-  display: inline-block; font: 600 16px/1 var(--display); color: var(--ink); text-decoration: none; cursor: pointer;
+  display: inline-flex; align-items: center; min-height: 44px; font: 600 16px/1 var(--display); color: var(--ink); text-decoration: none; cursor: pointer;
   background: var(--surface); border: 2px solid var(--line); border-radius: var(--r-sm);
   padding: 11px 18px; transition: border-color .15s, background .35s, border-radius .35s;
 }
@@ -151,7 +174,7 @@ main { padding-block: 16px 40px; }
 .transcript { margin: 18px auto 0; max-width: 660px; }
 .transcript summary {
   cursor: pointer; font: 600 15px/1.4 var(--display); color: var(--accent-ink);
-  padding: 8px 0; list-style-position: inside;
+  padding: 11px 0; min-height: 44px; list-style-position: inside;
 }
 .transcript summary h2 { display: inline; font: inherit; margin: 0; }
 .transcript ol { list-style: none; margin: 6px 0 0; padding: 14px 18px; background: var(--surface); border-radius: calc(var(--r) * .6); box-shadow: var(--shadow); }
@@ -168,6 +191,7 @@ main { padding-block: 16px 40px; }
 .bubble .body::before { content: var(--note-open); display: block; color: var(--muted); }
 .bubble .body::after { content: var(--note-close); display: block; color: var(--muted); }
 .bubble .body p { margin: 0 0 10px; }
+.bubble .body a, .about .body a { overflow-wrap: anywhere; }
 .bubble .body p:last-child { margin-bottom: 0; }
 .tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0 0; padding: 0; list-style: none; }
 .tags li { font-size: 13px; padding: 3px 10px; border-radius: var(--r-sm); background: var(--ground); color: var(--muted); }
@@ -238,6 +262,8 @@ main { padding-block: 16px 40px; }
 kbd { font: 600 12px/1 var(--display); color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 6px; padding: 3px 6px; }
 .keys-toggle { font: 600 13px/1 var(--display); color: var(--accent-ink); background: none; border: 0; padding: 6px 4px; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
 .no-js .keys, .no-js [data-js-only] { display: none; }
+/* Single-key shortcuts mean nothing on touch-only devices. */
+@media (hover: none) and (pointer: coarse) { .keys { display: none; } }
 
 @media (max-width: 560px) {
   .brand { flex-direction: column; gap: 8px; }

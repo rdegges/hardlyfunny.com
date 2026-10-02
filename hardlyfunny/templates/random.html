@@ -1,14 +1,15 @@
 {% extends "base.html" %}
+{# Redirect before the stylesheets and fonts load. #}
+{% block head %}
+<script>
+  (function () {
+    var slugs = {{ site.comics | map(attribute="slug") | list | tojson }};
+    var here = location.pathname.replace(/random\/(index\.html)?$/, "");
+    location.replace(here + "comics/" + slugs[Math.floor(Math.random() * slugs.length)] + "/" + (location.protocol === "file:" ? "index.html" : ""));
+  })();
+</script>
+{% endblock %}
 {% block main %}
 <h1 class="page-title">Finding you a random comic…</h1>
 <p class="page-lede">If nothing happens, <a href="{{ urls.ARCHIVE }}">pick one from the archive</a>.</p>
-<ul id="random-pool" hidden>
-  {% for comic in site.comics %}<li><a href="{{ urls.comic(comic) }}">{{ comic.title }}</a></li>{% endfor %}
-</ul>
-<script>
-  (function () {
-    var links = document.querySelectorAll("#random-pool a");
-    location.replace(links[Math.floor(Math.random() * links.length)].href);
-  })();
-</script>
 {% endblock %}

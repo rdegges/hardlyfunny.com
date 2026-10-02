@@ -17,7 +17,7 @@
 
 <meta property="og:site_name" content="{{ site.title }}">
 <meta property="og:type" content="{{ page.og_type }}">
-<meta property="og:title" content="{{ page.title.split(' · ')[0] }}">
+<meta property="og:title" content="{{ page.og_title or page.title }}">
 <meta property="og:description" content="{{ page.description }}">
 <meta property="og:url" content="{{ absolute(page.path) }}">
 <meta property="og:locale" content="en_US">
@@ -31,7 +31,7 @@
 <meta property="article:author" content="{{ site.author }}">
 {% endif %}
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="{{ page.title.split(' · ')[0] }}">
+<meta name="twitter:title" content="{{ page.og_title or page.title }}">
 <meta name="twitter:description" content="{{ page.description }}">
 <meta name="twitter:image" content="{{ absolute(page.image) }}">
 <meta name="twitter:image:alt" content="{{ page.image_alt }}">
@@ -39,12 +39,13 @@
 <link rel="alternate" type="application/atom+xml" title="{{ site.title }} (Atom feed)" href="{{ urls.FEED }}">
 <link rel="icon" type="image/png" href="/favicon.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=JetBrains+Mono:wght@400;600&family=Nunito:ital,wght@0,400;0,700;1,400&display=swap">
+{% block head %}{% endblock %}
+{# Fonts are self-hosted: no third-party requests, and no visitor IPs sent to Google. #}
+<link rel="preload" href="/fonts/fredoka.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/nunito.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="/site.css?v={{ asset_version.css }}">
 {# Apply the saved mode before first paint so the page never flashes the wrong theme. #}
-<script>document.documentElement.classList.replace("no-js", "js");try{var m=localStorage.getItem("hf-mode");if(m)document.documentElement.dataset.mode=m}catch(e){}</script>
+<script>document.documentElement.classList.replace("no-js", "js");try{var m=localStorage.getItem("hf-mode");if(m==="samantha"||m==="randall")document.documentElement.dataset.mode=m}catch(e){}</script>
 {% if page.jsonld %}
 <script type="application/ld+json">
 {{ page.jsonld | safe }}
@@ -97,7 +98,7 @@
       <span><kbd>a</kbd> archive</span>
       <span><kbd>i</kbd> about us</span>
       <span><kbd>m</kbd> switch sides</span>
-      <button type="button" class="keys-toggle" id="keys-toggle" aria-pressed="true">Shortcuts on</button>
+      <button type="button" class="keys-toggle" id="keys-toggle" aria-pressed="true">Keyboard shortcuts<span aria-hidden="true">: <span id="keys-state">on</span></span></button>
     </p>
   </footer>
 </div>

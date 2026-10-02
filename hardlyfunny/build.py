@@ -33,11 +33,12 @@ class Page:
     jsonld: str | None = None
     noindex: bool = False
     nav: str | None = None  # which site-nav item is current
+    og_title: str | None = None  # title for social cards, without the " · Hardly Funny" suffix
     published: str | None = None
 
 
 def _icon(name: str) -> Markup:
-    svg = (PACKAGE / "static" / "icons" / f"{name}.svg").read_text()
+    svg = (PACKAGE / "static" / "icons" / f"{name}.svg").read_text(encoding="utf-8")
     svg = re.sub(r"<title>.*?</title>", "", svg)
     svg = svg.replace('role="img"', 'aria-hidden="true" focusable="false" fill="currentColor" width="20" height="20"')
     return Markup(svg)
@@ -81,7 +82,8 @@ def comic_page(site: Site, comic: Comic, *, home: bool = False) -> Page:
     return Page(
         path=urls.comic(comic),
         title=f"{site.display_title(comic)} · {site.title}",
-        description=comic.summary,
+        og_title=site.display_title(comic),
+        description=site.description(comic),
         og_type="article",
         image=urls.social_card(comic),
         image_alt=comic.alt,
@@ -107,13 +109,30 @@ def make_portable(out: Path) -> None:
                 path += "index.html"
             return f"{m.group(1)}{prefix}{path}"
 
-        page.write_text(ROOT_RELATIVE.sub(rel, page.read_text()))
+        page.write_text(ROOT_RELATIVE.sub(rel, page.read_text(encoding="utf-8")), encoding="utf-8")
+
+
+MARKER = ".hardlyfunny-build"
+
+
+def _clear(out: Path) -> None:
+    """Empty the output directory, refusing anything that isn't a previous build."""
+    out = out.resolve()
+    if out.exists():
+        if out == ROOT or out in ROOT.parents or (out / ".git").exists() or (out / "comics.json").exists():
+            raise SystemExit(f"Refusing to delete {out}: that's not a build directory.")
+        earlier_build = all((out / f).exists() for f in ("index.html", "site.css", "feed.xml"))
+        if any(out.iterdir()) and not ((out / MARKER).exists() or earlier_build):
+            raise SystemExit(f"Refusing to delete {out}: it isn't empty and wasn't made by this build.")
+        shutil.rmtree(out)
+    out.mkdir(parents=True)
+    (out / MARKER).write_text("Built by python -m hardlyfunny. Safe to delete.\n", encoding="utf-8")
 
 
 def write(out: Path, path: str, text: str) -> None:
     dest = out / urls.output_path(path)
     dest.parent.mkdir(parents=True, exist_ok=True)
-    dest.write_text(text)
+    dest.write_text(text, encoding="utf-8")
 
 
 def build(out: Path, site_url: str | None = None, content: Path = CONTENT, portable: bool = False) -> Site:
@@ -125,9 +144,7 @@ def build(out: Path, site_url: str | None = None, content: Path = CONTENT, porta
     env = environment(site)
     env.globals["thumbnail"] = (lambda c: urls.comic_image(c.image)) if portable else urls.thumbnail
 
-    if out.exists():
-        shutil.rmtree(out)
-    out.mkdir(parents=True)
+    _clear(out)
 
     comic_tpl = env.get_template("comic.html")
     for comic in site.comics:
@@ -161,6 +178,7 @@ def build(out: Path, site_url: str | None = None, content: Path = CONTENT, porta
 
     shutil.copy2(PACKAGE / "static" / "site.css", out / "site.css")
     shutil.copy2(PACKAGE / "static" / "site.js", out / "site.js")
+    shutil.copytree(PACKAGE / "static" / "fonts", out / "fonts")
     shutil.copytree(content / "brand", out / "images" / "brand")
     images.copy_originals(site.comics, content, out)
     images.favicons(content, out)

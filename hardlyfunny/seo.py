@@ -42,10 +42,11 @@ def comic_jsonld(site: Site, comic: Comic) -> str:
             "height": img.height,
             "caption": img.alt,
         },
-        "keywords": ", ".join(comic.tags),
         "isPartOf": _series(site),
         "inLanguage": "en",
     }
+    if comic.tags:
+        data["keywords"] = ", ".join(comic.tags)
     if comic.transcript:
         data["text"] = "\n".join(comic.transcript)
     return _dump(data)
@@ -63,8 +64,10 @@ def home_jsonld(site: Site) -> str:
 
 
 def _dump(data: dict) -> str:
-    # "</" can't appear inside a <script> element.
-    return json.dumps(data, ensure_ascii=False, indent=2).replace("</", "<\\/")
+    # Inside <script>, "</script" or "<!--" in the data could end or swallow the element,
+    # so escape every <, > and & as JSON unicode escapes.
+    text = json.dumps(data, ensure_ascii=False, indent=2)
+    return text.replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026")
 
 
 def sitemap(site: Site) -> str:

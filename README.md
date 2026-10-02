@@ -23,7 +23,8 @@ python -m pytest                   # checks content, SEO tags, accessibility bas
   - Pages use skip links, landmarks, one `h1` each, and a visible focus style.
   - Colors meet WCAG AA contrast in both modes.
   - The shortcuts can be turned off, and the site respects `prefers-reduced-motion`.
-  - An axe-core audit of WCAG 2.2 AA found no violations in either mode.
+  - An axe-core audit of WCAG 2.2 AA found no violations in either mode, and Lighthouse scores 100 for accessibility, best practices and SEO.
+- **Privacy and speed**: fonts are self-hosted (`hardlyfunny/static/fonts/`, SIL Open Font License), so pages make no third-party requests and no analytics or trackers run.
 - **Samantha / Randall mode**: Randall mode is the dark theme and follows the OS until you pick. Its jokey labels live in `data-r` attributes and are swapped in by JavaScript. The HTML itself only ever contains the plain words, so nothing is duplicated for search engines, and screen readers still hear the plain meaning.
 
 ## Layout
@@ -44,7 +45,7 @@ python -m pytest                   # checks content, SEO tags, accessibility bas
 
 1. Put the image in `content/comics/<slug>.png`.
 2. Add an entry to the end of `content/comics.json`, including `number`, `slug`, `title`, `date`, `images` (with `width`, `height` and `alt`), `transcript`, `note_html` and `tags`.
-3. Run `python -m pytest`. It fails if alt text or a transcript is missing, or if a slug is reused.
+3. Run `python -m pytest`. The build also refuses to run if numbers aren't sequential, dates are out of order, a slug is reused or malformed, or an image has no alt text, and the tests check that image sizes match the files.
 
 ## Deploying
 

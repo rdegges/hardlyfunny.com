@@ -40,6 +40,9 @@ def unique_slugs(titles: list[str]) -> list[str]:
 
 
 def main(descriptions_path: str) -> int:
+    if (CONTENT / "comics.json").exists() and "--force" not in sys.argv:
+        print("content/comics.json already exists and may have hand edits. Re-run with --force to overwrite it.")
+        return 1
     export = json.loads((ARCHIVE / "comics.json").read_text())
     descriptions = json.loads(Path(descriptions_path).read_text())
     comics_out = CONTENT / "comics"

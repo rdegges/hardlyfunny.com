@@ -13,7 +13,7 @@ def test_feed_is_valid_atom_with_every_comic_newest_first(site):
     assert root.find(f"{A}link[@rel='self']").get("href") == "https://hardlyfunny.com/feed.xml"
 
     entries = root.findall(f"{A}entry")
-    assert len(entries) == 82
+    assert len(entries) == len(site.comics)
     assert entries[0].find(f"{A}title").text == site.latest.title
     ids = [e.find(f"{A}id").text for e in entries]
     assert len(set(ids)) == len(ids)
@@ -32,3 +32,9 @@ def test_entries_embed_the_comic_with_alt_text_and_transcript(site):
 
 def test_entry_ids_are_stable_tag_uris(site):
     assert feed.entry_id(site, site.comics[69]) == "tag:hardlyfunny.com,2012:comic/70"
+
+
+def test_entry_ids_do_not_depend_on_the_site_url(site):
+    import dataclasses
+    preview = dataclasses.replace(site, url="http://localhost:8000")
+    assert feed.entry_id(preview, site.comics[0]) == feed.entry_id(site, site.comics[0])

@@ -62,6 +62,13 @@ class Site:
     def latest(self) -> Comic:
         return self.comics[-1]
 
+    def description(self, comic: Comic) -> str:
+        """Meta description. Falls back to the alt text when another comic has the same
+        note (No. 82 is a redraw of No. 20), so no two pages share a description."""
+        if any(c.summary == comic.summary for c in self.comics if c.number < comic.number):
+            return truncate(comic.alt, 160)
+        return comic.summary
+
     def display_title(self, comic: Comic) -> str:
         """The comic's title, plus its number when another comic shares the title."""
         if sum(c.title == comic.title for c in self.comics) > 1:
@@ -99,8 +106,29 @@ def truncate(text: str, limit: int) -> str:
     return cut[: cut.rfind(" ")].rstrip(",;:—–- ") + "…"
 
 
+class ContentError(ValueError):
+    """content/comics.json is inconsistent; the message says what to fix."""
+
+
+def validate(comics: tuple[Comic, ...]) -> None:
+    """Catch hand-editing mistakes before they become broken navigation."""
+    seen: set[str] = set()
+    for i, c in enumerate(comics):
+        if c.number != i + 1:
+            raise ContentError(f"Comic “{c.title}” is number {c.number}, but it's entry {i + 1}. Numbers must run 1, 2, 3… in order.")
+        if i and c.published < comics[i - 1].published:
+            raise ContentError(f"No. {c.number} ({c.published}) is dated before No. {c.number - 1}. Keep comics in date order.")
+        if c.slug in seen:
+            raise ContentError(f"Slug “{c.slug}” is used twice. Every comic needs its own.")
+        seen.add(c.slug)
+        if not re.fullmatch(r"[a-z0-9]+(-[a-z0-9]+)*", c.slug):
+            raise ContentError(f"Slug “{c.slug}” must be lowercase letters, digits and hyphens.")
+        if not c.images or any(not img.alt.strip() for img in c.images):
+            raise ContentError(f"No. {c.number} needs at least one image, and every image needs alt text.")
+
+
 def load(path: Path) -> Site:
-    data = json.loads(path.read_text())
+    data = json.loads(path.read_text(encoding="utf-8"))
     comics = tuple(
         Comic(
             number=c["number"],
@@ -114,6 +142,7 @@ def load(path: Path) -> Site:
         )
         for c in data["comics"]
     )
+    validate(comics)
     site = data["site"]
     return Site(
         title=site["title"],
