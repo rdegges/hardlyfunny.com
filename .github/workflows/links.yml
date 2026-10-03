@@ -1,0 +1,30 @@
+name: Links
+
+# Fails when a link in the comic notes or About page is broken (404/410, dead
+# domain). Links a script can't verify (bot-blocking sites, server hiccups) are
+# reported as warnings on the run instead.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "17 14 * * 1"  # Mondays: links rot even when nothing is committed
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: links-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - run: python scripts/check_links.py
