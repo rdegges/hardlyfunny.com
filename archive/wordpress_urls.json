@@ -1,0 +1,580 @@
+{
+ "_about": "Paths the old WordPress.com site served, per comic number (from the export). Used to generate _redirects.",
+ "comics": [
+  {
+   "number": 1,
+   "post": "/2012/01/02/engineers/",
+   "uploads": [
+    "/wp-content/uploads/2012/12/crane.png"
+   ]
+  },
+  {
+   "number": 2,
+   "post": "/2012/08/26/we-all-cant-live-entirely-from-our-keyboards/",
+   "uploads": [
+    "/wp-content/uploads/2012/05/8-25-20121.png"
+   ]
+  },
+  {
+   "number": 3,
+   "post": "/2012/08/31/shopping-with-randall/",
+   "uploads": [
+    "/wp-content/uploads/2012/08/reddit8-30-20121.png"
+   ]
+  },
+  {
+   "number": 4,
+   "post": "/2012/09/10/technical-vs-literary-writing/",
+   "uploads": [
+    "/wp-content/uploads/2012/09/conversionrate9-101.jpg"
+   ]
+  },
+  {
+   "number": 5,
+   "post": "/2012/09/18/wedding-planning/",
+   "uploads": [
+    "/wp-content/uploads/2012/09/lanparty2.jpg"
+   ]
+  },
+  {
+   "number": 6,
+   "post": "/2012/09/24/the-hijacking-of-our-new-bookcase/",
+   "uploads": [
+    "/wp-content/uploads/2012/09/bookshelf1.jpg"
+   ]
+  },
+  {
+   "number": 7,
+   "post": "/2012/09/27/when-gaming-comes-between-us/",
+   "uploads": [
+    "/wp-content/uploads/2012/09/steam2.jpg"
+   ]
+  },
+  {
+   "number": 8,
+   "post": "/2012/11/06/exquisite-man/",
+   "uploads": [
+    "/wp-content/uploads/2012/11/exquisiteman1.jpg"
+   ]
+  },
+  {
+   "number": 9,
+   "post": "/2012/11/08/defying-logic/",
+   "uploads": [
+    "/wp-content/uploads/2012/11/defieslogic4.jpg"
+   ]
+  },
+  {
+   "number": 10,
+   "post": "/2012/11/12/tron/",
+   "uploads": [
+    "/wp-content/uploads/2012/11/tron.png"
+   ]
+  },
+  {
+   "number": 11,
+   "post": "/2012/11/14/energy-drinks/",
+   "uploads": [
+    "/wp-content/uploads/2012/11/energy-drinks1.png"
+   ]
+  },
+  {
+   "number": 12,
+   "post": "/2012/11/16/working-from-home/",
+   "uploads": [
+    "/wp-content/uploads/2012/11/workingfromhome.jpg"
+   ]
+  },
+  {
+   "number": 13,
+   "post": "/2012/11/19/things-nerds-say/",
+   "uploads": [
+    "/wp-content/uploads/2012/11/genevatickling.jpg"
+   ]
+  },
+  {
+   "number": 14,
+   "post": "/2012/11/21/3/",
+   "uploads": [
+    "/wp-content/uploads/2012/11/heart2.png"
+   ]
+  },
+  {
+   "number": 15,
+   "post": "/2012/11/23/funsucker/",
+   "uploads": [
+    "/wp-content/uploads/2012/11/pilgrim.png"
+   ]
+  },
+  {
+   "number": 16,
+   "post": "/2012/11/26/dropbox/",
+   "uploads": [
+    "/wp-content/uploads/2012/11/dropbox.png"
+   ]
+  },
+  {
+   "number": 17,
+   "post": "/2012/11/28/first-impressions/",
+   "uploads": [
+    "/wp-content/uploads/2012/11/hat.png",
+    "/wp-content/uploads/2012/11/wikihat2.png"
+   ]
+  },
+  {
+   "number": 18,
+   "post": "/2012/11/30/handles/",
+   "uploads": [
+    "/wp-content/uploads/2012/11/handle.png"
+   ]
+  },
+  {
+   "number": 19,
+   "post": "/2012/12/03/a-typical-conversation/",
+   "uploads": [
+    "/wp-content/uploads/2012/12/memcache3.png"
+   ]
+  },
+  {
+   "number": 20,
+   "post": "/2012/12/05/shopping-with-a-nerd/",
+   "uploads": [
+    "/wp-content/uploads/2012/12/holidayshopping1.png"
+   ]
+  },
+  {
+   "number": 21,
+   "post": "/2012/12/07/the-morning-news/",
+   "uploads": [
+    "/wp-content/uploads/2012/12/morningnews1.png"
+   ]
+  },
+  {
+   "number": 22,
+   "post": "/2012/12/10/peculiarity/",
+   "uploads": [
+    "/wp-content/uploads/2012/12/headphonehair.png"
+   ]
+  },
+  {
+   "number": 23,
+   "post": "/2012/12/12/w-o-w/",
+   "uploads": [
+    "/wp-content/uploads/2012/12/guild.png"
+   ]
+  },
+  {
+   "number": 24,
+   "post": "/2012/12/14/sassypants/",
+   "uploads": [
+    "/wp-content/uploads/2012/12/underwear.png"
+   ]
+  },
+  {
+   "number": 25,
+   "post": "/2012/12/18/shopping/",
+   "uploads": [
+    "/wp-content/uploads/2012/12/applestore.png"
+   ]
+  },
+  {
+   "number": 26,
+   "post": "/2012/12/21/optimization/",
+   "uploads": [
+    "/wp-content/uploads/2012/12/wifiscale.png"
+   ]
+  },
+  {
+   "number": 27,
+   "post": "/2012/12/24/church/",
+   "uploads": [
+    "/wp-content/uploads/2012/12/church.png"
+   ]
+  },
+  {
+   "number": 28,
+   "post": "/2012/12/25/raspberry-pie/",
+   "uploads": [
+    "/wp-content/uploads/2012/12/raspberrypie.png"
+   ]
+  },
+  {
+   "number": 29,
+   "post": "/2012/12/27/my-first-time/",
+   "uploads": [
+    "/wp-content/uploads/2012/12/india.png"
+   ]
+  },
+  {
+   "number": 30,
+   "post": "/2012/12/31/nightmares/",
+   "uploads": [
+    "/wp-content/uploads/2012/12/talkinginsleep.png"
+   ]
+  },
+  {
+   "number": 31,
+   "post": "/2013/01/07/tech-support/",
+   "uploads": [
+    "/wp-content/uploads/2013/01/ping.png"
+   ]
+  },
+  {
+   "number": 32,
+   "post": "/2013/01/09/new-year-resolutions/",
+   "uploads": [
+    "/wp-content/uploads/2013/01/beardpower.png"
+   ]
+  },
+  {
+   "number": 33,
+   "post": "/2013/01/11/girl-talk/",
+   "uploads": [
+    "/wp-content/uploads/2013/01/talkingabouthusbands1.png"
+   ]
+  },
+  {
+   "number": 34,
+   "post": "/2013/01/14/oh-facebook/",
+   "uploads": [
+    "/wp-content/uploads/2013/01/facebook.png"
+   ]
+  },
+  {
+   "number": 35,
+   "post": "/2013/01/16/why-you-should-leave-your-developer-at-home/",
+   "uploads": [
+    "/wp-content/uploads/2013/01/hexadecimal.png"
+   ]
+  },
+  {
+   "number": 36,
+   "post": "/2013/01/18/parents-of-programmers/",
+   "uploads": [
+    "/wp-content/uploads/2013/01/parents1.png"
+   ]
+  },
+  {
+   "number": 37,
+   "post": "/2013/01/21/randalls-grand-idea/",
+   "uploads": [
+    "/wp-content/uploads/2013/01/calculations.png"
+   ]
+  },
+  {
+   "number": 38,
+   "post": "/2013/01/23/even-with-music/",
+   "uploads": [
+    "/wp-content/uploads/2013/01/playlist.png"
+   ]
+  },
+  {
+   "number": 39,
+   "post": "/2013/01/25/ab-command/",
+   "uploads": [
+    "/wp-content/uploads/2013/01/ab-command.png"
+   ]
+  },
+  {
+   "number": 40,
+   "post": "/2013/01/28/startupvitamins-posters/",
+   "uploads": [
+    "/wp-content/uploads/2013/01/startupvitamins2.png"
+   ]
+  },
+  {
+   "number": 41,
+   "post": "/2013/01/30/the-bug/",
+   "uploads": [
+    "/wp-content/uploads/2013/01/thebugv1.png"
+   ]
+  },
+  {
+   "number": 42,
+   "post": "/2013/02/01/first-repository/",
+   "uploads": [
+    "/wp-content/uploads/2013/02/github.png"
+   ]
+  },
+  {
+   "number": 43,
+   "post": "/2013/02/04/404/",
+   "uploads": [
+    "/wp-content/uploads/2013/02/trex.png"
+   ]
+  },
+  {
+   "number": 44,
+   "post": "/2013/02/06/uncommon-problems/",
+   "uploads": [
+    "/wp-content/uploads/2013/02/885mph1.png"
+   ]
+  },
+  {
+   "number": 45,
+   "post": "/2013/02/08/the-essentials/",
+   "uploads": [
+    "/wp-content/uploads/2013/02/unpacking.png"
+   ]
+  },
+  {
+   "number": 46,
+   "post": "/2013/02/11/being-thoughtful/",
+   "uploads": [
+    "/wp-content/uploads/2013/02/unix.png"
+   ]
+  },
+  {
+   "number": 47,
+   "post": "/2013/02/13/updates/",
+   "uploads": [
+    "/wp-content/uploads/2013/02/ubuntuupdates.png"
+   ]
+  },
+  {
+   "number": 48,
+   "post": "/2013/02/15/embarrassing/",
+   "uploads": [
+    "/wp-content/uploads/2013/02/kernalupdates.png"
+   ]
+  },
+  {
+   "number": 49,
+   "post": "/2013/02/18/breaking-the-cycle/",
+   "uploads": [
+    "/wp-content/uploads/2013/02/nocaffeine.png"
+   ]
+  },
+  {
+   "number": 50,
+   "post": "/2013/02/20/screen-of-what/",
+   "uploads": [
+    "/wp-content/uploads/2013/02/bluescreen.png"
+   ]
+  },
+  {
+   "number": 51,
+   "post": "/2013/02/22/1337-dreams/",
+   "uploads": [
+    "/wp-content/uploads/2013/02/chaptertitles.png"
+   ]
+  },
+  {
+   "number": 52,
+   "post": "/2013/02/25/working-from-home-2/",
+   "uploads": [
+    "/wp-content/uploads/2013/02/anime1.png"
+   ]
+  },
+  {
+   "number": 53,
+   "post": "/2013/03/03/things-randall-says/",
+   "uploads": [
+    "/wp-content/uploads/2013/03/zeldahat.png"
+   ]
+  },
+  {
+   "number": 54,
+   "post": "/2013/03/08/making-conversation/",
+   "uploads": [
+    "/wp-content/uploads/2013/03/computer-names.png"
+   ]
+  },
+  {
+   "number": 55,
+   "post": "/2013/03/13/quality-time/",
+   "uploads": [
+    "/wp-content/uploads/2013/03/qualitytime.png"
+   ]
+  },
+  {
+   "number": 56,
+   "post": "/2013/03/16/moving/",
+   "uploads": [
+    "/wp-content/uploads/2013/03/ispscan1.png"
+   ]
+  },
+  {
+   "number": 57,
+   "post": "/2013/03/18/waza/",
+   "uploads": [
+    "/wp-content/uploads/2013/03/wazascan.png"
+   ]
+  },
+  {
+   "number": 58,
+   "post": "/2013/03/23/favorite-number/",
+   "uploads": [
+    "/wp-content/uploads/2013/03/favoritenumber.png"
+   ]
+  },
+  {
+   "number": 59,
+   "post": "/2013/03/25/497/",
+   "uploads": [
+    "/wp-content/uploads/2013/03/randallscloset1.jpg"
+   ]
+  },
+  {
+   "number": 60,
+   "post": "/2013/03/28/a-pen/",
+   "uploads": [
+    "/wp-content/uploads/2013/03/penandpaper.png"
+   ]
+  },
+  {
+   "number": 61,
+   "post": "/2013/03/29/507/",
+   "uploads": [
+    "/wp-content/uploads/2013/03/mammalianheart1.png"
+   ]
+  },
+  {
+   "number": 62,
+   "post": "/2013/03/31/happy-birthday-to-me/",
+   "uploads": [
+    "/wp-content/uploads/2013/03/birthdaypresent1.png"
+   ]
+  },
+  {
+   "number": 63,
+   "post": "/2013/04/05/date-night/",
+   "uploads": [
+    "/wp-content/uploads/2013/04/anniversary.png"
+   ]
+  },
+  {
+   "number": 64,
+   "post": "/2013/04/09/angry-randall/",
+   "uploads": [
+    "/wp-content/uploads/2013/04/bash.png"
+   ]
+  },
+  {
+   "number": 65,
+   "post": "/2013/04/13/robotics/",
+   "uploads": [
+    "/wp-content/uploads/2013/04/roboticscompetition.png"
+   ]
+  },
+  {
+   "number": 66,
+   "post": "/2013/04/16/ideal-hackathon/",
+   "uploads": [
+    "/wp-content/uploads/2013/04/idealhackathon1.png"
+   ]
+  },
+  {
+   "number": 67,
+   "post": "/2013/04/18/investing/",
+   "uploads": [
+    "/wp-content/uploads/2013/04/bitcoin1.png"
+   ]
+  },
+  {
+   "number": 68,
+   "post": "/2013/04/24/api-testing/",
+   "uploads": [
+    "/wp-content/uploads/2013/04/apitesting.png"
+   ]
+  },
+  {
+   "number": 69,
+   "post": "/2013/05/09/logic-loving-husband/",
+   "uploads": [
+    "/wp-content/uploads/2013/05/headoverheels1.png"
+   ]
+  },
+  {
+   "number": 70,
+   "post": "/2013/05/15/infinite-recursion/",
+   "uploads": [
+    "/wp-content/uploads/2013/05/infiniterecursion.png"
+   ]
+  },
+  {
+   "number": 71,
+   "post": "/2013/05/22/left-4-dead/",
+   "uploads": [
+    "/wp-content/uploads/2013/05/left4dead1.png"
+   ]
+  },
+  {
+   "number": 72,
+   "post": "/2013/05/24/randall-goes-outside/",
+   "uploads": [
+    "/wp-content/uploads/2013/05/randallgoesoutside1.png"
+   ]
+  },
+  {
+   "number": 73,
+   "post": "/2013/05/27/houserules/",
+   "uploads": [
+    "/wp-content/uploads/2013/05/facebook.png"
+   ]
+  },
+  {
+   "number": 74,
+   "post": "/2013/05/29/all-hope-is-lost/",
+   "uploads": [
+    "/wp-content/uploads/2013/05/slow-internet.png"
+   ]
+  },
+  {
+   "number": 75,
+   "post": "/2013/06/04/potentially-perfect/",
+   "uploads": [
+    "/wp-content/uploads/2013/06/potentially-perfect.png"
+   ]
+  },
+  {
+   "number": 76,
+   "post": "/2013/06/07/parking-problems/",
+   "uploads": [
+    "/wp-content/uploads/2013/06/parking.png"
+   ]
+  },
+  {
+   "number": 77,
+   "post": "/2013/06/15/disconnected/",
+   "uploads": [
+    "/wp-content/uploads/2013/06/disconnected.png"
+   ]
+  },
+  {
+   "number": 78,
+   "post": "/2013/06/20/testing-telephony/",
+   "uploads": [
+    "/wp-content/uploads/2013/06/testing_telephony1.png"
+   ]
+  },
+  {
+   "number": 79,
+   "post": "/2013/07/18/easy-reading/",
+   "uploads": [
+    "/wp-content/uploads/2013/07/easy_reading.png"
+   ]
+  },
+  {
+   "number": 80,
+   "post": "/2013/11/28/thanksgiving/",
+   "uploads": [
+    "/wp-content/uploads/2013/10/thanksgiving.png"
+   ]
+  },
+  {
+   "number": 81,
+   "post": "/2014/01/13/defcon/",
+   "uploads": [
+    "/wp-content/uploads/2014/01/defcon.png"
+   ]
+  },
+  {
+   "number": 82,
+   "post": "/2014/01/16/randalls-unusual-nostalgia/",
+   "uploads": [
+    "/wp-content/uploads/2014/01/holiday_shopping_new.png"
+   ]
+  }
+ ]
+}

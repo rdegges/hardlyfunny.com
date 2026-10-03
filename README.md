@@ -15,6 +15,7 @@ python -m pytest                   # checks content, SEO tags, accessibility bas
 ## What the site includes
 
 - **Clean, permanent URLs**: one page per comic at `/comics/<slug>/` (e.g. `/comics/infinite-recursion/`), plus `/archive/`, `/about/` and `/random/`.
+- **Old WordPress links still work**: the build writes a Cloudflare `_redirects` file that 301s every old post URL (`/2013/05/15/infinite-recursion/`, with or without the slash, and its attachment pages), every hotlinked `/wp-content/uploads/…` image, `/feed/`, and tag/category/date/page listings to their new homes. It's generated from `archive/wordpress_urls.json`, and the tests check that every old URL lands on a page that exists and that no rule shadows a real page.
 - **Atom feed** at `/feed.xml`, linked from every page as "Feed". Entries embed the comic, its alt text, Samantha's note and the transcript. Entry IDs are tag URIs, so they never change.
 - **Social sharing**: X, Facebook, LinkedIn, Reddit and Hacker News intent links with the title prefilled. The comic image comes from each page's `og:image`: a 1200×630 card generated per comic. Instagram has no web share link, so its button uses the device's share sheet with the image attached (phones), and otherwise copies the link and points to the image.
 - **SEO/GEO**: a unique `<title>`, meta description and canonical URL on every page. Open Graph and Twitter card tags. `ComicStory`/`ComicSeries` JSON-LD. A `sitemap.xml`, a `robots.txt`, and `llms.txt` / `llms-full.txt` (with every transcript) for AI answer engines.
@@ -57,4 +58,4 @@ Create a Pages project connected to this GitHub repo, with:
 | Build command | `pip install -r requirements.txt && python -m hardlyfunny build` |
 | Build output directory | `_site` |
 
-Python is pinned by `.python-version`. The build writes `_headers` (security and cache headers) into `_site/`; Pages compresses responses and serves `404.html` for missing pages on its own. Every pull request gets its own preview deployment, and `main` only changes through pull requests that pass CI. Then add hardlyfunny.com as a custom domain on the project.
+Python is pinned by `.python-version`. The build writes `_headers` (security and cache headers) and `_redirects` (old WordPress URLs) into `_site/`; Pages compresses responses and serves `404.html` for missing pages on its own. Every pull request gets its own preview deployment, and `main` only changes through pull requests that pass CI. Then add hardlyfunny.com as a custom domain on the project.

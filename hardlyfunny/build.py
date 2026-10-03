@@ -11,7 +11,7 @@ from pathlib import Path
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from markupsafe import Markup
 
-from . import feed, images, seo, share, urls
+from . import feed, images, redirects, seo, share, urls
 from .content import Comic, Site, load
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -180,6 +180,7 @@ def build(out: Path, site_url: str | None = None, content: Path = CONTENT, porta
     shutil.copy2(PACKAGE / "static" / "site.js", out / "site.js")
     shutil.copytree(PACKAGE / "static" / "fonts", out / "fonts")
     shutil.copy2(PACKAGE / "static" / "_headers", out / "_headers")  # Cloudflare Pages
+    write(out, "/_redirects", redirects.render(redirects.build(site, ROOT / "archive" / "wordpress_urls.json")))
     shutil.copytree(content / "brand", out / "images" / "brand")
     images.copy_originals(site.comics, content, out)
     images.favicons(content, out)
