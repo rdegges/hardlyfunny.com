@@ -1,5 +1,19 @@
 {% extends "base.html" %}
+{% from "_comic_card.html" import comic_card %}
 {% block main %}
-<h1 class="page-title" data-r="404: comic not found">This page wandered off</h1>
-<p class="page-lede">Probably Scribbles again. Try <a href="/">the latest comic</a> or <a href="{{ urls.ARCHIVE }}">the archive</a>.</p>
+<section class="lost" aria-labelledby="lost-title">
+  <img class="lost-dog" src="/images/brand/scribbles.png" width="122" height="85" alt="Scribbles the chihuahua, looking pleased with herself">
+  <h1 class="page-title" id="lost-title" data-r="404: comic not found">This page wandered off</h1>
+  <p class="page-lede">Probably Scribbles again. Try <a href="/">the latest comic</a> or <a href="{{ urls.ARCHIVE }}">the archive</a>, or pick one of these.</p>
+</section>
+
+<section class="lost-picks" aria-labelledby="picks-title">
+  <h2 class="lost-picks-title" id="picks-title" data-r="$ shuf -n 3 ./comics">Maybe one of these?</h2>
+  {# Three favourites without JavaScript; site.js swaps in three random comics from the hidden pool. #}
+  <ul class="shelf" id="lost-picks">
+    {% for comic in picks %}{{ comic_card(comic, lazy=False, attrs=' data-default-pick') }}{% endfor %}
+    {% for comic in site.comics %}{{ comic_card(comic, attrs=' data-pick hidden') }}{% endfor %}
+  </ul>
+  <p class="center"><a class="button primary" href="{{ urls.RANDOM }}" data-r="rand()" data-label="Surprise me">Surprise me</a></p>
+</section>
 {% endblock %}

@@ -1,0 +1,12 @@
+{# One comic as a card: the archive grid (or an `ls -la` row in Randall mode). #}
+{% macro comic_card(comic, lazy=True, attrs="") %}
+  <li{{ attrs }}>
+    <a href="{{ urls.comic(comic) }}">
+      <span class="perm" aria-hidden="true">-rw-r--r--</span>
+      <span class="n" aria-hidden="true">{{ comic.number }}</span>
+      <img src="{{ thumbnail(comic) }}" width="320" height="{{ (320 * comic.image.height / comic.image.width) | round | int }}" alt=""{% if lazy %} loading="lazy"{% endif %} decoding="async">
+      <span class="t">{{ comic.title }}</span>
+      <time class="d" datetime="{{ comic.published.isoformat() }}">{{ comic.published.isoformat() }}</time>
+    </a>
+  </li>
+{% endmacro %}
