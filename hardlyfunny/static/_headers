@@ -1,5 +1,5 @@
-# Cloudflare Pages response headers: https://developers.cloudflare.com/pages/configuration/headers/
-# (Pages already compresses responses and serves 404.html for missing pages.)
+# Cloudflare static assets response headers: https://developers.cloudflare.com/workers/static-assets/headers/
+# (Cloudflare already compresses responses; cloudflare.config.ts makes it serve 404.html for missing pages.)
 
 /*
   X-Content-Type-Options: nosniff
@@ -7,7 +7,7 @@
   X-Frame-Options: SAMEORIGIN
   Permissions-Policy: camera=(), microphone=(), geolocation=(), interest-cohort=()
 
-# Pages link these with ?v=<content hash>, so they can be cached forever.
+# Our pages link these with ?v=<content hash>, so they can be cached forever.
 /site.css
   Cache-Control: public, max-age=31536000, immutable
 /site.js

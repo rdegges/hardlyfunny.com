@@ -1,0 +1,140 @@
+"""The built site as the Cloudflare runtime actually serves it (static assets, `_redirects`, `_headers`).
+
+The rest of the suite checks `_redirects` with a Python model of Cloudflare's matching
+(`test_redirects.follow`). This module replays the same paths against a real `cf dev`
+server, so a difference between that model and the runtime fails here instead of in
+production. It needs a running server, so it is skipped unless HARDLYFUNNY_RUNTIME_URL is set:
+
+    python -m hardlyfunny build
+    npx cf dev                                   # in a Node container, serves _site on :8787
+    HARDLYFUNNY_RUNTIME_URL=http://localhost:8787 python -m pytest tests/test_cloudflare_runtime.py
+
+The server must serve a build of the same checkout the tests run from.
+"""
+
+import http.client
+import os
+from urllib.parse import urlsplit
+
+import pytest
+
+from hardlyfunny import urls
+from tests.test_redirects import OLD, VARIANTS, follow, rules
+
+BASE = os.environ.get("HARDLYFUNNY_RUNTIME_URL")
+pytestmark = pytest.mark.skipif(not BASE, reason="set HARDLYFUNNY_RUNTIME_URL to a running `cf dev`")
+
+SECURITY_HEADERS = {
+    "x-content-type-options": "nosniff",
+    "referrer-policy": "strict-origin-when-cross-origin",
+    "x-frame-options": "SAMEORIGIN",
+    "permissions-policy": "camera=(), microphone=(), geolocation=(), interest-cohort=()",
+}
+IMMUTABLE = "public, max-age=31536000, immutable"
+
+
+def get(path):
+    """One request, redirects not followed: (status, lower-cased headers, body)."""
+    parts = urlsplit(BASE)
+    conn = http.client.HTTPConnection(parts.hostname, parts.port or 80, timeout=10)
+    try:
+        conn.request("GET", path)
+        res = conn.getresponse()
+        return res.status, {k.lower(): v for k, v in res.getheaders()}, res.read()
+    finally:
+        conn.close()
+
+
+def location(headers):
+    """Location as a path, whether the runtime sends it relative or absolute."""
+    loc = urlsplit(headers.get("location", ""))
+    return loc.path + (f"?{loc.query}" if loc.query else "")
+
+
+def assert_lands(path, dest):
+    """`path` 301s straight to `dest`, and `dest` is a page (no second hop)."""
+    status, headers, _ = get(path)
+    assert (status, location(headers)) == (301, dest), path
+    status, _, _ = get(dest)
+    assert status == 200, f"{path} -> {dest} -> {status}"
+
+
+def test_runtime_serves_the_same_build(built):
+    """Guards every other test: a stale `_site` behind the server would make them meaningless."""
+    status, _, body = get("/_redirects")
+    assert status == 404
+    status, _, body = get(urls.FEED)
+    assert status == 200 and body == (built / "feed.xml").read_bytes()
+
+
+def test_every_static_rule_matches_the_python_model(built):
+    for source, dest, _ in rules(built):
+        if "*" not in source:
+            assert follow(built, source) == (dest, 301)
+            assert_lands(source, dest)
+
+
+def test_every_splat_rule_matches_the_python_model(built):
+    for source, _, _ in rules(built):
+        if source.endswith("/*"):
+            for path in (source[:-1] + "anything/deeper/", source[:-1]):
+                dest, _ = follow(built, path)
+                assert_lands(path, dest)
+
+
+@pytest.mark.parametrize("variant", VARIANTS)
+def test_every_old_post_url_lands_on_its_comic(built, site, variant):
+    for entry in OLD:
+        assert_lands(VARIANTS[variant](entry["post"]), urls.comic(site.comics[entry["number"] - 1]))
+
+
+def test_redirects_keep_the_query_string():
+    status, headers, _ = get("/feed/?utm_source=x")
+    assert (status, location(headers)) == (301, "/feed.xml?utm_source=x")
+
+
+def test_new_urls_are_pages_with_security_headers(site):
+    for path in ["/", urls.ARCHIVE, urls.ABOUT, urls.RANDOM, *(urls.comic(c) for c in site.comics)]:
+        status, headers, _ = get(path)
+        assert status == 200, path
+        assert headers["content-type"].startswith("text/html"), path
+        assert {k: headers.get(k) for k in SECURITY_HEADERS} == SECURITY_HEADERS, path
+
+
+def test_slashless_page_urls_reach_the_page():
+    # auto-trailing-slash: /about must not 404 now that Pages' own handling is gone.
+    for path in ["/about", "/archive", "/comics/infinite-recursion"]:
+        status, headers, _ = get(path)
+        assert status in (301, 307, 308) and location(headers) == path + "/", path
+
+
+@pytest.mark.parametrize("path", ["/nope/", "/comics/no-such-comic/", "/_redirects", "/_headers",
+                                  "/wrangler.config.ts", "/cloudflare.config.ts", "/package.json"])
+def test_missing_and_config_paths_get_the_site_404(built, path):
+    status, headers, body = get(path)
+    assert status == 404, path
+    assert body == (built / "404.html").read_bytes(), path
+    assert {k: headers.get(k) for k in SECURITY_HEADERS} == SECURITY_HEADERS, path
+
+
+def test_cache_and_content_type_rules_apply(built):
+    font = next((built / "fonts").iterdir()).name
+    image = next(p for p in (built / "images").rglob("*") if p.is_file()).relative_to(built)
+    expected = {
+        "/site.css?v=abc": IMMUTABLE,
+        "/site.js": IMMUTABLE,
+        f"/fonts/{font}": IMMUTABLE,
+        f"/{image}": "public, max-age=604800",
+    }
+    for path, cache in expected.items():
+        status, headers, _ = get(path)
+        assert (status, headers.get("cache-control")) == (200, cache), path
+    status, headers, _ = get("/")
+    assert "immutable" not in headers.get("cache-control", ""), "HTML must not be cached forever"
+    status, headers, _ = get(urls.FEED)
+    assert headers["content-type"] == "application/atom+xml; charset=utf-8"
+
+
+def test_build_marker_is_not_published():
+    status, _, _ = get("/.hardlyfunny-build")
+    assert status == 404

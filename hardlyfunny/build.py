@@ -127,6 +127,8 @@ def _clear(out: Path) -> None:
         shutil.rmtree(out)
     out.mkdir(parents=True)
     (out / MARKER).write_text("Built by python -m hardlyfunny. Safe to delete.\n", encoding="utf-8")
+    # Wrangler uploads dotfiles too; this keeps the internal marker off the live site.
+    (out / ".assetsignore").write_text(MARKER + "\n", encoding="utf-8")
 
 
 # Shown on the 404 page when JavaScript can't pick random ones.
@@ -189,7 +191,7 @@ def build(out: Path, site_url: str | None = None, content: Path = CONTENT, porta
     shutil.copy2(PACKAGE / "static" / "site.css", out / "site.css")
     shutil.copy2(PACKAGE / "static" / "site.js", out / "site.js")
     shutil.copytree(PACKAGE / "static" / "fonts", out / "fonts")
-    shutil.copy2(PACKAGE / "static" / "_headers", out / "_headers")  # Cloudflare Pages
+    shutil.copy2(PACKAGE / "static" / "_headers", out / "_headers")  # Cloudflare static assets
     write(out, "/_redirects", redirects.render(redirects.build(site, ROOT / "archive" / "wordpress_urls.json")))
     shutil.copytree(content / "brand", out / "images" / "brand")
     images.copy_originals(site.comics, content, out)

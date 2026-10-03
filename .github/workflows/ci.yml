@@ -21,3 +21,34 @@ jobs:
       - run: pip install -r requirements-dev.txt
       - run: python -m pytest -q
       - run: python -m hardlyfunny build
+
+  deploy:
+    # Branch protection isn't available on this plan, so `needs: test` is what keeps a red build off the live site.
+    needs: test
+    runs-on: ubuntu-latest
+    concurrency:
+      group: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && 'deploy-production' || format('deploy-dry-run-{0}', github.ref) }}
+      cancel-in-progress: false
+    env:
+      CF_SEND_TELEMETRY: "false"
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements*.txt
+      - run: pip install -r requirements.txt
+      - run: python -m hardlyfunny build
+      - uses: actions/setup-node@v6
+        with:
+          node-version: lts/*
+          cache: npm
+      - run: npm ci
+      - if: github.event_name == 'pull_request'
+        run: npx cf deploy --dry-run
+      - if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: npx cf deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

@@ -1,11 +1,11 @@
-"""The WordPress → new-site redirects, checked the way Cloudflare Pages applies them."""
+"""The WordPress → new-site redirects, checked the way Cloudflare applies them."""
 
 import json
 import re
 
 import pytest
 
-from hardlyfunny import urls
+from hardlyfunny import redirects, urls
 from hardlyfunny.build import ROOT
 
 OLD = json.loads((ROOT / "archive" / "wordpress_urls.json").read_text(encoding="utf-8"))["comics"]
@@ -35,6 +35,16 @@ def test_within_cloudflare_limits_and_all_permanent(built):
     dynamic = [r for r in rs if "*" in r[0] or ":" in r[0]]
     assert len(rs) - len(dynamic) <= 2000 and len(dynamic) <= 100
     assert all(status == "301" for _, _, status in rs)
+
+
+@pytest.mark.parametrize("static, dynamic", [(redirects.MAX_STATIC + 1, 0), (0, redirects.MAX_DYNAMIC + 1)])
+def test_render_refuses_more_rules_than_cloudflare_reads(static, dynamic):
+    # Cloudflare reads at most this many rules, so the build must fail rather than ship a partial file.
+    rs = [redirects.Redirect(f"/s{i}", "/") for i in range(static)]
+    rs += [redirects.Redirect(f"/d{i}/*", "/") for i in range(dynamic)]
+    with pytest.raises(ValueError):
+        redirects.render(rs)
+    redirects.render(rs[1:])
 
 
 VARIANTS = {
