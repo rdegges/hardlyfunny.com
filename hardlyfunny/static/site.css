@@ -244,6 +244,14 @@ main { padding-block: 16px 40px; }
   :root:not([data-mode="samantha"]) .shelf .d { font-size: 13px; order: 3; }
 }
 
+/* 404 */
+.lost { text-align: center; padding-top: 12px; }
+.lost-dog { display: block; margin: 8px auto 0; width: 122px; height: auto; transform: rotate(-6deg); }
+.lost-picks { max-width: 720px; margin: 8px auto 0; }
+.lost-picks-title { font: 600 18px/1.2 var(--display); text-align: center; margin: 0 0 14px; }
+.lost-picks .shelf { grid-template-columns: repeat(auto-fill, minmax(min(100%, 180px), 1fr)); }
+.lost-picks .center { margin-top: 22px; }
+
 /* About */
 .about { max-width: 660px; margin: 0 auto; }
 .about .comic-art { justify-items: stretch; padding: 24px 28px; }

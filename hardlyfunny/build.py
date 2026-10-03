@@ -129,6 +129,16 @@ def _clear(out: Path) -> None:
     (out / MARKER).write_text("Built by python -m hardlyfunny. Safe to delete.\n", encoding="utf-8")
 
 
+# Shown on the 404 page when JavaScript can't pick random ones.
+FAVOURITES = ("infinite-recursion", "screen-of-what", "time-machine")
+
+
+def lost_picks(site: Site) -> list[Comic]:
+    by_slug = {c.slug: c for c in site.comics}
+    picks = [by_slug[s] for s in FAVOURITES if s in by_slug]
+    return picks or list(site.comics[-3:])
+
+
 def write(out: Path, path: str, text: str) -> None:
     dest = out / urls.output_path(path)
     dest.parent.mkdir(parents=True, exist_ok=True)
@@ -167,7 +177,7 @@ def build(out: Path, site_url: str | None = None, content: Path = CONTENT, porta
         description="Hardly Funny is an autobiographical webcomic by Samantha Degges about life with Randall, a programmer, and their chihuahua Scribbles.")))
     write(out, urls.RANDOM, env.get_template("random.html").render(page=Page(
         path=urls.RANDOM, title=f"Random comic · {site.title}", description="Opens a random Hardly Funny comic.", noindex=True)))
-    write(out, "/404.html", env.get_template("404.html").render(page=Page(
+    write(out, "/404.html", env.get_template("404.html").render(picks=lost_picks(site), page=Page(
         path="/404.html", title=f"Page not found · {site.title}", description="This page doesn't exist.", noindex=True)))
 
     write(out, urls.FEED, feed.render(site))

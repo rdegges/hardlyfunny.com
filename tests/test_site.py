@@ -151,3 +151,16 @@ def test_cloudflare_headers_file_is_published(built):
     headers = (built / "_headers").read_text()
     assert "X-Content-Type-Options: nosniff" in headers
     assert "/fonts/*" in headers and "immutable" in headers
+
+
+def test_404_page_offers_scribbles_and_comics_to_try(built, site, parse):
+    page = parse(built / "404.html")
+    dog = [i for i in page.all("img") if i["src"].endswith("scribbles.png") and i.get("alt")]
+    assert dog, "Scribbles appears with alt text"
+    cards = [li for li in page.all("li") if "data-default-pick" in li or "data-pick" in li]
+    defaults = [li for li in cards if "data-default-pick" in li]
+    pool = [li for li in cards if "data-pick" in li]
+    assert len(defaults) == 3 and not any("hidden" in li for li in defaults)
+    assert len(pool) == len(site.comics) and all("hidden" in li for li in pool)
+    assert page.all("a", href=urls.RANDOM)
+    assert page.meta("robots") == "noindex"

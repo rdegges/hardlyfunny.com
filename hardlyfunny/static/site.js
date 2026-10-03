@@ -109,6 +109,16 @@
     if (link) { e.preventDefault(); location.href = link.href; }
   });
 
+  // ---- 404: three random comics instead of the fixed favourites ------------
+  var pool = Array.prototype.slice.call(document.querySelectorAll("#lost-picks [data-pick]"));
+  if (pool.length >= 3) {
+    for (var i = pool.length - 1; i > 0; i--) {  // Fisher-Yates shuffle
+      var j = Math.floor(Math.random() * (i + 1)), tmp = pool[i]; pool[i] = pool[j]; pool[j] = tmp;
+    }
+    Array.prototype.forEach.call(document.querySelectorAll("#lost-picks [data-default-pick]"), function (li) { li.hidden = true; });
+    pool.slice(0, 3).forEach(function (li) { li.hidden = false; });
+  }
+
   // ---- Sharing -------------------------------------------------------------
   var status = document.querySelector(".share-status");
   function say(message) { if (status) status.textContent = message; }
