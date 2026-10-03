@@ -39,7 +39,7 @@ python -m pytest                   # checks content, SEO tags, accessibility bas
 | `hardlyfunny/static/_headers` | Cloudflare Pages response headers, copied into the build |
 | `.github/workflows/ci.yml` | Runs the tests and a build on every PR |
 | `archive/` | The untouched WordPress export and its generated descriptions (history, not edited) |
-| `scripts/` | `export_wordpress.py` (WordPress → `archive/`) and `migrate_to_content.py` (one-time `archive/` → `content/`) |
+| `scripts/` | `export_wordpress.py` (WordPress → `archive/`), `migrate_to_content.py` (one-time `archive/` → `content/`) and `check_links.py` (reports dead links in the notes) |
 | `index.html`, `designs/` | The design review page and the four clickable mockups it previews |
 
 ## Adding a comic
