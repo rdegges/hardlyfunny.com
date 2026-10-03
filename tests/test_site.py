@@ -117,7 +117,7 @@ def test_nothing_links_to_old_wordpress_urls(built):
 def test_share_links_on_every_comic(built, site, parse):
     page = parse(built / "comics" / site.latest.slug / "index.html")
     hosts = {urlparse(a["href"]).netloc for a in page.all("a") if a.get("target") == "_blank"}
-    assert {"x.com", "www.facebook.com", "www.linkedin.com", "www.reddit.com", "news.ycombinator.com"} <= hosts
+    assert {"x.com", "bsky.app", "www.facebook.com", "www.linkedin.com", "www.reddit.com", "news.ycombinator.com"} <= hosts
     assert [b for b in page.all("button") if "data-share-instagram" in b]
 
 
@@ -164,3 +164,10 @@ def test_404_page_offers_scribbles_and_comics_to_try(built, site, parse):
     assert len(pool) == len(site.comics) and all("hidden" in li for li in pool)
     assert page.all("a", href=urls.RANDOM)
     assert page.meta("robots") == "noindex"
+
+
+def test_every_share_link_has_an_icon(built, site):
+    html = (built / "comics" / site.latest.slug / "index.html").read_text()
+    for host in ("x.com", "bsky.app", "www.facebook.com", "www.linkedin.com"):
+        anchor = re.search(rf'<a href="https://{re.escape(host)}/[^>]*>(.*?)</a>', html, re.S).group(1)
+        assert "<svg" in anchor and 'aria-hidden="true"' in anchor, host
