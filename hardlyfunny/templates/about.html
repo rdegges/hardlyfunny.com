@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block main %}
+<article class="about" aria-labelledby="about-title">
+  <h1 class="page-title" id="about-title" data-r="$ cat ABOUT.md">About us</h1>
+  <div class="comic-art">
+    <img src="/images/brand/couple.png" width="250" height="217" alt="Samantha, smiling with her chin in her hands, next to Randall on his laptop, in front of a pink pixel heart.">
+    <div class="body">{{ site.about_html | safe }}</div>
+  </div>
+  <p class="center"><a class="button" href="/" data-r="cd ~" data-label="Read the latest comic">Read the latest comic</a></p>
+</article>
+{% endblock %}

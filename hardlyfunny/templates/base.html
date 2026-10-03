@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en" class="no-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ page.title }}</title>
+<meta name="description" content="{{ page.description }}">
+<meta name="author" content="{{ site.author }}">
+{% if page.noindex %}
+<meta name="robots" content="noindex">
+{% else %}
+<link rel="canonical" href="{{ absolute(page.path) }}">
+{% endif %}
+<meta name="theme-color" content="#fff4fa" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#19191b" media="(prefers-color-scheme: dark)">
+<meta name="color-scheme" content="light dark">
+
+<meta property="og:site_name" content="{{ site.title }}">
+<meta property="og:type" content="{{ page.og_type }}">
+<meta property="og:title" content="{{ page.og_title or page.title }}">
+<meta property="og:description" content="{{ page.description }}">
+<meta property="og:url" content="{{ absolute(page.path) }}">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="{{ absolute(page.image) }}">
+<meta property="og:image:type" content="image/jpeg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="{{ page.image_alt }}">
+{% if page.published %}
+<meta property="article:published_time" content="{{ page.published }}">
+<meta property="article:author" content="{{ site.author }}">
+{% endif %}
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{{ page.og_title or page.title }}">
+<meta name="twitter:description" content="{{ page.description }}">
+<meta name="twitter:image" content="{{ absolute(page.image) }}">
+<meta name="twitter:image:alt" content="{{ page.image_alt }}">
+
+<link rel="alternate" type="application/atom+xml" title="{{ site.title }} (Atom feed)" href="{{ urls.FEED }}">
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+{% block head %}{% endblock %}
+{# Fonts are self-hosted: no third-party requests, and no visitor IPs sent to Google. #}
+<link rel="preload" href="/fonts/fredoka.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/nunito.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/site.css?v={{ asset_version.css }}">
+{# Apply the saved mode before first paint so the page never flashes the wrong theme. #}
+<script>document.documentElement.classList.replace("no-js", "js");try{var m=localStorage.getItem("hf-mode");if(m==="samantha"||m==="randall")document.documentElement.dataset.mode=m}catch(e){}</script>
+{% if page.jsonld %}
+<script type="application/ld+json">
+{{ page.jsonld | safe }}
+</script>
+{% endif %}
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<div class="wrap">
+  <header class="site-header">
+    <a class="brand" href="/" rel="home"{% if page.nav == "home" %} aria-current="page"{% endif %}>
+      <img src="/images/brand/couple.png" width="250" height="217" alt="">
+      {# The site name is the page's h1 only on the home page; elsewhere the page's own title is. #}
+      <div>
+        {% if page.nav == "home" %}<h1 class="wordmark" data-r="hardly_funny">{{ site.title }}</h1>
+        {% else %}<span class="wordmark" data-r="hardly_funny">{{ site.title }}</span>{% endif %}
+        <span class="tagline" data-r="// {{ site.tagline | lower }}">{{ site.tagline | lower }}</span>
+      </div>
+    </a>
+    <div class="switch">
+      <div class="switch-row">
+        <span id="lbl-s" aria-hidden="true">Samantha</span>
+        <button type="button" class="track" id="mode" role="switch" aria-checked="false" aria-label="Randall mode (dark theme)">
+          <img src="/images/brand/scribbles.png" width="122" height="85" alt="">
+        </button>
+        <span id="lbl-r" aria-hidden="true">Randall</span>
+      </div>
+      <span class="switch-hint" data-r="Scribbles.side = 'randall';">Scribbles is on my side.</span>
+    </div>
+    <nav class="site-nav" aria-label="Site">
+      <ul>
+        <li><a href="{{ urls.ARCHIVE }}" data-key="a" data-r="ls ./comics" data-label="Archive"{% if page.nav == "archive" %} aria-current="page"{% endif %}>Archive</a></li>
+        <li><a href="{{ urls.ABOUT }}" data-key="i" data-r="cat ABOUT.md" data-label="About us"{% if page.nav == "about" %} aria-current="page"{% endif %}>About us</a></li>
+        <li><a href="{{ urls.FEED }}" type="application/atom+xml" data-r="curl /feed.xml" data-label="Feed">Feed</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main id="main" tabindex="-1">
+{% block main %}{% endblock %}
+  </main>
+
+  <footer class="site-footer">
+    <p>Drawn by {{ site.author }}. Inspired by Randall, whether he likes it or not.</p>
+    <p><a href="{{ urls.FEED }}" type="application/atom+xml">Subscribe to the feed</a> · <a href="{{ urls.ARCHIVE }}">All {{ site.comics | length }} comics</a> · <a href="{{ urls.RANDOM }}" data-key="r">Random comic</a></p>
+    <p class="keys" id="keys">
+      <span class="visually-hidden">Keyboard shortcuts:</span>
+      <span><kbd>←</kbd> <kbd>→</kbd> previous / next</span>
+      <span><kbd>r</kbd> random</span>
+      <span><kbd>a</kbd> archive</span>
+      <span><kbd>i</kbd> about us</span>
+      <span><kbd>m</kbd> switch sides</span>
+      <button type="button" class="keys-toggle" id="keys-toggle" aria-pressed="true">Keyboard shortcuts<span aria-hidden="true">: <span id="keys-state">on</span></span></button>
+    </p>
+  </footer>
+</div>
+<script src="/site.js?v={{ asset_version.js }}" defer></script>
+</body>
+</html>

@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block main %}
+<h1 class="page-title" data-r="$ ls -la ./comics">Every comic, ever</h1>
+<p class="page-lede">{{ site.comics | length }} comics, {{ site.comics[0].published.strftime("%B %Y") }} to {{ site.latest.published.strftime("%B %Y") }}. Newest first.</p>
+<ol class="shelf" reversed>
+  {% for comic in site.comics | reverse %}
+  <li>
+    <a href="{{ urls.comic(comic) }}">
+      <span class="perm" aria-hidden="true">-rw-r--r--</span>
+      <span class="n" aria-hidden="true">{{ comic.number }}</span>
+      <img src="{{ thumbnail(comic) }}" width="320" height="{{ (320 * comic.image.height / comic.image.width) | round | int }}" alt=""{% if loop.index > 8 %} loading="lazy"{% endif %} decoding="async">
+      <span class="t">{{ comic.title }}</span>
+      <time class="d" datetime="{{ comic.published.isoformat() }}">{{ comic.published.isoformat() }}</time>
+    </a>
+  </li>
+  {% endfor %}
+</ol>
+{% endblock %}

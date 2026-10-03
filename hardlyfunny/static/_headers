@@ -1,0 +1,23 @@
+# Cloudflare Pages response headers: https://developers.cloudflare.com/pages/configuration/headers/
+# (Pages already compresses responses and serves 404.html for missing pages.)
+
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  X-Frame-Options: SAMEORIGIN
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), interest-cohort=()
+
+# Pages link these with ?v=<content hash>, so they can be cached forever.
+/site.css
+  Cache-Control: public, max-age=31536000, immutable
+/site.js
+  Cache-Control: public, max-age=31536000, immutable
+/fonts/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Comic art and cards aren't fingerprinted; a week keeps fixes from going stale for long.
+/images/*
+  Cache-Control: public, max-age=604800
+
+/feed.xml
+  Content-Type: application/atom+xml; charset=utf-8

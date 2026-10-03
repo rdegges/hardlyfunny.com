@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Hardly Funny · Engineering Pad</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Architects+Daughter&family=Kalam:wght@300;400;700&display=swap">
+<style>
+  /* Direction 3 — Engineering Pad.
+     The green engineering computation paper that lives on every programmer's desk,
+     used as her sketchbook. Each comic is a numbered sheet with a real title block
+     (PROJECT / SHEET n OF 82 / DRAWN BY / CHK'D BY), taped down with washi tape.
+     Dark mode turns the pad into a blueprint. */
+  :root {
+    color-scheme: light;
+    --paper: #eef5e3;           /* engineering-pad green, tuned toward her #ccff99 */
+    --grid: rgba(102, 153, 51, .16);
+    --grid-major: rgba(102, 153, 51, .30);
+    --margin: #e98fc9;          /* margin rule, her pink softened */
+    --ink: #2c3327;             /* graphite */
+    --ink-soft: #5b6552;
+    --block: rgba(255, 255, 255, .55);
+    --block-line: #58763c;
+    --tape-a: rgba(255, 102, 204, .55);
+    --tape-b: rgba(204, 102, 255, .45);
+    --tape-c: rgba(204, 255, 153, .85);
+    --card: #ffffff;
+    --shadow: 0 1px 1px rgba(44, 51, 39, .1), 0 12px 24px -10px rgba(44, 51, 39, .35);
+    --hand: "Kalam", "Comic Neue", cursive;
+    --letter: "Architects Daughter", "Kalam", cursive;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      color-scheme: dark;
+      --paper: #143a5c;         /* blueprint */
+      --grid: rgba(220, 236, 255, .09);
+      --grid-major: rgba(220, 236, 255, .18);
+      --margin: rgba(255, 102, 204, .55);
+      --ink: #eaf2fb;
+      --ink-soft: #a9c1da;
+      --block: rgba(10, 34, 56, .55);
+      --block-line: #cfe1f5;
+      --tape-a: rgba(255, 102, 204, .5);
+      --tape-b: rgba(204, 153, 255, .45);
+      --tape-c: rgba(204, 255, 153, .55);
+      --shadow: 0 16px 34px -12px rgba(0, 0, 0, .6);
+    }
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; color: var(--ink);
+    font: 400 18px/1.55 var(--hand);
+    background-color: var(--paper);
+    background-image:
+      linear-gradient(var(--grid-major) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-major) 1px, transparent 1px),
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 100px 100px, 100px 100px, 20px 20px, 20px 20px;
+    padding: 0 16px;
+  }
+  a { color: inherit; text-decoration-color: var(--margin); text-underline-offset: 3px; }
+  :focus-visible { outline: 2px dashed var(--margin); outline-offset: 4px; }
+
+  .sheet { max-width: 980px; margin: 0 auto; padding-block: 28px 56px; position: relative; }
+  /* the red-ish margin rule down the left of an engineering pad */
+  .sheet::before {
+    content: ""; position: absolute; top: 0; bottom: 0; left: 64px;
+    border-left: 2px solid var(--margin); opacity: .7; pointer-events: none;
+  }
+
+  header { display: grid; grid-template-columns: minmax(0, 420px) 1fr; gap: 12px 24px; align-items: end; padding-left: 88px; }
+  .logo img { width: min(420px, 100%); height: auto; display: block; }
+  header nav { display: flex; gap: 18px; justify-content: flex-end; flex-wrap: wrap; font: 400 20px/1 var(--letter); padding-bottom: 10px; }
+  header nav a { white-space: nowrap; text-decoration: none; border-bottom: 2px solid transparent; }
+  header nav a:hover { border-bottom-color: var(--margin); }
+
+  /* Title block — the engineering-sheet detail */
+  .titleblock {
+    margin: 22px 0 0 88px;
+    display: grid; grid-template-columns: 2.2fr 1fr 1fr 1fr 1fr;
+    border: 2px solid var(--block-line); background: var(--block);
+    font-family: var(--letter); text-transform: uppercase;
+  }
+  .titleblock > div { padding: 6px 10px 5px; border-left: 1px solid var(--block-line); min-width: 0; }
+  .titleblock > div:first-child { border-left: 0; }
+  .titleblock label { display: block; font-size: 11px; letter-spacing: .08em; color: var(--ink-soft); }
+  .titleblock output { display: block; font-size: 18px; line-height: 1.25; text-transform: none; overflow-wrap: anywhere; }
+  .titleblock .big output { font-size: 24px; }
+
+  main { margin-left: 88px; }
+  .board { display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 36px; margin-top: 34px; align-items: start; }
+
+  .taped { position: relative; justify-self: center; transform: rotate(-.6deg); width: 100%; max-width: 620px; }
+  .taped .card { background: var(--card); padding: 12px; box-shadow: var(--shadow); display: grid; gap: 10px; }
+  .taped img { display: block; width: 100%; height: auto; }
+  .tape { position: absolute; width: 120px; height: 30px; background: var(--tape-a); z-index: 2;
+          mask: linear-gradient(90deg, transparent 0 4px, #000 4px calc(100% - 4px), transparent 0); }
+  .tape.t1 { top: -12px; left: -22px; transform: rotate(-32deg); }
+  .tape.t2 { top: -10px; right: -24px; transform: rotate(28deg); background: var(--tape-b); }
+  .tape.t3 { bottom: -12px; left: 40%; transform: rotate(-4deg); background: var(--tape-c); width: 90px; }
+
+  .margin-notes { display: grid; gap: 22px; }
+  .note { transform: rotate(.8deg); }
+  .note h2 { font: 400 22px/1.1 var(--letter); margin: 0 0 6px; }
+  .note-body { font-weight: 300; font-size: 19px; line-height: 1.5; }
+  .note-body p { margin: 0 0 10px; }
+  .note-body:empty::before { content: "(no notes on this sheet)"; color: var(--ink-soft); }
+  .arrow { display: block; width: 90px; height: 40px; color: var(--margin); margin: -6px 0 -4px -8px; }
+  .tags { display: flex; flex-wrap: wrap; gap: 6px 12px; font: 400 16px/1.3 var(--letter); color: var(--ink-soft); }
+  .tags span::before { content: "#"; color: var(--margin); }
+
+  .controls { display: flex; flex-wrap: wrap; gap: 10px 14px; justify-content: center; margin: 40px 0 0; }
+  .controls button {
+    font: 400 20px/1 var(--letter); color: var(--ink); background: var(--block);
+    border: 2px solid var(--ink); padding: 9px 16px 7px; cursor: pointer;
+    border-radius: 3px 10px 4px 9px / 9px 3px 10px 4px;
+  }
+  .controls button:hover { background: var(--tape-c); }
+  .controls button[disabled] { opacity: .35; cursor: default; background: transparent; }
+  .controls .rand { background: var(--tape-a); }
+
+  /* Archive = the drawing register */
+  .register { margin: 30px 0 0 88px; }
+  .register h2 { font: 400 32px/1 var(--letter); margin: 0 0 4px; }
+  .register > p { margin: 0 0 18px; color: var(--ink-soft); }
+  .table-wrap { overflow-x: auto; border: 2px solid var(--block-line); background: var(--block); }
+  table { border-collapse: collapse; width: 100%; font: 400 17px/1.3 var(--hand); }
+  th { font: 400 12px/1 var(--letter); letter-spacing: .08em; text-transform: uppercase; text-align: left; color: var(--ink-soft); padding: 10px; border-bottom: 2px solid var(--block-line); }
+  td { padding: 6px 10px; border-bottom: 1px solid var(--grid-major); vertical-align: middle; }
+  td.num, td.date { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  td.thumb img { width: 44px; height: 44px; object-fit: cover; object-position: top; background: #fff; display: block; border: 1px solid var(--grid-major); }
+  tr[data-goto] { cursor: pointer; }
+  tr[data-goto]:hover td { background: var(--tape-c); color: #2c3327; }
+  tr.milestone td { font: 400 15px/1.3 var(--letter); color: var(--margin); background: transparent; }
+  tr.milestone td::before { content: "✎ "; }
+
+  body:not([data-view="comic"]) main,
+  body:not([data-view="archive"]) .register,
+  body:not([data-view="about"]) .about { display: none; }
+  header nav a[aria-current="true"] { border-bottom-color: var(--margin); }
+
+  /* About = a sheet of its own */
+  .about { margin: 30px 0 0 88px; display: grid; grid-template-columns: minmax(0, 1fr) 240px; gap: 36px; align-items: start; }
+  .about h2 { font: 400 32px/1 var(--letter); margin: 0 0 16px; }
+  .about-body { font-size: 20px; line-height: 1.6; max-width: 60ch; }
+  .about-body p { margin: 0 0 14px; }
+  .about-body strong { font-weight: 700; }
+  .about aside { transform: rotate(1.5deg); }
+  .about aside .card { background: var(--card); padding: 10px; box-shadow: var(--shadow); }
+  .about aside img { width: 100%; height: auto; display: block; }
+  .about aside p { font: 400 16px/1.3 var(--letter); color: var(--ink-soft); margin: 10px 0 0; text-align: center; }
+  @media (max-width: 860px) { .about { grid-template-columns: 1fr; } .about aside { max-width: 260px; } }
+  @media (max-width: 640px) { .about { margin-left: 12px; } }
+
+  footer { margin: 60px 0 0 88px; font: 400 16px/1.5 var(--letter); color: var(--ink-soft); display: flex; gap: 12px; align-items: center; }
+  footer img { width: 70px; height: auto; transform: scaleX(-1); }
+
+  @media (max-width: 860px) {
+    .board { grid-template-columns: 1fr; }
+    .titleblock { grid-template-columns: 1fr 1fr; }
+    .titleblock > div { border-top: 1px solid var(--block-line); }
+    .titleblock > div:nth-child(-n+2) { border-top: 0; }
+    .titleblock > div:nth-child(odd) { border-left: 0; }
+    .titleblock .big { grid-column: 1 / -1; border-top: 0; }
+    .titleblock .big + div { border-left: 0; border-top: 1px solid var(--block-line); }
+    .titleblock .big + div + div { border-left: 1px solid var(--block-line); border-top: 1px solid var(--block-line); }
+  }
+  @media (max-width: 640px) {
+    .sheet::before { left: 8px; }
+    header, .titleblock, main, .register, footer { padding-left: 0; margin-left: 12px; }
+    header { grid-template-columns: 1fr; }
+    header nav { justify-content: flex-start; }
+    .taped { transform: none; }
+    .tape.t1 { left: -8px; } .tape.t2 { right: -8px; }
+    td.tags-col, th.tags-col { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body data-view="comic">
+<div class="sheet">
+  <header>
+    <a class="logo" href="#" data-nav="last" aria-label="Hardly Funny, latest sheet">
+      <img src="../archive/brand/banner.png" width="1000" height="280" alt="Hardly Funny: a webcomic about being married to a computer programmer">
+    </a>
+    <nav aria-label="Site">
+      <a href="#" data-show="archive">Sheet index</a>
+      <a href="#" data-nav="random">Random</a>
+      <a href="#" data-show="about">About</a>
+      <a href="#feed">Feed</a>
+    </nav>
+  </header>
+
+  <main>
+    <div class="titleblock" aria-label="Sheet details">
+      <div class="big"><label>Title</label><output id="tb-title"></output></div>
+      <div><label>Sheet</label><output id="tb-sheet"></output></div>
+      <div><label>Date</label><output id="tb-date"></output></div>
+      <div><label>Drawn by</label><output>Samantha</output></div>
+      <div><label>Chk'd by</label><output>Randall</output></div>
+    </div>
+
+    <div class="board">
+      <div class="taped">
+        <span class="tape t1" aria-hidden="true"></span>
+        <span class="tape t2" aria-hidden="true"></span>
+        <span class="tape t3" aria-hidden="true"></span>
+        <div class="card" id="comic"></div>
+      </div>
+
+      <aside class="margin-notes" aria-label="Margin notes">
+        <div class="note">
+          <h2>Notes:</h2>
+          <svg class="arrow" viewBox="0 0 90 40" fill="none" aria-hidden="true"><path d="M86 6C60 4 30 10 10 30m0 0 2-13m-2 13 13-1" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <div class="note-body" id="note"></div>
+        </div>
+        <div class="tags" id="tags"></div>
+      </aside>
+    </div>
+
+    <div class="controls" aria-label="Comic navigation">
+      <button type="button" data-nav="first">« Sheet 1</button>
+      <button type="button" data-nav="prev">‹ Prev</button>
+      <button type="button" class="rand" data-nav="random">Random</button>
+      <button type="button" data-nav="next">Next ›</button>
+      <button type="button" data-nav="last">Latest »</button>
+    </div>
+  </main>
+
+  <section class="register" aria-labelledby="reg-heading">
+    <h2 id="reg-heading">Sheet index</h2>
+    <p>Every sheet in the pad, with a few notes from the margins of our life at the time.</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Sheet</th><th></th><th>Title</th><th>Date</th><th class="tags-col">Filed under</th></tr></thead>
+        <tbody id="register"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="about" aria-labelledby="about-heading">
+    <div>
+      <h2 id="about-heading">About this pad</h2>
+      <div class="about-body" id="about"></div>
+      <div class="controls" style="justify-content:flex-start"><button type="button" data-show="comic">‹ Back to the sheets</button></div>
+    </div>
+    <aside>
+      <div class="card"><img src="../archive/brand/couple.png" width="250" height="217" alt="Samantha and Randall"></div>
+      <p>The artist and her source material</p>
+    </aside>
+  </section>
+
+  <footer>
+    <img src="../archive/brand/scribbles.png" width="122" height="85" alt="">
+    <span>Drawn on engineering paper by Samantha. Chk'd (and caused) by Randall. Supervised by Scribbles, 2003–2014.</span>
+  </footer>
+</div>
+
+<script src="../archive/comics.js"></script>
+<script src="reader.js"></script>
+<script>
+  const $ = (id) => document.getElementById(id);
+  const esc = HF.escapeHtml;
+  const total = HF.comics.length;
+  // Margin notes: real moments mentioned in her own posts.
+  const MILESTONES = {
+    "2012-09-10": "Randall's first book comes out (The Heroku Hacker's Guide)",
+    "2013-02-08": "Packing up again: moving to the Bay Area in three weeks",
+    "2013-04-05": "Three years married",
+  };
+
+  HF.reader({
+    render(c) {
+      $("tb-title").textContent = c.title;
+      $("tb-sheet").textContent = `${c.number} of ${total}`;
+      $("tb-date").textContent = HF.format.sheet(c.date);
+      $("comic").innerHTML = c.images.map((img) =>
+        `<img src="${HF.src(img)}" width="${img.width}" height="${img.height}" alt="${esc(c.title)}">`).join("");
+      $("note").innerHTML = c.note_html;
+      $("tags").innerHTML = c.tags.map((t) => `<span>${esc(t.toLowerCase().replace(/\s+/g, "-"))}</span>`).join("");
+      document.title = `Sheet ${c.number}: ${c.title} · Hardly Funny`;
+    },
+    renderAbout(html) { $("about").innerHTML = html; },
+    renderArchive(comics) {
+      let html = "";
+      comics.forEach((c, i) => {
+        html += `<tr data-goto="${i}" tabindex="0">
+          <td class="num">${String(c.number).padStart(2, "0")}</td>
+          <td class="thumb"><img src="${HF.src(c.images[0])}" alt="" loading="lazy"></td>
+          <td>${esc(c.title)}</td>
+          <td class="date">${HF.format.sheet(c.date)}</td>
+          <td class="tags-col">${esc(c.tags.slice(0, 3).join(", "))}</td></tr>`;
+        if (MILESTONES[c.date]) html += `<tr class="milestone"><td></td><td></td><td colspan="3">${esc(MILESTONES[c.date])}</td></tr>`;
+      });
+      $("register").innerHTML = html;
+      $("register").addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && e.target.dataset.goto) e.target.click();
+      });
+    },
+  });
+</script>
+</body>
+</html>
