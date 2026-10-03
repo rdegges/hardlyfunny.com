@@ -185,3 +185,20 @@ def test_share_buttons_follow_the_samantha_randall_switch(built, site, parse):
     assert '[data-side="randall"] { display: var(--randall-only); }' in css
     # Both Randall theme blocks (OS dark mode and the switch) swap the sets.
     assert css.count("--samantha-only: none; --randall-only: block;") == 2
+
+
+def test_header_shows_her_banner_and_his_wordmark(built, parse):
+    for path in html_pages(built):
+        page = parse(path)
+        banners = [i for i in page.all("img") if i["src"].endswith("images/brand/banner.png") and "banner" in i.get("class", "")]
+        assert len(banners) == 1, path
+        assert banners[0]["alt"] == "", "decorative: the brand link's text names it"
+        assert banners[0]["width"] == "1000" and banners[0]["height"] == "280"
+    # The site name and tagline stay in the page as text in both modes.
+    home = (built / "index.html").read_text()
+    assert re.search(r'<a class="brand"[^>]*>.*?<h1 class="wordmark"[^>]*>Hardly Funny</h1>.*?class="tagline"', home, re.S)
+    css = (built / "site.css").read_text()
+    assert ".brand .banner { display: var(--samantha-only);" in css
+    assert ".brand .couple { display: var(--randall-only);" in css
+    # Randall mode undoes the hidden wordmark for both the switch and the OS dark setting.
+    assert '[data-mode="randall"] .brand-text' in css and ':not([data-mode="samantha"]) .brand-text' in css

@@ -57,9 +57,12 @@
 <div class="wrap">
   <header class="site-header">
     <a class="brand" href="/" rel="home"{% if page.nav == "home" %} aria-current="page"{% endif %}>
-      <img src="/images/brand/couple.png" width="250" height="217" alt="">
-      {# The site name is the page's h1 only on the home page; elsewhere the page's own title is. #}
-      <div>
+      {# Samantha mode shows her original banner; Randall mode shows the couple and his wordmark. #}
+      <img class="banner" src="/images/brand/banner.png" width="1000" height="280" alt="">
+      <img class="couple" src="/images/brand/couple.png" width="250" height="217" alt="">
+      {# The site name is the page's h1 only on the home page; elsewhere the page's own title is.
+         It stays in the page as text in both modes; in Samantha mode the banner draws it. #}
+      <div class="brand-text">
         {% if page.nav == "home" %}<h1 class="wordmark" data-r="hardly_funny">{{ site.title }}</h1>
         {% else %}<span class="wordmark" data-r="hardly_funny">{{ site.title }}</span>{% endif %}
         <span class="tagline" data-r="// {{ site.tagline | lower }}">{{ site.tagline | lower }}</span>
