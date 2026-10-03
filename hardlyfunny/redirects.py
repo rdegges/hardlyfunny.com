@@ -3,14 +3,21 @@
 Old links keep working, but every visitor and search engine is sent (301) to the
 clean URL, so the WordPress date-style paths are retired rather than preserved.
 
-Cloudflare limits: 2,000 static + 100 dynamic (splat) rules, first match wins,
-and `/path` and `/path/` are different paths, so both are listed.
+Cloudflare limits: 2,000 static + 100 dynamic (splat) rules, and `/path` and `/path/`
+are different paths, so both are listed.
 https://developers.cloudflare.com/workers/static-assets/redirects/
+
+No two dynamic rules may overlap. Cloudflare's edge does not apply overlapping splats in
+file order (`/2012/*` beat the earlier `/2012/01/02/engineers/*` in production, while
+`cf dev` honored the order), so order can't be relied on. An exact rule does win over a
+splat, so every date archive WordPress served is listed exactly instead of a year
+catch-all, and a path WordPress never served gets the 404 page.
 """
 
 from __future__ import annotations
 
 import json
+from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -41,6 +48,24 @@ def _both(path: str, dest: str) -> list[Redirect]:
     return [Redirect(path + "/", dest), Redirect(path, dest)]
 
 
+def _date_archives(posts: list[str]) -> list[Redirect]:
+    """Year, month and day listings, their pages and their feeds, for every date that had a post.
+
+    Pages go up to one per post: the old posts-per-page setting isn't known, and spare rules are free.
+    """
+    periods = Counter()
+    for post in posts:
+        y, m, d = post.strip("/").split("/")[:3]
+        periods.update([y, f"{y}/{m}", f"{y}/{m}/{d}"])
+    out: list[Redirect] = []
+    for period, count in sorted(periods.items()):
+        out += _both(f"/{period}", urls.ARCHIVE)
+        out += _both(f"/{period}/feed", urls.FEED)
+        for n in range(2, count + 1):
+            out += _both(f"/{period}/page/{n}", urls.ARCHIVE)
+    return out
+
+
 def build(site: Site, wordpress_urls: Path) -> list[Redirect]:
     old = json.loads(wordpress_urls.read_text(encoding="utf-8"))["comics"]
     by_number = {c.number: c for c in site.comics}
@@ -66,15 +91,28 @@ def build(site: Site, wordpress_urls: Path) -> list[Redirect]:
         *_both("/category/posts", urls.ARCHIVE),
         *_both("/author/samanthadegges", urls.ABOUT),
     ]
-    # Catch-alls go last: first match wins.
-    dynamic += [
-        Redirect(f"/{prefix}/*", urls.ARCHIVE)
-        for prefix in ("tag", "category", "page", "type", "2012", "2013", "2014")
-    ]
+    static += _date_archives([entry["post"] for entry in old])
+    dynamic += [Redirect(f"/{prefix}/*", urls.ARCHIVE) for prefix in ("tag", "category", "page", "type")]
     return static + dynamic
 
 
+def _check_dynamic(redirects: list[Redirect]) -> None:
+    """Refuse dynamic rules whose result would depend on the edge's (unreliable) ordering."""
+    prefixes = []
+    for r in redirects:
+        if not r.dynamic:
+            continue
+        if ":" in r.source or not r.source.endswith("/*") or "*" in r.source[:-1]:
+            raise ValueError(f"{r.source}: only a trailing /* splat can be checked for overlaps")
+        prefixes.append(r.source[:-1])
+    prefixes.sort()
+    for a, b in zip(prefixes, prefixes[1:]):
+        if b.startswith(a):
+            raise ValueError(f"{a}* overlaps {b}*: Cloudflare doesn't apply overlapping splats in file order")
+
+
 def render(redirects: list[Redirect]) -> str:
+    _check_dynamic(redirects)
     static = sum(not r.dynamic for r in redirects)
     dynamic = len(redirects) - static
     if static > MAX_STATIC or dynamic > MAX_DYNAMIC:

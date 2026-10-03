@@ -1,13 +1,16 @@
 """The built site as the Cloudflare runtime actually serves it (static assets, `_redirects`, `_headers`).
 
 The rest of the suite checks `_redirects` with a Python model of Cloudflare's matching
-(`test_redirects.follow`). This module replays the same paths against a real `cf dev`
-server, so a difference between that model and the runtime fails here instead of in
-production. It needs a running server, so it is skipped unless HARDLYFUNNY_RUNTIME_URL is set:
+(`test_redirects.follow`). This module replays the same paths against a running server, so a
+difference between that model and the runtime fails here instead of in production. `cf dev`
+is not enough on its own: it applied overlapping `_redirects` splats in file order while the
+real edge did not, so run it against a deployed Worker too. It is skipped unless
+HARDLYFUNNY_RUNTIME_URL is set:
 
     python -m hardlyfunny build
     npx cf dev                                   # in a Node container, serves _site on :8787
     HARDLYFUNNY_RUNTIME_URL=http://localhost:8787 python -m pytest tests/test_cloudflare_runtime.py
+    HARDLYFUNNY_RUNTIME_URL=https://<worker>.workers.dev python -m pytest tests/test_cloudflare_runtime.py
 
 The server must serve a build of the same checkout the tests run from.
 """
@@ -19,7 +22,7 @@ from urllib.parse import urlsplit
 import pytest
 
 from hardlyfunny import urls
-from tests.test_redirects import OLD, VARIANTS, follow, rules
+from tests.test_redirects import OLD, VARIANTS, follow, old_urls, rules
 
 BASE = os.environ.get("HARDLYFUNNY_RUNTIME_URL")
 pytestmark = pytest.mark.skipif(not BASE, reason="set HARDLYFUNNY_RUNTIME_URL to a running `cf dev`")
@@ -36,7 +39,10 @@ IMMUTABLE = "public, max-age=31536000, immutable"
 def get(path):
     """One request, redirects not followed: (status, lower-cased headers, body)."""
     parts = urlsplit(BASE)
-    conn = http.client.HTTPConnection(parts.hostname, parts.port or 80, timeout=10)
+    if parts.scheme == "https":
+        conn = http.client.HTTPSConnection(parts.hostname, parts.port or 443, timeout=10)
+    else:
+        conn = http.client.HTTPConnection(parts.hostname, parts.port or 80, timeout=10)
     try:
         conn.request("GET", path)
         res = conn.getresponse()
@@ -86,6 +92,16 @@ def test_every_splat_rule_matches_the_python_model(built):
 def test_every_old_post_url_lands_on_its_comic(built, site, variant):
     for entry in OLD:
         assert_lands(VARIANTS[variant](entry["post"]), urls.comic(site.comics[entry["number"] - 1]))
+
+
+def test_every_old_url_lands_on_a_real_page(site):
+    failures = []
+    for path, dest in old_urls(site).items():
+        try:
+            assert_lands(path, dest)
+        except AssertionError as e:
+            failures.append(f"{path}: {e}")
+    assert not failures, f"{len(failures)} of {len(old_urls(site))} old URLs failed:\n" + "\n".join(failures[:20])
 
 
 def test_redirects_keep_the_query_string():
