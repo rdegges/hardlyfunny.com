@@ -1,8 +1,12 @@
 """Share links for each comic.
 
-X, Facebook, LinkedIn, Reddit and Hacker News have "intent" URLs that open a
-prefilled post. They all take the page URL, and each network then pulls the comic
-image from the page's og:image tag, so the post shows the comic.
+X, Bluesky, Facebook, LinkedIn, Reddit and Hacker News have "intent" URLs that
+open a prefilled post. They all carry the page URL, and each network then pulls the
+comic image from the page's og:image tag, so the post shows the comic. X, Bluesky,
+Reddit and Hacker News also take prefilled text; Facebook and LinkedIn only take the
+URL (they dropped prefilled text years ago) and fill the card from the page's tags.
+Bluesky's composer has no url parameter: it builds the link card from the first URL
+in the text, so the link goes at the end of the post.
 
 Instagram has no web intent at all. The page offers it through the browser's
 native share sheet with the image attached (site.js), which reaches the Instagram
@@ -31,6 +35,7 @@ def links(page_url: str, title: str, site_title: str) -> list[ShareLink]:
     text = f"“{title}” from {site_title}, a webcomic about being married to a programmer"
     return [
         ShareLink("x", "X", "https://x.com/intent/post?" + _query({"text": text, "url": page_url})),
+        ShareLink("bluesky", "Bluesky", "https://bsky.app/intent/compose?" + _query({"text": f"{text} {page_url}"})),
         ShareLink("facebook", "Facebook", "https://www.facebook.com/sharer/sharer.php?" + _query({"u": page_url})),
         ShareLink("linkedin", "LinkedIn", "https://www.linkedin.com/sharing/share-offsite/?" + _query({"url": page_url})),
         ShareLink("reddit", "Reddit", "https://www.reddit.com/submit?" + _query({"url": page_url, "title": f"{site_title}: {title}"})),

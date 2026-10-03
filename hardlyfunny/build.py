@@ -17,7 +17,7 @@ from .content import Comic, Site, load
 ROOT = Path(__file__).resolve().parent.parent
 CONTENT = ROOT / "content"
 PACKAGE = Path(__file__).resolve().parent
-SHARE_NETWORKS = ("x", "facebook", "linkedin", "reddit", "ycombinator", "instagram")
+SHARE_NETWORKS = ("x", "bluesky", "facebook", "linkedin", "reddit", "ycombinator", "instagram")
 
 
 @dataclass(frozen=True)
