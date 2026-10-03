@@ -92,8 +92,17 @@ def old_urls(site):
     for period, count in periods.items():
         both(f"/{period}/", urls.ARCHIVE)
         both(f"/{period}/feed/", urls.FEED)
-        for n in range(2, count + 1):
+        out[f"/{period}/feed/atom/"] = urls.FEED
+        out[f"/{period}/feed/rss2/"] = urls.FEED
+        for n in range(1, count + 1):
             both(f"/{period}/page/{n}/", urls.ARCHIVE)
+        # WordPress accepted months and days without the leading zero too.
+        y, *rest = period.split("/")
+        unpadded = "/".join([y, *(str(int(part)) for part in rest)])
+        both(f"/{unpadded}/", urls.ARCHIVE)
+        if len(rest) == 2:
+            both(f"/{y}/{rest[0]}/{int(rest[1])}/", urls.ARCHIVE)
+            both(f"/{y}/{int(rest[0])}/{rest[1]}/", urls.ARCHIVE)
     for tag in {t for c in site.comics for t in c.tags}:
         for suffix in ("", "page/2/", "feed/"):
             out[f"/tag/{wordpress_slug(tag)}/{suffix}"] = urls.ARCHIVE
@@ -159,7 +168,10 @@ def test_old_image_hotlinks_land_on_the_same_artwork(built, site):
     ("/feed/", "/feed.xml"), ("/feed", "/feed.xml"), ("/comments/feed/", "/feed.xml"),
     ("/tag/things-randall-says/", "/archive/"), ("/category/posts/", "/archive/"),
     ("/page/2/", "/archive/"), ("/2013/05/", "/archive/"), ("/2013/05/page/2/", "/archive/"),
-    ("/2013/05/feed/", "/feed.xml"), ("/2012/feed", "/feed.xml"), ("/author/samanthadegges/", "/about/"),
+    ("/2013/05/feed/", "/feed.xml"), ("/2012/feed", "/feed.xml"), ("/2012/feed/atom/", "/feed.xml"),
+    ("/2013/05/feed/rss2/", "/feed.xml"), ("/2012/page/1/", "/archive/"), ("/2013/05/page/1", "/archive/"),
+    ("/2012/1/", "/archive/"), ("/2012/1/2/", "/archive/"), ("/2012/01/2", "/archive/"), ("/2012/1/02/", "/archive/"),
+    ("/author/samanthadegges/", "/about/"),
 ])
 def test_feeds_and_listing_pages(built, old, new):
     assert follow(built, old) == (new, 301)

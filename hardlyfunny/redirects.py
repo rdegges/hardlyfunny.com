@@ -48,10 +48,21 @@ def _both(path: str, dest: str) -> list[Redirect]:
     return [Redirect(path + "/", dest), Redirect(path, dest)]
 
 
+def _spellings(period: str) -> list[str]:
+    """WordPress also accepted months and days without the leading zero (`/2012/1/2/`)."""
+    y, *rest = period.split("/")
+    out = [y]
+    for part in rest:
+        out = [f"{o}/{v}" for o in out for v in dict.fromkeys((part, part.lstrip("0")))]
+    return out
+
+
 def _date_archives(posts: list[str]) -> list[Redirect]:
     """Year, month and day listings, their pages and their feeds, for every date that had a post.
 
     Pages go up to one per post: the old posts-per-page setting isn't known, and spare rules are free.
+    Unpadded spellings only get the listing itself, and feed formats only the slashed form WordPress
+    linked to, to stay under Cloudflare's 2,000 static rules.
     """
     periods = Counter()
     for post in posts:
@@ -59,9 +70,11 @@ def _date_archives(posts: list[str]) -> list[Redirect]:
         periods.update([y, f"{y}/{m}", f"{y}/{m}/{d}"])
     out: list[Redirect] = []
     for period, count in sorted(periods.items()):
-        out += _both(f"/{period}", urls.ARCHIVE)
+        for spelling in _spellings(period):
+            out += _both(f"/{spelling}", urls.ARCHIVE)
         out += _both(f"/{period}/feed", urls.FEED)
-        for n in range(2, count + 1):
+        out += [Redirect(f"/{period}/feed/{fmt}/", urls.FEED) for fmt in ("atom", "rss2")]
+        for n in range(1, count + 1):
             out += _both(f"/{period}/page/{n}", urls.ARCHIVE)
     return out
 
