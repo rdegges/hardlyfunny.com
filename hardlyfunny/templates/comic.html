@@ -77,9 +77,9 @@
     <h2 id="share-title" data-r="export --share">Share this comic</h2>
     <ul>
       {% for link in share_links %}
-      <li><a href="{{ link.href }}" target="_blank" rel="noopener noreferrer" aria-label="Share on {{ link.label }} (opens in a new tab)">{{ icons[link.network] }}<span>{{ link.label }}</span></a></li>
+      <li data-side="{{ link.side }}"><a href="{{ link.href }}" target="_blank" rel="noopener noreferrer" aria-label="Share on {{ link.label }} (opens in a new tab)">{{ icons[link.network] }}<span>{{ link.label }}</span></a></li>
       {% endfor %}
-      <li data-js-only><button type="button" data-share-instagram data-image="{{ urls.comic_image(comic.image) }}" data-url="{{ absolute(permalink) }}" data-title="{{ comic.title }}">{{ icons.instagram }}<span>Instagram</span></button></li>
+      <li data-js-only data-side="samantha"><button type="button" data-share-instagram data-image="{{ urls.comic_image(comic.image) }}" data-url="{{ absolute(permalink) }}" data-title="{{ comic.title }}">{{ icons.instagram }}<span>Instagram</span></button></li>
       <li data-js-only><button type="button" data-copy-link="{{ absolute(permalink) }}"><span>Copy link</span></button></li>
     </ul>
     <p class="share-status" role="status" aria-live="polite"></p>

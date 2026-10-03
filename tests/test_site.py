@@ -171,3 +171,17 @@ def test_every_share_link_has_an_icon(built, site):
     for host in ("x.com", "bsky.app", "www.facebook.com", "www.linkedin.com"):
         anchor = re.search(rf'<a href="https://{re.escape(host)}/[^>]*>(.*?)</a>', html, re.S).group(1)
         assert "<svg" in anchor and 'aria-hidden="true"' in anchor, host
+
+
+def test_share_buttons_follow_the_samantha_randall_switch(built, site, parse):
+    page = parse(built / "comics" / site.latest.slug / "index.html")
+    items = [li for li in page.all("li") if "data-side" in li]
+    samantha = [li for li in items if li["data-side"] == "samantha"]
+    randall = [li for li in items if li["data-side"] == "randall"]
+    assert len(samantha) == 3 and len(randall) == 4  # X, Facebook, Instagram / Bluesky, LinkedIn, Reddit, HN
+    assert not [li for li in items if li["data-side"] not in ("samantha", "randall")]
+    css = (built / "site.css").read_text()
+    assert '[data-side="samantha"] { display: var(--samantha-only); }' in css
+    assert '[data-side="randall"] { display: var(--randall-only); }' in css
+    # Both Randall theme blocks (OS dark mode and the switch) swap the sets.
+    assert css.count("--samantha-only: none; --randall-only: block;") == 2

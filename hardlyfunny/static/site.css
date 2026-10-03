@@ -49,6 +49,8 @@
   --shadow: 0 18px 40px -18px rgba(177, 18, 124, .35);
   --scribbles-x: 0px;
   --scribbles-flip: 1;
+  --samantha-only: block;
+  --randall-only: none;
   --track-fill: linear-gradient(90deg, #ffd6f0 0 50%, #19191b 50%);
 }
 
@@ -64,6 +66,7 @@
     --note-open: "/*"; --note-close: "*/"; --tag-prefix: "--tag=";
     --shadow: 0 0 0 1px #34343a;
     --scribbles-x: 62px; --scribbles-flip: -1;
+    --samantha-only: none; --randall-only: block;
   }
 }
 :root[data-mode="randall"] {
@@ -76,6 +79,7 @@
   --note-open: "/*"; --note-close: "*/"; --tag-prefix: "--tag=";
   --shadow: 0 0 0 1px #34343a;
   --scribbles-x: 62px; --scribbles-flip: -1;
+  --samantha-only: none; --randall-only: block;
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -210,6 +214,9 @@ main { padding-block: 16px 40px; }
 }
 .share a:hover, .share button:hover { border-color: var(--accent); color: var(--accent-ink); }
 .share svg { flex: none; }
+/* Her networks in Samantha mode, his in Randall mode; Copy link is in both. */
+.share [data-side="samantha"] { display: var(--samantha-only); }
+.share [data-side="randall"] { display: var(--randall-only); }
 .share-status { min-height: 1.6em; margin: 10px 0 0; font-size: 14px; color: var(--muted); }
 
 /* Archive */

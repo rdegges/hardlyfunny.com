@@ -8,6 +8,10 @@ URL (they dropped prefilled text years ago) and fill the card from the page's ta
 Bluesky's composer has no url parameter: it builds the link card from the first URL
 in the text, so the link goes at the end of the post.
 
+Each network belongs to one side of the Samantha / Randall switch, and only that
+side's buttons show: X, Facebook and Instagram for Samantha; Bluesky, LinkedIn,
+Reddit and Hacker News for Randall.
+
 Instagram has no web intent at all. The page offers it through the browser's
 native share sheet with the image attached (site.js), which reaches the Instagram
 app on phones.
@@ -24,6 +28,7 @@ class ShareLink:
     network: str  # also the icon file name
     label: str
     href: str
+    side: str  # "samantha" or "randall": the mode that shows this button
 
 
 def _query(params: dict[str, str]) -> str:
@@ -34,10 +39,10 @@ def _query(params: dict[str, str]) -> str:
 def links(page_url: str, title: str, site_title: str) -> list[ShareLink]:
     text = f"“{title}” from {site_title}, a webcomic about being married to a programmer"
     return [
-        ShareLink("x", "X", "https://x.com/intent/post?" + _query({"text": text, "url": page_url})),
-        ShareLink("bluesky", "Bluesky", "https://bsky.app/intent/compose?" + _query({"text": f"{text} {page_url}"})),
-        ShareLink("facebook", "Facebook", "https://www.facebook.com/sharer/sharer.php?" + _query({"u": page_url})),
-        ShareLink("linkedin", "LinkedIn", "https://www.linkedin.com/sharing/share-offsite/?" + _query({"url": page_url})),
-        ShareLink("reddit", "Reddit", "https://www.reddit.com/submit?" + _query({"url": page_url, "title": f"{site_title}: {title}"})),
-        ShareLink("ycombinator", "Hacker News", "https://news.ycombinator.com/submitlink?" + _query({"u": page_url, "t": f"{site_title}: {title}"})),
+        ShareLink("x", "X", "https://x.com/intent/post?" + _query({"text": text, "url": page_url}), "samantha"),
+        ShareLink("bluesky", "Bluesky", "https://bsky.app/intent/compose?" + _query({"text": f"{text} {page_url}"}), "randall"),
+        ShareLink("facebook", "Facebook", "https://www.facebook.com/sharer/sharer.php?" + _query({"u": page_url}), "samantha"),
+        ShareLink("linkedin", "LinkedIn", "https://www.linkedin.com/sharing/share-offsite/?" + _query({"url": page_url}), "randall"),
+        ShareLink("reddit", "Reddit", "https://www.reddit.com/submit?" + _query({"url": page_url, "title": f"{site_title}: {title}"}), "randall"),
+        ShareLink("ycombinator", "Hacker News", "https://news.ycombinator.com/submitlink?" + _query({"u": page_url, "t": f"{site_title}: {title}"}), "randall"),
     ]
