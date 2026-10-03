@@ -39,8 +39,14 @@ python -m pytest                   # checks content, SEO tags, accessibility bas
 | `hardlyfunny/static/_headers` | Cloudflare Pages response headers, copied into the build |
 | `.github/workflows/ci.yml` | Runs the tests and a build on every PR |
 | `archive/` | The untouched WordPress export and its generated descriptions (history, not edited) |
-| `scripts/` | `export_wordpress.py` (WordPress → `archive/`), `migrate_to_content.py` (one-time `archive/` → `content/`) and `check_links.py` (reports dead links in the notes) |
+| `scripts/` | `export_wordpress.py` (WordPress → `archive/`), `migrate_to_content.py` (one-time `archive/` → `content/`) and `check_links.py` (link checker run by CI) |
 | `index.html`, `designs/` | The design review page and the four clickable mockups it previews |
+
+## Link checking
+
+`.github/workflows/links.yml` runs `scripts/check_links.py` on every pull request, every push to `main`, and every Monday (links die even when nothing changes). It fails on links that are definitely broken (404/410, a domain that no longer resolves) and only warns about links a script can't verify, like Reddit's and YouTube's bot blocking or a server error, which you can check in a browser. Results show as annotations and a summary table on the run. Fix a dead link by pointing it at an Internet Archive snapshot from around the comic's date.
+
+Internal links (pages, images, CSS) are checked by the test suite on every build.
 
 ## Adding a comic
 
