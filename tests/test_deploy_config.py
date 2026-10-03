@@ -49,6 +49,8 @@ def test_deploy_waits_for_tests_and_only_main_pushes_publish():
     assert dry == ["github.event_name == 'pull_request'"]
     # Deploys must queue, never cancel each other halfway through an upload.
     assert re.search(r"cancel-in-progress: false", deploy)
+    # A queued PR dry run must not replace a queued production deploy, so only main pushes share the group.
+    assert re.search(r"group: \$\{\{ github.event_name == 'push' && github.ref == 'refs/heads/main' && 'deploy-production' \|\|", deploy)
 
 
 def test_deploy_secrets_are_scoped_to_the_publishing_step():

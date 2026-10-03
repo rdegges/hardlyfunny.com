@@ -27,7 +27,7 @@ jobs:
     needs: test
     runs-on: ubuntu-latest
     concurrency:
-      group: deploy-production
+      group: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && 'deploy-production' || format('deploy-dry-run-{0}', github.ref) }}
       cancel-in-progress: false
     env:
       CF_SEND_TELEMETRY: "false"

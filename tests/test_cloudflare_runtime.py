@@ -135,7 +135,6 @@ def test_cache_and_content_type_rules_apply(built):
     assert headers["content-type"] == "application/atom+xml; charset=utf-8"
 
 
-@pytest.mark.xfail(reason="PROPOSED CONTRACT: the build marker is an internal file, not a page", strict=False)
-def test_PROPOSED_CONTRACT_build_marker_is_not_published():
+def test_build_marker_is_not_published():
     status, _, _ = get("/.hardlyfunny-build")
     assert status == 404

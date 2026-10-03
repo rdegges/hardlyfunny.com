@@ -127,6 +127,8 @@ def _clear(out: Path) -> None:
         shutil.rmtree(out)
     out.mkdir(parents=True)
     (out / MARKER).write_text("Built by python -m hardlyfunny. Safe to delete.\n", encoding="utf-8")
+    # Wrangler uploads dotfiles too; this keeps the internal marker off the live site.
+    (out / ".assetsignore").write_text(MARKER + "\n", encoding="utf-8")
 
 
 # Shown on the 404 page when JavaScript can't pick random ones.
