@@ -36,8 +36,9 @@ python -m pytest                   # checks content, SEO tags, accessibility bas
 | `content/comics/`, `content/brand/` | Comic artwork (named by slug) and the 2011 banner cut-outs |
 | `hardlyfunny/` | The generator: `content.py` (model), `urls.py`, `build.py`, `feed.py`, `seo.py`, `share.py`, `images.py`, `templates/`, `static/` |
 | `tests/` | pytest suite (builds the site once and inspects the output) |
-| `hardlyfunny/static/_headers` | Cloudflare Pages response headers, copied into the build |
-| `.github/workflows/ci.yml` | Runs the tests and a build on every PR |
+| `hardlyfunny/static/_headers` | Cloudflare response headers, copied into the build |
+| `.github/workflows/ci.yml` | Runs the tests and a build on every PR and push. Deploys `main` to Cloudflare |
+| `package.json`, `cloudflare.config.ts`, `wrangler.config.ts` | Deploy tooling only. The site is built by Python |
 | `archive/` | The untouched WordPress export and its generated descriptions (history, not edited) |
 | `scripts/` | `export_wordpress.py` (WordPress → `archive/`), `migrate_to_content.py` (one-time `archive/` → `content/`) and `check_links.py` (link checker run by CI) |
 | `index.html`, `designs/` | The design review page and the four clickable mockups it previews |
@@ -54,14 +55,15 @@ Internal links (pages, images, CSS) are checked by the test suite on every build
 2. Add an entry to the end of `content/comics.json`, including `number`, `slug`, `title`, `date`, `images` (with `width`, `height` and `alt`), `transcript`, `note_html` and `tags`.
 3. Run `python -m pytest`. The build also refuses to run if numbers aren't sequential, dates are out of order, a slug is reused or malformed, or an image has no alt text, and the tests check that image sizes match the files.
 
-## Deploying (Cloudflare Pages)
+## Deploying (Cloudflare)
 
-Create a Pages project connected to this GitHub repo, with:
+The site runs on Cloudflare as a Worker with static assets and no Worker code. The `deploy` job in `.github/workflows/ci.yml` publishes it with the [`cf` CLI](https://developers.cloudflare.com/cf/):
 
-| Setting | Value |
-| --- | --- |
-| Production branch | `main` |
-| Build command | `pip install -r requirements.txt && python -m hardlyfunny build` |
-| Build output directory | `_site` |
+- On a push to `main`, the job builds `_site` and runs `npx cf deploy`. It starts only after the `test` job in the same run passes.
+- On a pull request, the job runs `npx cf deploy --dry-run`. This run uses no credentials and publishes nothing.
 
-Python is pinned by `.python-version`. The build writes `_headers` (security and cache headers) and `_redirects` (old WordPress URLs) into `_site/`; Pages compresses responses and serves `404.html` for missing pages on its own. Every pull request gets its own preview deployment, and `main` only changes through pull requests that pass CI. Then add hardlyfunny.com as a custom domain on the project.
+Two repository secrets give the job access: `CLOUDFLARE_API_TOKEN` (an account token with only Workers Scripts Write) and `CLOUDFLARE_ACCOUNT_ID`.
+
+`wrangler.config.ts` sets `_site` as the assets directory. `cloudflare.config.ts` names the Worker `hardlyfunny` and makes Cloudflare serve `404.html` for missing pages. The build writes `_headers` (security and cache headers) and `_redirects` (old WordPress URLs) into `_site/`. Cloudflare reads both files as rules and does not serve them as pages.
+
+To run the site locally on the Cloudflare runtime, build it first. Then run `npm ci && npx cf dev` in a Node container.

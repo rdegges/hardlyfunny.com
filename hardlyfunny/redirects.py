@@ -1,11 +1,11 @@
-"""Permanent redirects from the old WordPress.com URLs, as a Cloudflare Pages `_redirects` file.
+"""Permanent redirects from the old WordPress.com URLs, as a Cloudflare `_redirects` file.
 
 Old links keep working, but every visitor and search engine is sent (301) to the
 clean URL, so the WordPress date-style paths are retired rather than preserved.
 
 Cloudflare limits: 2,000 static + 100 dynamic (splat) rules, first match wins,
 and `/path` and `/path/` are different paths, so both are listed.
-https://developers.cloudflare.com/pages/configuration/redirects/
+https://developers.cloudflare.com/workers/static-assets/redirects/
 """
 
 from __future__ import annotations

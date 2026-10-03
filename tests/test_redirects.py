@@ -1,4 +1,4 @@
-"""The WordPress → new-site redirects, checked the way Cloudflare Pages applies them."""
+"""The WordPress → new-site redirects, checked the way Cloudflare applies them."""
 
 import json
 import re
