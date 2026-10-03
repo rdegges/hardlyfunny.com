@@ -51,6 +51,8 @@
   --scribbles-flip: 1;
   --samantha-only: block;
   --randall-only: none;
+  --brand-flow: column;
+  --brand-gap: 0px;
   --track-fill: linear-gradient(90deg, #ffd6f0 0 50%, #19191b 50%);
 }
 
@@ -66,7 +68,7 @@
     --note-open: "/*"; --note-close: "*/"; --tag-prefix: "--tag=";
     --shadow: 0 0 0 1px #34343a;
     --scribbles-x: 62px; --scribbles-flip: -1;
-    --samantha-only: none; --randall-only: block;
+    --samantha-only: none; --randall-only: block; --brand-flow: row; --brand-gap: 14px;
   }
 }
 :root[data-mode="randall"] {
@@ -79,7 +81,7 @@
   --note-open: "/*"; --note-close: "*/"; --tag-prefix: "--tag=";
   --shadow: 0 0 0 1px #34343a;
   --scribbles-x: 62px; --scribbles-flip: -1;
-  --samantha-only: none; --randall-only: block;
+  --samantha-only: none; --randall-only: block; --brand-flow: row; --brand-gap: 14px;
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -111,8 +113,15 @@ h1, h2, h3 { text-wrap: balance; }
 
 /* Header */
 .site-header { display: flex; flex-direction: column; align-items: center; gap: 14px; padding-block: 22px 8px; text-align: center; }
-.brand { display: flex; align-items: center; gap: 14px; text-decoration: none; color: inherit; }
-.brand img { width: 84px; height: auto; border-radius: var(--r); transition: border-radius .35s; }
+.brand { display: flex; flex-direction: var(--brand-flow); align-items: center; gap: var(--brand-gap); text-decoration: none; color: inherit; }
+/* Hers: the original 2012 banner, which draws the name and tagline itself. His: the couple and a wordmark. */
+.brand .banner { display: var(--samantha-only); width: min(100%, 760px); height: auto; }
+.brand .couple { display: var(--randall-only); width: 84px; height: auto; border-radius: var(--r); }
+.brand-text { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+:root[data-mode="randall"] .brand-text { position: static; width: auto; height: auto; margin: 0; padding: 0; overflow: visible; clip: auto; white-space: normal; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-mode="samantha"]) .brand-text { position: static; width: auto; height: auto; margin: 0; padding: 0; overflow: visible; clip: auto; white-space: normal; }
+}
 .wordmark {
   display: block; margin: 0;
   font: 700 clamp(30px, 6vw, 44px)/1 var(--display);
@@ -281,7 +290,15 @@ kbd { font: 600 12px/1 var(--display); color: var(--ink); background: var(--surf
 @media (hover: none) and (pointer: coarse) { .keys { display: none; } }
 
 @media (max-width: 560px) {
-  .brand { flex-direction: column; gap: 8px; }
+  .brand { flex-direction: column; gap: min(var(--brand-gap), 8px); }
+  /* The banner's drawn tagline would be ~7px tall here. Clip that strip off (Scribbles keeps his
+     feet) and set the real tagline in its place beside him. */
+  .brand .banner { clip-path: polygon(0 0, 100% 0, 100% 81%, 16.5% 81%, 16.5% 100%, 0 100%); }
+  .brand-text { position: static; width: auto; height: auto; overflow: visible; clip: auto; white-space: normal; margin: -5.3% 0 0; padding-left: 16.5%; }
+  .brand-text .wordmark { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .brand-text .tagline { margin: 0; font-size: 13px; line-height: 1.35; }
+  :root[data-mode="randall"] .brand-text .wordmark { position: static; width: auto; height: auto; overflow: visible; clip: auto; }
+  :root[data-mode="randall"] .brand-text .tagline { margin: 4px 0 0; font-size: 14px; line-height: 1.4; }
   .note { grid-template-columns: 1fr; }
   .note .who { display: none; }
   .bubble::before { display: none; }
@@ -290,6 +307,8 @@ kbd { font: 600 12px/1 var(--display); color: var(--ink); background: var(--surf
   :root[data-mode="randall"] .shelf .perm, :root[data-mode="randall"] .shelf .d { display: none; }
 }
 @media (max-width: 560px) and (prefers-color-scheme: dark) {
+  :root:not([data-mode="samantha"]) .brand-text .wordmark { position: static; width: auto; height: auto; overflow: visible; clip: auto; }
+  :root:not([data-mode="samantha"]) .brand-text .tagline { margin: 4px 0 0; font-size: 14px; line-height: 1.4; }
   :root:not([data-mode="samantha"]) .shelf a { grid-template-columns: 4ch 1fr; }
   :root:not([data-mode="samantha"]) .shelf .perm, :root:not([data-mode="samantha"]) .shelf .d { display: none; }
 }
