@@ -51,6 +51,7 @@ def test_bluesky_opens_the_composer_with_the_post_and_link():
     assert len(text) <= 300, "Bluesky posts are capped at 300 characters"
 
 
-def test_share_buttons_are_in_a_sensible_order():
-    networks = [l.network for l in share.links(URL, "Infinite Recursion", "Hardly Funny")]
-    assert networks[:4] == ["x", "bluesky", "facebook", "linkedin"]
+def test_each_mode_gets_its_own_networks():
+    sides = {l.network: l.side for l in share.links(URL, "Infinite Recursion", "Hardly Funny")}
+    assert [n for n, s in sides.items() if s == "samantha"] == ["x", "facebook"]  # plus Instagram, in the template
+    assert [n for n, s in sides.items() if s == "randall"] == ["bluesky", "linkedin", "reddit", "ycombinator"]
