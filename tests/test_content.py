@@ -79,3 +79,10 @@ def test_meta_descriptions_are_unique(site):
 def test_validation_catches_hand_editing_mistakes(site, break_it, message):
     with pytest.raises(ContentError, match=message):
         validate(break_it(site.comics))
+
+
+def test_archived_links_are_well_formed_wayback_snapshots(site):
+    archived = [h for c in site.comics for h in re.findall(r'href="([^"]+)"', c.note_html) if "archive.org" in h]
+    assert archived, "dead links in notes are replaced with Internet Archive snapshots"
+    for href in archived:
+        assert re.fullmatch(r"https://web\.archive\.org/web/(19|20)\d{12}/https?://\S+", href), href
