@@ -179,6 +179,7 @@ def build(out: Path, site_url: str | None = None, content: Path = CONTENT, porta
     shutil.copy2(PACKAGE / "static" / "site.css", out / "site.css")
     shutil.copy2(PACKAGE / "static" / "site.js", out / "site.js")
     shutil.copytree(PACKAGE / "static" / "fonts", out / "fonts")
+    shutil.copy2(PACKAGE / "static" / "_headers", out / "_headers")  # Cloudflare Pages
     shutil.copytree(content / "brand", out / "images" / "brand")
     images.copy_originals(site.comics, content, out)
     images.favicons(content, out)

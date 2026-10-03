@@ -145,3 +145,9 @@ def test_random_and_404_are_not_indexed(built, parse):
         page = parse(built / name)
         assert page.meta("robots") == "noindex"
         assert not page.all("link", rel="canonical")
+
+
+def test_cloudflare_headers_file_is_published(built):
+    headers = (built / "_headers").read_text()
+    assert "X-Content-Type-Options: nosniff" in headers
+    assert "/fonts/*" in headers and "immutable" in headers

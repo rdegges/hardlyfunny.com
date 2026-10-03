@@ -35,7 +35,7 @@ python -m pytest                   # checks content, SEO tags, accessibility bas
 | `content/comics/`, `content/brand/` | Comic artwork (named by slug) and the 2011 banner cut-outs |
 | `hardlyfunny/` | The generator: `content.py` (model), `urls.py`, `build.py`, `feed.py`, `seo.py`, `share.py`, `images.py`, `templates/`, `static/` |
 | `tests/` | pytest suite (builds the site once and inspects the output) |
-| `render.yaml` | Render static-site Blueprint |
+| `hardlyfunny/static/_headers` | Cloudflare Pages response headers, copied into the build |
 | `.github/workflows/ci.yml` | Runs the tests and a build on every PR |
 | `archive/` | The untouched WordPress export and its generated descriptions (history, not edited) |
 | `scripts/` | `export_wordpress.py` (WordPress → `archive/`) and `migrate_to_content.py` (one-time `archive/` → `content/`) |
@@ -47,6 +47,14 @@ python -m pytest                   # checks content, SEO tags, accessibility bas
 2. Add an entry to the end of `content/comics.json`, including `number`, `slug`, `title`, `date`, `images` (with `width`, `height` and `alt`), `transcript`, `note_html` and `tags`.
 3. Run `python -m pytest`. The build also refuses to run if numbers aren't sequential, dates are out of order, a slug is reused or malformed, or an image has no alt text, and the tests check that image sizes match the files.
 
-## Deploying
+## Deploying (Cloudflare Pages)
 
-Create a Render Blueprint from this repo. `render.yaml` builds with `python -m hardlyfunny build` and publishes `_site/`. Then point hardlyfunny.com at it.
+Create a Pages project connected to this GitHub repo, with:
+
+| Setting | Value |
+| --- | --- |
+| Production branch | `main` |
+| Build command | `pip install -r requirements.txt && python -m hardlyfunny build` |
+| Build output directory | `_site` |
+
+Python is pinned by `.python-version`. The build writes `_headers` (security and cache headers) into `_site/`; Pages compresses responses and serves `404.html` for missing pages on its own. Every pull request gets its own preview deployment, and `main` only changes through pull requests that pass CI. Then add hardlyfunny.com as a custom domain on the project.
