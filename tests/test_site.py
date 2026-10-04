@@ -158,6 +158,33 @@ def test_archive_description_counts_the_comics_and_fits_search_results(built, si
     assert f"All {len(site.comics)} " in description
 
 
+def test_archive_description_spans_the_first_to_the_latest_year(built, site, parse):
+    description = parse(built / "archive" / "index.html").meta("description")
+    assert f"{site.comics[0].published.year} to {site.latest.published.year}" in description
+
+
+def test_redraw_no_82_has_its_own_structured_data_description(built, site):
+    # No. 82 redraws No. 20 with the same note; JSON-LD used to repeat it while the meta tag did not.
+    def story(number):
+        comic = site.comics[number - 1]
+        [block] = jsonld_blocks((built / "comics" / comic.slug / "index.html").read_text())
+        [node] = [n for n in block["@graph"] if n["@type"] == "ComicStory"]
+        return node["description"]
+    assert site.comics[19].summary == site.comics[81].summary
+    assert story(20) != story(82)
+
+
+def test_indexable_pages_have_distinct_descriptions(built, parse):
+    seen = {}
+    for path in html_pages(built):
+        page = parse(path)
+        if page.meta("robots") == "noindex":
+            continue
+        description = page.meta("description")
+        assert description not in seen, f"{path} repeats {seen.get(description)}"
+        seen[description] = path
+
+
 def test_about_page_describes_the_series_and_its_two_people(built, site):
     [block] = jsonld_blocks((built / "about" / "index.html").read_text())
     nodes = {n["@id"]: n for n in block["@graph"]}
