@@ -1,7 +1,9 @@
-"""The production domain's edge: www goes to the naked domain, and http goes to https.
+"""The production domain's edge: www goes to the naked domain, http goes to https, and the
+Worker's workers.dev URL serves no copy of the site.
 
 Only meaningful against the real custom domain, so it skips for `cf dev` (localhost) and
 *.workers.dev. The www redirect is a zone Single Redirect rule, not part of `_redirects`.
+The workers.dev check always hits one fixed host, whatever HARDLYFUNNY_RUNTIME_URL is.
 """
 
 import http.client
@@ -52,3 +54,20 @@ def test_http_www_reaches_the_naked_https_url_in_two_hops_at_most():
 
 def test_http_goes_to_https():
     assert head(f"http://{HOST}/x") == (301, f"https://{HOST}/x")
+
+
+# `randall-degges` is the account's workers.dev subdomain; if it is renamed, this check passes without testing anything until the constant is updated.
+WORKERS_DEV = "https://hardlyfunny.randall-degges.workers.dev/"
+
+
+def test_workers_dev_does_not_serve_a_second_copy_of_the_site():
+    parts = urlsplit(WORKERS_DEV)
+    conn = http.client.HTTPSConnection(parts.hostname, timeout=10)
+    try:
+        conn.request("GET", parts.path, headers=HEADERS)
+        res = conn.getresponse()
+        body = res.read()
+    finally:
+        conn.close()
+    assert res.status == 404, WORKERS_DEV
+    assert b"Hardly Funny" not in body, "workers.dev serves a site page"
