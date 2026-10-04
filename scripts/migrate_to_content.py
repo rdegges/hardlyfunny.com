@@ -75,6 +75,7 @@ def main(descriptions_path: str) -> int:
         "title": export["site"],
         "tagline": export["tagline"],
         "author": export["author"],
+        "randall": {"name": "Randall Degges", "url": "https://rdegges.com"},
         "url": SITE_URL,
         "about_html": export["about_html"],
     }

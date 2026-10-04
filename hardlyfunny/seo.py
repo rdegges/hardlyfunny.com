@@ -13,6 +13,19 @@ from .content import Comic, Site
 CONTENT_SIGNALS = "search=yes, ai-input=yes, ai-train=yes"
 
 
+def _samantha_id(site: Site) -> str:
+    return urls.absolute(site.url, urls.ABOUT) + "#samantha"
+
+
+def _people(site: Site) -> list[dict]:
+    """Samantha and Randall. Every page that references them by @id includes these nodes."""
+    about = urls.absolute(site.url, urls.ABOUT)
+    # Samantha has no public social media: her node must never get sameAs or an off-site url.
+    samantha = {"@type": "Person", "@id": _samantha_id(site), "name": site.author, "url": about}
+    randall = {"@type": "Person", "@id": about + "#randall", "name": site.randall.name, "url": site.randall.url}
+    return [samantha, randall]
+
+
 def _series(site: Site) -> dict:
     return {
         "@type": "ComicSeries",
@@ -20,7 +33,8 @@ def _series(site: Site) -> dict:
         "name": site.title,
         "description": site.tagline,
         "url": site.url + "/",
-        "author": {"@type": "Person", "name": site.author},
+        "author": {"@id": _samantha_id(site)},
+        "character": [{"@id": p["@id"]} for p in _people(site)],
         "startDate": site.comics[0].published.isoformat(),
         "endDate": site.latest.published.isoformat(),
         "inLanguage": "en",
@@ -29,7 +43,7 @@ def _series(site: Site) -> dict:
 
 def comic_jsonld(site: Site, comic: Comic) -> str:
     page = urls.absolute(site.url, urls.comic(comic))
-    author = {"@type": "Person", "name": site.author}
+    author = {"@id": _samantha_id(site)}
     story = {
         "@type": "ComicStory",
         "@id": page + "#comic",
@@ -66,7 +80,7 @@ def comic_jsonld(site: Site, comic: Comic) -> str:
             for i, (name, path) in enumerate(crumbs, 1)
         ],
     }
-    return _dump({"@context": "https://schema.org", "@graph": [story, breadcrumbs]})
+    return _dump({"@context": "https://schema.org", "@graph": [story, breadcrumbs, *_people(site)]})
 
 
 def home_jsonld(site: Site) -> str:
@@ -76,6 +90,20 @@ def home_jsonld(site: Site) -> str:
             {"@type": "WebSite", "@id": site.url + "/#website", "name": site.title,
              "url": site.url + "/", "description": site.tagline, "inLanguage": "en"},
             _series(site),
+            *_people(site),
+        ],
+    })
+
+
+def about_jsonld(site: Site) -> str:
+    page = urls.absolute(site.url, urls.ABOUT)
+    return _dump({
+        "@context": "https://schema.org",
+        "@graph": [
+            {"@type": "AboutPage", "@id": page, "name": f"About {site.title}", "url": page,
+             "about": {"@id": site.url + "/#series"}, "inLanguage": "en"},
+            _series(site),
+            *_people(site),
         ],
     })
 
