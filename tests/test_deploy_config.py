@@ -81,6 +81,8 @@ def test_verify_checks_the_live_domain_after_each_production_deploy():
     assert "tests/test_cloudflare_runtime.py tests/test_live_domain.py --junitxml=verify.xml" in verify
     # The suites skip themselves without a URL; a run with no tests or any skip must fail.
     assert "sys.exit(0 if tests > 0 and skipped == 0 else 1)" in verify
+    # continue-on-error would turn a red verify green without anyone noticing.
+    assert "continue-on-error" not in verify
 
 
 def verify_gate():
