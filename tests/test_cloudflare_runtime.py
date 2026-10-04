@@ -223,6 +223,12 @@ def test_robots_txt_is_the_one_the_build_writes(built):
     assert (status, without_beacon(headers, body)) == (200, (built / "robots.txt").read_bytes())
 
 
+def test_sitemap_xml_is_the_one_the_build_writes(built):
+    # Search engines find the comic images through it, so a stale sitemap hides new ones.
+    status, headers, body = get(urls.SITEMAP)
+    assert (status, without_beacon(headers, body)) == (200, (built / urls.output_path(urls.SITEMAP)).read_bytes())
+
+
 def test_build_marker_is_not_published():
     status, _, _ = get("/.hardlyfunny-build")
     assert status == 404

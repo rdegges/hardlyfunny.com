@@ -9,6 +9,7 @@ from xml.etree import ElementTree as ET
 import pytest
 
 from hardlyfunny import urls
+from hardlyfunny.build import CONTENT
 
 SITE_URL = "https://hardlyfunny.com"
 
@@ -146,6 +147,34 @@ def test_sitemap_robots_and_llms_txt(built, site):
     llms = (built / "llms.txt").read_text()
     assert llms.startswith("# Hardly Funny") and llms.count("/comics/") == len(site.comics)
     assert "Transcript:" in (built / "llms-full.txt").read_text()
+
+
+def test_sitemap_lists_each_comic_image_once_on_its_page(built, parse):
+    sm, im = "{http://www.sitemaps.org/schemas/sitemap/0.9}", "{http://www.google.com/schemas/sitemap-image/1.1}"
+    root = ET.parse(built / "sitemap.xml").getroot()
+    tags = {el.tag for el in root.iter()}
+    assert tags == {sm + t for t in ("urlset", "url", "loc", "lastmod")} | {im + "image", im + "loc"}
+    by_page = {}
+    for url in root.iter(f"{sm}url"):
+        page = url.find(f"{sm}loc").text
+        assert all(len(img) == 1 for img in url.findall(f"{im}image")), page
+        locs = [img.find(f"{im}loc").text for img in url.findall(f"{im}image")]
+        path = urlparse(page).path
+        if not path.startswith("/comics/"):
+            assert not locs, f"{page} lists images"
+            continue
+        srcs = [SITE_URL + i["src"] for i in parse(built / urls.output_path(path)).all("img")
+                if i["src"].startswith("/images/comics/")]
+        assert locs == srcs, page
+        assert all((built / urlparse(loc).path.lstrip("/")).is_file() for loc in locs), page
+        by_page[path] = locs
+    # Read comics.json directly, not through the loader, so a dropped image can't hide on both sides.
+    raw = json.loads((CONTENT / "comics.json").read_text(encoding="utf-8"))["comics"]
+    expected = [f"{SITE_URL}/images/{img['file']}" for c in raw for img in c["images"]]
+    listed = [loc for locs in by_page.values() for loc in locs]
+    assert sorted(listed) == sorted(expected) and len(set(listed)) == len(listed)
+    no_17 = next(c for c in raw if c["number"] == 17)  # the one comic with two images
+    assert len(by_page[f"/comics/{no_17['slug']}/"]) == len(no_17["images"]) == 2
 
 
 ROBOT_AGENTS = ["*", "Googlebot", "Bingbot", "GPTBot", "ClaudeBot", "PerplexityBot", "Google-Extended"]
