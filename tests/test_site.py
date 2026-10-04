@@ -188,6 +188,14 @@ def test_hsts_is_sent_on_every_path_and_nowhere_else(built):
                                 "permissions-policy", "strict-transport-security"}
 
 
+def test_feed_url_is_sent_as_atom_and_no_stale_rule_remains(built):
+    # The feed is built as an index.html, so without this rule the edge sends it as HTML (with the
+    # analytics beacon). CI skips the runtime check, and the rule must follow urls.FEED if it moves.
+    rules = header_rules((built / "_headers").read_text())
+    assert rules[urls.FEED]["content-type"] == "application/atom+xml; charset=utf-8"
+    assert [p for p, h in rules.items() if "content-type" in h] == [urls.FEED]
+
+
 def test_404_page_offers_scribbles_and_comics_to_try(built, site, parse):
     page = parse(built / "404.html")
     dog = [i for i in page.all("img") if i["src"].endswith("scribbles.png") and i.get("alt")]
