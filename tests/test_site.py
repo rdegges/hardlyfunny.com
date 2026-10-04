@@ -37,6 +37,19 @@ def test_pages_have_one_h1_a_title_and_a_description(built, parse):
         assert page.all("html")[0].get("lang") == "en"
 
 
+def test_titles_follow_the_house_format(built, site, parse):
+    comics = {built / "comics" / c.slug / "index.html": site.display_title(c) for c in site.comics}
+    for path in html_pages(built):
+        page = parse(path)
+        assert " · " not in page.title, path
+        if path in comics:
+            assert page.title == f"{comics[path]} - A {site.title} Comic", path
+            # Social cards show the bare comic title; the suffix is only for browser tabs and search results.
+            assert page.meta("og:title") == page.meta("twitter:title") == comics[path], path
+        elif path != built / "index.html":
+            assert page.title.endswith(f" - {site.title}"), path
+
+
 @pytest.mark.parametrize("key", [
     "og:title", "og:description", "og:url", "og:image", "og:image:alt", "og:type",
     "twitter:card", "twitter:image",

@@ -33,7 +33,7 @@ class Page:
     jsonld: str | None = None
     noindex: bool = False
     nav: str | None = None  # which site-nav item is current
-    og_title: str | None = None  # title for social cards, without the " · Hardly Funny" suffix
+    og_title: str | None = None  # title for social cards, without the " - A Hardly Funny Comic" suffix
     published: str | None = None
 
 
@@ -81,7 +81,7 @@ def comic_page(site: Site, comic: Comic, *, home: bool = False) -> Page:
         )
     return Page(
         path=urls.comic(comic),
-        title=f"{site.display_title(comic)} · {site.title}",
+        title=f"{site.display_title(comic)} - A {site.title} Comic",
         og_title=site.display_title(comic),
         description=site.description(comic),
         og_type="article",
@@ -177,15 +177,15 @@ def build(out: Path, site_url: str | None = None, content: Path = CONTENT, porta
     write(out, urls.HOME, comic_tpl.render(page=home, comic=latest, prev=prev, next=None, share_links=links, home=True))
 
     write(out, urls.ARCHIVE, env.get_template("archive.html").render(page=Page(
-        path=urls.ARCHIVE, title=f"Archive · {site.title}", nav="archive",
+        path=urls.ARCHIVE, title=f"Archive - {site.title}", nav="archive",
         description=f"All {len(site.comics)} Hardly Funny comics, {site.comics[0].published:%B %Y} to {latest.published:%B %Y}.")))
     write(out, urls.ABOUT, env.get_template("about.html").render(page=Page(
-        path=urls.ABOUT, title=f"About · {site.title}", nav="about", jsonld=seo.about_jsonld(site),
+        path=urls.ABOUT, title=f"About - {site.title}", nav="about", jsonld=seo.about_jsonld(site),
         description="Hardly Funny is an autobiographical webcomic by Samantha Degges about life with Randall, a programmer, and their chihuahua Scribbles.")))
     write(out, urls.RANDOM, env.get_template("random.html").render(page=Page(
-        path=urls.RANDOM, title=f"Random comic · {site.title}", description="Opens a random Hardly Funny comic.", noindex=True)))
+        path=urls.RANDOM, title=f"Random comic - {site.title}", description="Opens a random Hardly Funny comic.", noindex=True)))
     write(out, "/404.html", env.get_template("404.html").render(picks=lost_picks(site), page=Page(
-        path="/404.html", title=f"Page not found · {site.title}", description="This page doesn't exist.", noindex=True)))
+        path="/404.html", title=f"Page not found - {site.title}", description="This page doesn't exist.", noindex=True)))
 
     write(out, urls.FEED, feed.render(site))
     write(out, urls.SITEMAP, seo.sitemap(site))
