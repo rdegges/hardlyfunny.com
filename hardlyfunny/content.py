@@ -10,6 +10,9 @@ from dataclasses import dataclass, field
 from datetime import date
 from pathlib import Path
 
+# Shorter notes are asides ("We love dinosaurs…") that don't say what the comic shows.
+MIN_NOTE_DESCRIPTION = 80
+
 
 @dataclass(frozen=True)
 class Image:
@@ -70,12 +73,17 @@ class Site:
         return self.comics[-1]
 
     def description(self, comic: Comic) -> str:
-        """Meta description. Falls back to the alt text when the note is too short to say what
-        the comic shows, or when another comic has the same note (No. 82 is a redraw of No. 20),
-        so no two pages share a description."""
-        if len(comic.summary) < 80 or any(c.summary == comic.summary for c in self.comics if c.number < comic.number):
-            return truncate(comic.alt, 160)
-        return comic.summary
+        """Meta description: the first of these that no earlier comic already uses (No. 82 redraws No. 20):
+        the note if it has at least MIN_NOTE_DESCRIPTION characters, then the alt text, then the short note."""
+        taken: set[str] = set()
+        # One pass in number order: each pick depends on the picks before it, and recursing would redo them exponentially.
+        for c in [*(c for c in self.comics if c.number < comic.number), comic]:
+            candidates = [c.summary] if len(c.summary) >= MIN_NOTE_DESCRIPTION else []
+            pick = next((d for d in [*candidates, truncate(c.alt, 160), c.summary] if d not in taken), None)
+            if pick is None:
+                raise ValueError(f"No. {c.number} has no description that an earlier comic isn't already using.")
+            taken.add(pick)
+        return pick
 
     def display_title(self, comic: Comic) -> str:
         """The comic's title, plus its number when another comic shares the title."""
