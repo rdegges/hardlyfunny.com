@@ -129,11 +129,49 @@ def test_live_domain_suite_runs_only_against_an_https_custom_domain(monkeypatch,
     assert module.pytestmark.args[0] is not runs
 
 
+def uncommented(ts):
+    """TypeScript without its comments. `(^|\\s)//` leaves the `//` in "https://" strings alone."""
+    ts = re.sub(r"/\*.*?\*/", "", ts, flags=re.S)
+    return re.sub(r"(^|\s)//.*$", r"\1", ts, flags=re.M)
+
+
+def settings(ts, key):
+    """Every value `key` is set to outside comments."""
+    return re.findall(rf"\b{key}:\s*(\w+)", uncommented(ts))
+
+
 def test_the_worker_serves_only_the_site_url(site):
     # The custom domain must be the host the build writes into canonicals, feeds and share cards.
     from urllib.parse import urlsplit
     # Commented-out settings don't count: commenting `domains` out is the obvious wrong way to detach it.
-    code = re.sub(r"^\s*//.*$", "", CLOUDFLARE, flags=re.M)
+    code = uncommented(CLOUDFLARE)
     domains = re.search(r"domains:\s*\[([^\]]*)\]", code)
     assert domains and re.findall(r'"([^"]+)"', domains.group(1)) == [urlsplit(site.url).hostname]
-    assert re.search(r"workersDev:\s*false", code) and re.search(r"previewUrls:\s*false", code)
+    # Exactly one setting each: a second copy elsewhere in the file could turn a host back on.
+    assert settings(CLOUDFLARE, "workersDev") == ["false"]
+    assert settings(CLOUDFLARE, "previewUrls") == ["false"]
+
+
+ON = "    workersDev: false,\n    previewUrls: false,\n"
+
+
+@pytest.mark.parametrize("block, workers_dev, preview_urls", [
+    (ON, ["false"], ["false"]),
+    ("    workersDev: true,\n    previewUrls: false,\n", ["true"], ["false"]),
+    ("    workersDev: false,\n", ["false"], []),
+    ("    workersDev: false, // previewUrls: false\n", ["false"], []),
+    ("    previewUrls: true, // was previewUrls: false\n    workersDev: false,\n", ["false"], ["true"]),
+    ("    /* workersDev: false, */\n    previewUrls: false,\n", [], ["false"]),
+    ("    /*\n    workersDev: false,\n    */\n    previewUrls: false,\n", [], ["false"]),
+    ('    workersDev: false,\n    previewUrls: false,\n    note: "https://x.workers.dev",\n', ["false"], ["false"]),
+    (ON + "    env: { staging: { workersDev: true } },\n", ["false", "true"], ["false"]),
+], ids=["as-shipped", "workers-dev-on", "previews-unset", "previews-only-in-trailing-comment",
+        "previews-on-with-false-in-comment", "workers-dev-in-block-comment", "workers-dev-in-multiline-comment",
+        "url-string-kept", "second-copy-elsewhere"])
+def test_subdomain_settings_ignore_comments_and_see_every_copy(block, workers_dev, preview_urls):
+    # Pins the parsing the test above relies on: each case here passed the earlier
+    # whole-line-comment regex while leaving workers.dev or Preview URLs on (or unset).
+    ts = CLOUDFLARE.replace(ON, block)
+    assert ON in CLOUDFLARE
+    assert settings(ts, "workersDev") == workers_dev
+    assert settings(ts, "previewUrls") == preview_urls
