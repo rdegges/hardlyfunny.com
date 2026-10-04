@@ -130,10 +130,18 @@ def offsite_allowed(node, key, value):
     return JSONLD_OFFSITE_URLS.get((node.get("@id"), key)) == value
 
 
+def is_samantha(node, site):
+    """Any object that names her or points at her @id, whatever its @type and however the @id is spelled."""
+    ids, names = node.get("@id", []), node.get("name", [])
+    ids, names = ids if isinstance(ids, list) else [ids], names if isinstance(names, list) else [names]
+    return site.author in names or any("samantha" in urlparse(str(i)).fragment.lower() for i in ids)
+
+
 def test_jsonld_is_well_formed_on_site_and_self_contained(built, site, parse):
     home, about = built / "index.html", built / urls.output_path(urls.ABOUT)
     comics = sorted((built / "comics").glob("*/index.html"))
     assert site.comics and len(comics) == len(site.comics)
+    assert not any(node_id == SAMANTHA for node_id, _ in JSONLD_OFFSITE_URLS), "no off-site URL for Samantha"
     ids = {}  # target page -> its id= attributes
 
     def page_ids(path):
@@ -154,15 +162,15 @@ def test_jsonld_is_well_formed_on_site_and_self_contained(built, site, parse):
             types = n.get("@type", [])
             types = types if isinstance(types, list) else [types]
             assert set(types) <= JSONLD_TYPES, f"{path}: {types}"
-            if "Person" in types and (n.get("name") == site.author or n.get("@id") == SAMANTHA):
+            if is_samantha(n, site):
                 assert "sameAs" not in n, f"{path}: {site.author} has sameAs"
-                # A closed key set, so any new property on her node (a profile link, say) fails here.
-                assert set(n) == {"@type", "@id", "name", "url"}, f"{path}: {site.author} has {sorted(n)}"
+                # A bare reference or her full node, nothing else: any other key (a profile link, say) fails.
+                assert set(n) in ({"@id"}, {"@type", "@id", "name", "url"}), f"{path}: {site.author} has {sorted(n)}"
                 urls_on_her = n.get("url", [])
                 for url in urls_on_her if isinstance(urls_on_her, list) else [urls_on_her]:
                     assert url.startswith(site.url + "/"), f"{path}: {site.author} has url={url}"
             if "@id" in n:
-                assert n["@id"].startswith(site.url + "/"), f"{path}: {n['@id']}"
+                assert isinstance(n["@id"], str) and n["@id"].startswith(site.url + "/"), f"{path}: {n['@id']}"
                 assert n["@id"] in defined, f"{path}: {n['@id']} is referenced but never defined"
             # Any absolute URL under any key (sameAs, license, ...) is on-site or allowlisted.
             values = [(k, v) for k, vs in n.items() if k != "@context" for v in (vs if isinstance(vs, list) else [vs])]
