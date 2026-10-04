@@ -4,7 +4,13 @@ The deploy config is TypeScript and the CI workflow is YAML, and neither has a p
 requirements-dev.txt, so these are text checks of the few settings the site depends on.
 """
 
+import importlib.util
 import re
+import subprocess
+import sys
+import textwrap
+
+import pytest
 
 from hardlyfunny.build import ROOT
 
@@ -75,3 +81,47 @@ def test_verify_checks_the_live_domain_after_each_production_deploy():
     assert "tests/test_cloudflare_runtime.py tests/test_live_domain.py --junitxml=verify.xml" in verify
     # The suites skip themselves without a URL; a run with no tests or any skip must fail.
     assert "sys.exit(0 if tests > 0 and skipped == 0 else 1)" in verify
+
+
+def verify_gate():
+    """The Python the verify job's last step runs, as it appears in ci.yml."""
+    match = re.search(r"python - <<'PY'\n(.*?)\n\s*PY\n", job("verify"), re.S)
+    assert match, "no gate script in the verify job"
+    return textwrap.dedent(match.group(1))
+
+
+@pytest.mark.parametrize("tests, passes", [
+    ("def test_a(): pass\ndef test_b(): pass\n", True),
+    ("import pytest\ndef test_a(): pass\n@pytest.mark.skip\ndef test_b(): pass\n", False),
+    ("import pytest\npytestmark = pytest.mark.skip\ndef test_a(): pass\n", False),
+    ("", False),
+], ids=["all-ran", "one-skipped", "all-skipped", "none-collected"])
+def test_verify_gate_passes_only_when_every_live_test_ran(tmp_path, tests, passes):
+    # Runs the real gate on real pytest JUnit output: the string check above can't tell whether
+    # the script reads the XML pytest writes (root <testsuites>, counts on the inner <testsuite>).
+    (tmp_path / "test_live.py").write_text(tests)
+    subprocess.run([sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider", "test_live.py",
+                    "--junitxml=verify.xml"], cwd=tmp_path, capture_output=True)
+    gate = subprocess.run([sys.executable, "-c", verify_gate()], cwd=tmp_path, capture_output=True, text=True)
+    assert (gate.returncode == 0) == passes, gate.stdout + gate.stderr
+
+
+@pytest.mark.parametrize("url, runs", [
+    ("https://hardlyfunny.com", True),
+    ("https://hardlyfunny.com/", True),
+    ("", False),
+    ("http://hardlyfunny.com", False),
+    ("http://localhost:8787", False),
+    ("https://localhost:8787", False),
+    ("http://127.0.0.1:8787", False),
+    ("https://hardlyfunny.randall-degges.workers.dev", False),
+    ("https://HARDLYFUNNY.Randall-Degges.Workers.Dev", False),
+], ids=lambda v: v if isinstance(v, str) and v else repr(v))
+def test_live_domain_suite_runs_only_against_an_https_custom_domain(monkeypatch, url, runs):
+    # The verify job fails on any skip, and the preview/cf dev runs would fail its www and
+    # http checks, so this condition decides whether both stay green.
+    monkeypatch.setenv("HARDLYFUNNY_RUNTIME_URL", url)
+    spec = importlib.util.spec_from_file_location("live_domain_probe", ROOT / "tests" / "test_live_domain.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    assert module.pytestmark.args[0] is not runs
