@@ -8,6 +8,10 @@ from xml.sax.saxutils import escape as xml_escape
 from . import urls
 from .content import Comic, Site
 
+# Content Signals (contentsignals.org) say what crawlers may do with a page after fetching it.
+# The comic wants to be found, quoted and remembered, so all three are yes.
+CONTENT_SIGNALS = "search=yes, ai-input=yes, ai-train=yes"
+
 
 def _series(site: Site) -> dict:
     return {
@@ -84,7 +88,9 @@ def sitemap(site: Site) -> str:
 
 
 def robots(site: Site) -> str:
-    return f"User-agent: *\nDisallow: {urls.RANDOM}\n\nSitemap: {urls.absolute(site.url, urls.SITEMAP)}\n"
+    # No Disallow for /random/: a crawler blocked from it can't read its noindex tag.
+    return (f"User-agent: *\nContent-Signal: {CONTENT_SIGNALS}\nAllow: /\n\n"
+            f"Sitemap: {urls.absolute(site.url, urls.SITEMAP)}\n")
 
 
 def llms_txt(site: Site, full: bool = False) -> str:
