@@ -17,6 +17,8 @@ The server must serve a build of the same checkout the tests run from.
 
 import http.client
 import os
+import threading
+from concurrent.futures import ThreadPoolExecutor
 from urllib.parse import urlsplit
 
 import pytest
@@ -36,19 +38,37 @@ SECURITY_HEADERS = {
 IMMUTABLE = "public, max-age=31536000, immutable"
 
 
-def get(path):
-    """One request, redirects not followed: (status, lower-cased headers, body)."""
+# Browser Integrity Check challenges requests without a User-Agent on proxied hosts.
+HEADERS = {"User-Agent": "hardlyfunny-runtime-tests"}
+_local = threading.local()
+
+
+def _connect():
     parts = urlsplit(BASE)
     if parts.scheme == "https":
-        conn = http.client.HTTPSConnection(parts.hostname, parts.port or 443, timeout=10)
-    else:
-        conn = http.client.HTTPConnection(parts.hostname, parts.port or 80, timeout=10)
-    try:
-        conn.request("GET", path)
-        res = conn.getresponse()
-        return res.status, {k.lower(): v for k, v in res.getheaders()}, res.read()
-    finally:
-        conn.close()
+        return http.client.HTTPSConnection(parts.hostname, parts.port or 443, timeout=10)
+    return http.client.HTTPConnection(parts.hostname, parts.port or 80, timeout=10)
+
+
+def get(path):
+    """One request, redirects not followed: (status, lower-cased headers, body).
+
+    Reuses a keep-alive connection per thread: a fresh TLS handshake per request made the
+    full suite take ~27 minutes against the real edge.
+    """
+    for attempt in (1, 2):
+        conn = getattr(_local, "conn", None) or _connect()
+        _local.conn = conn
+        try:
+            conn.request("GET", path, headers=HEADERS)
+            res = conn.getresponse()
+            return res.status, {k.lower(): v for k, v in res.getheaders()}, res.read()
+        except (http.client.HTTPException, ConnectionError, TimeoutError):
+            # The server closed an idle connection; retry once on a fresh one.
+            conn.close()
+            _local.conn = None
+            if attempt == 2:
+                raise
 
 
 def location(headers):
@@ -65,6 +85,18 @@ def assert_lands(path, dest):
     assert status == 200, f"{path} -> {dest} -> {status}"
 
 
+def assert_all_land(pairs):
+    """`assert_lands` for every (path, dest), 8 at a time, reporting every failure at once."""
+    def check(pair):
+        try:
+            assert_lands(*pair)
+        except AssertionError as e:
+            return f"{pair[0]}: {e}"
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        failures = [f for f in pool.map(check, pairs) if f]
+    assert not failures, f"{len(failures)} of {len(pairs)} failed:\n" + "\n".join(failures[:20])
+
+
 def test_runtime_serves_the_same_build(built):
     """Guards every other test: a stale `_site` behind the server would make them meaningless."""
     status, _, body = get("/_redirects")
@@ -74,34 +106,25 @@ def test_runtime_serves_the_same_build(built):
 
 
 def test_every_static_rule_matches_the_python_model(built):
-    for source, dest, _ in rules(built):
-        if "*" not in source:
-            assert follow(built, source) == (dest, 301)
-            assert_lands(source, dest)
+    pairs = [(source, dest) for source, dest, _ in rules(built) if "*" not in source]
+    for source, dest in pairs:
+        assert follow(built, source) == (dest, 301)
+    assert_all_land(pairs)
 
 
 def test_every_splat_rule_matches_the_python_model(built):
-    for source, _, _ in rules(built):
-        if source.endswith("/*"):
-            for path in (source[:-1] + "anything/deeper/", source[:-1]):
-                dest, _ = follow(built, path)
-                assert_lands(path, dest)
+    paths = [path for source, _, _ in rules(built) if source.endswith("/*")
+             for path in (source[:-1] + "anything/deeper/", source[:-1])]
+    assert_all_land([(path, follow(built, path)[0]) for path in paths])
 
 
 @pytest.mark.parametrize("variant", VARIANTS)
 def test_every_old_post_url_lands_on_its_comic(built, site, variant):
-    for entry in OLD:
-        assert_lands(VARIANTS[variant](entry["post"]), urls.comic(site.comics[entry["number"] - 1]))
+    assert_all_land([(VARIANTS[variant](entry["post"]), urls.comic(site.comics[entry["number"] - 1])) for entry in OLD])
 
 
 def test_every_old_url_lands_on_a_real_page(site):
-    failures = []
-    for path, dest in old_urls(site).items():
-        try:
-            assert_lands(path, dest)
-        except AssertionError as e:
-            failures.append(f"{path}: {e}")
-    assert not failures, f"{len(failures)} of {len(old_urls(site))} old URLs failed:\n" + "\n".join(failures[:20])
+    assert_all_land(list(old_urls(site).items()))
 
 
 def test_redirects_keep_the_query_string():
