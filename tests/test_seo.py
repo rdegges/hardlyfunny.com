@@ -5,16 +5,40 @@ from xml.etree import ElementTree as ET
 from hardlyfunny import seo
 
 
+def node(block, type_):
+    """The one node of this @type in a JSON-LD @graph (a KeyError or a failed match, never a vacuous pass)."""
+    [found] = [n for n in json.loads(block)["@graph"] if n["@type"] == type_]
+    return found
+
+
 def test_jsonld_cannot_break_out_of_its_script_element(site):
     nasty = dataclasses.replace(site.comics[0], title="</script><!--<script>", transcript=("Randall: <b>&</b>",))
     block = seo.comic_jsonld(site, nasty)
     assert "<" not in block and ">" not in block and "&" not in block
-    assert json.loads(block)["name"] == "</script><!--<script>"
+    assert node(block, "ComicStory")["name"] == "</script><!--<script>"
 
 
 def test_keywords_are_omitted_when_a_comic_has_no_tags(site):
     untagged = dataclasses.replace(site.comics[0], tags=())
-    assert "keywords" not in json.loads(seo.comic_jsonld(site, untagged))
+    story = node(seo.comic_jsonld(site, untagged), "ComicStory")
+    assert story["name"] == untagged.title and "keywords" not in story
+
+
+def test_comic_story_lists_every_image_and_names_its_publisher(site):
+    two = next(c for c in site.comics if len(c.images) > 1)
+    story = node(seo.comic_jsonld(site, two), "ComicStory")
+    assert story["@id"] == f"{site.url}/comics/{two.slug}/#comic"
+    assert [i["contentUrl"] for i in story["image"]] == [f"{site.url}/images/{img.file}" for img in two.images]
+    assert story["publisher"] == story["author"] == {"@type": "Person", "name": site.author}
+
+
+def test_breadcrumbs_lead_home_then_archive_then_the_comic(site):
+    # A comic that shares its title with another, so the last crumb must be the numbered display title.
+    twin = next(c for c in site.comics if site.display_title(c) != c.title)
+    crumbs = node(seo.comic_jsonld(site, twin), "BreadcrumbList")["itemListElement"]
+    assert [c["position"] for c in crumbs] == [1, 2, 3]
+    assert [c["item"] for c in crumbs] == [f"{site.url}/", f"{site.url}/archive/", f"{site.url}/comics/{twin.slug}/"]
+    assert [c["name"] for c in crumbs] == ["Home", "Archive", f"{twin.title} (No. {twin.number})"]
 
 
 def test_robots_sitemap_follows_the_site_url(site):
