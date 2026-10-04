@@ -87,7 +87,7 @@ def _send(path):
 # Cloudflare Web Analytics, which the site keeps on, injects one beacon tag before </body> on
 # every HTML page served on the zone. Strip exactly that, then compare bytes as before.
 BEACON_HOST = b"static.cloudflareinsights.com"
-BEACON = re.compile(rb'<script[^>]*src="https://static\.cloudflareinsights\.com/beacon\.min\.js[^"]*"[^>]*></script>\s*(?=</body>)')
+BEACON = re.compile(rb'<script(?:\s+(?!src=)[\w-]+(?:="[^"]*"|=\'[^\']*\')?)*\s+src="https://static\.cloudflareinsights\.com/beacon\.min\.js[^"]*"[^>]*></script>\s*(?=</body>)')
 
 
 def without_beacon(headers, body):
