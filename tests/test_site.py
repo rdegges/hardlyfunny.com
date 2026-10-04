@@ -102,11 +102,14 @@ def test_every_comic_page_describes_that_comic_and_its_breadcrumb_trail(built, s
         assert (crumbs[-1]["item"], crumbs[-1]["name"]) == (story["url"], site.display_title(comic))
 
 
-# Adding a type or an off-site URL should be a deliberate edit here. The type list only catches
-# typos. Off-site URLs start empty; Samantha's profiles must never be added.
+# Adding a type or an off-site URL must be a deliberate edit here. The type list only catches typos.
+# Off-site detection covers http(s) and protocol-relative values under any key, plus every value
+# under JSONLD_LINK_KEYS (sameAs included), which must be an exact allowlist entry or a built page.
+# Samantha's Person node may never carry sameAs or an off-site url: the test enforces that, so no
+# allowlist entry can grant it.
 JSONLD_TYPES = {"WebSite", "ComicSeries", "ComicStory", "Person", "ImageObject", "BreadcrumbList", "ListItem"}
 JSONLD_OFFSITE_URLS: set[str] = set()
-JSONLD_LINK_KEYS = ("url", "item", "contentUrl", "acquireLicensePage")
+JSONLD_LINK_KEYS = ("url", "item", "contentUrl", "acquireLicensePage", "sameAs")
 
 
 def test_jsonld_is_well_formed_on_site_and_self_contained(built, site, parse):
@@ -127,10 +130,16 @@ def test_jsonld_is_well_formed_on_site_and_self_contained(built, site, parse):
         if path == home or path in comics:
             assert blocks, f"{path} has no JSON-LD"
         nodes = [n for b in blocks for n in jsonld_nodes(b)]
-        defined = {n["@id"] for n in nodes if "@id" in n and len(n) > 1}
+        defined = {n["@id"] for n in nodes if "@id" in n and "@type" in n and "name" in n}
         for n in nodes:
             types = n.get("@type", [])
-            assert set(types if isinstance(types, list) else [types]) <= JSONLD_TYPES, f"{path}: {types}"
+            types = types if isinstance(types, list) else [types]
+            assert set(types) <= JSONLD_TYPES, f"{path}: {types}"
+            if "Person" in types and n.get("name") == site.author:
+                assert "sameAs" not in n, f"{path}: {site.author} has sameAs"
+                urls_on_her = n.get("url", [])
+                for url in urls_on_her if isinstance(urls_on_her, list) else [urls_on_her]:
+                    assert url.startswith(site.url + "/"), f"{path}: {site.author} has url={url}"
             if "@id" in n:
                 assert n["@id"].startswith(site.url + "/"), f"{path}: {n['@id']}"
                 assert n["@id"] in defined, f"{path}: {n['@id']} is referenced but never defined"
