@@ -217,3 +217,38 @@ def test_assert_all_land_stops_once_the_runtime_stops_answering(serve, monkeypat
     with pytest.raises(TimeoutError):
         rt.assert_all_land([(f"/from/{i}", f"/to/{i}") for i in range(200)])
     assert len(calls) < 100, f"{len(calls)} requests sent after the runtime stopped answering"
+
+
+# The beacon Cloudflare Web Analytics injected on the rehearsal domain (2026-10-04).
+BEACON_TAG = (b'<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495" '
+              b'integrity="sha512-x" data-cf-beacon=\'{"version":"2024.11.0","token":"t","r":1,"spa":2}\' crossorigin="anonymous"></script>\n')
+PAGE = b'<!doctype html>\n<p>hi</p>\n<script src="/site.js?v=1" defer></script>\n</body>\n</html>\n'
+HTML = {"content-type": "text/html"}
+
+
+def with_beacon(page, tag=BEACON_TAG):
+    return page.replace(b"</body>", tag + b"</body>")
+
+
+def test_without_beacon_removes_the_one_cloudflare_injects():
+    assert rt.without_beacon(HTML, with_beacon(PAGE)) == PAGE
+
+
+def test_without_beacon_leaves_a_page_without_one_alone():
+    assert rt.without_beacon(HTML, PAGE) == PAGE
+
+
+def test_without_beacon_rejects_two_beacons():
+    with pytest.raises(AssertionError):
+        rt.without_beacon(HTML, with_beacon(with_beacon(PAGE)))
+
+
+def test_without_beacon_keeps_a_beacon_anywhere_but_right_before_body_end():
+    elsewhere = PAGE.replace(b"<p>hi</p>", BEACON_TAG + b"<p>hi</p>")
+    assert rt.without_beacon(HTML, elsewhere) != PAGE
+
+
+def test_without_beacon_rejects_analytics_outside_html():
+    with pytest.raises(AssertionError):
+        rt.without_beacon({"content-type": "application/atom+xml"}, b"<feed>" + BEACON_TAG + b"</feed>")
+    assert rt.without_beacon({"content-type": "text/plain"}, b"User-agent: *\n") == b"User-agent: *\n"

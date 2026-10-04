@@ -127,3 +127,11 @@ def test_live_domain_suite_runs_only_against_an_https_custom_domain(monkeypatch,
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     assert module.pytestmark.args[0] is not runs
+
+
+def test_the_worker_serves_the_site_url_and_keeps_workers_dev_until_turned_off(site):
+    # The custom domain must be the host the build writes into canonicals, feeds and share cards.
+    from urllib.parse import urlsplit
+    domains = re.search(r"domains:\s*\[([^\]]*)\]", CLOUDFLARE)
+    assert domains and re.findall(r'"([^"]+)"', domains.group(1)) == [urlsplit(site.url).hostname]
+    assert re.search(r"workersDev:\s*true", CLOUDFLARE)

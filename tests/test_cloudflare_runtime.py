@@ -17,6 +17,7 @@ The server must serve a build of the same checkout the tests run from.
 
 import http.client
 import os
+import re
 import threading
 from concurrent.futures import ThreadPoolExecutor
 from urllib.parse import urlsplit
@@ -83,6 +84,22 @@ def _send(path):
     return res.status, {k.lower(): v for k, v in res.getheaders()}, res.read()
 
 
+# Cloudflare Web Analytics, which the site keeps on, injects one beacon tag before </body> on
+# every HTML page served on the zone. Strip exactly that, then compare bytes as before.
+BEACON_HOST = b"static.cloudflareinsights.com"
+BEACON = re.compile(rb'<script[^>]*src="https://static\.cloudflareinsights\.com/beacon\.min\.js[^"]*"[^>]*></script>\s*(?=</body>)')
+
+
+def without_beacon(headers, body):
+    """The body as the build wrote it: HTML may carry one beacon right before </body>, nothing else may."""
+    count = body.count(BEACON_HOST)
+    if not headers.get("content-type", "").startswith("text/html"):
+        assert count == 0, f"analytics in a non-HTML response ({headers.get('content-type')})"
+        return body
+    assert count <= 1, f"{count} analytics references in one page"
+    return BEACON.sub(b"", body, count=1)
+
+
 def location(headers):
     """Location as a path, whether the runtime sends it relative or absolute."""
     loc = urlsplit(headers.get("location", ""))
@@ -113,8 +130,8 @@ def test_runtime_serves_the_same_build(built):
     """Guards every other test: a stale `_site` behind the server would make them meaningless."""
     status, _, body = get("/_redirects")
     assert status == 404
-    status, _, body = get(urls.FEED)
-    assert status == 200 and body == (built / "feed.xml").read_bytes()
+    status, headers, body = get(urls.FEED)
+    assert status == 200 and without_beacon(headers, body) == (built / "feed.xml").read_bytes()
 
 
 def test_every_static_rule_matches_the_python_model(built):
@@ -164,7 +181,7 @@ def test_slashless_page_urls_reach_the_page():
 def test_missing_and_config_paths_get_the_site_404(built, path):
     status, headers, body = get(path)
     assert status == 404, path
-    assert body == (built / "404.html").read_bytes(), path
+    assert without_beacon(headers, body) == (built / "404.html").read_bytes(), path
     assert {k: headers.get(k) for k in SECURITY_HEADERS} == SECURITY_HEADERS, path
 
 
@@ -190,8 +207,8 @@ def test_cache_and_content_type_rules_apply(built):
 
 def test_robots_txt_is_the_one_the_build_writes(built):
     # A zone's managed robots.txt would replace ours on the custom domain.
-    status, _, body = get("/robots.txt")
-    assert (status, body) == (200, (built / "robots.txt").read_bytes())
+    status, headers, body = get("/robots.txt")
+    assert (status, without_beacon(headers, body)) == (200, (built / "robots.txt").read_bytes())
 
 
 def test_build_marker_is_not_published():
@@ -217,6 +234,6 @@ def test_every_splat_prefix_without_its_slash_matches_the_python_model(built):
 @pytest.mark.parametrize("path", ["/2012/99/", "/2012/01/02/no-such-post/", "/2015/", "/2012/01/03/",
                                   "/2012/page/999/", "/wp-login.php", "/xmlrpc.php", "/ads.txt"])
 def test_paths_wordpress_never_served_get_the_site_404(built, path):
-    status, _, body = get(path)
+    status, headers, body = get(path)
     assert status == 404, path
-    assert body == (built / "404.html").read_bytes(), path
+    assert without_beacon(headers, body) == (built / "404.html").read_bytes(), path
