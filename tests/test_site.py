@@ -166,6 +166,22 @@ def test_404_page_offers_scribbles_and_comics_to_try(built, site, parse):
     assert page.meta("robots") == "noindex"
 
 
+def test_404_defaults_load_eagerly_and_the_hidden_pool_stays_lazy(built, site, parse):
+    # site.js only flips loading="eager" on the three pool cards it reveals; that is safe only
+    # because the build ships every pool thumbnail lazy (so a 404 doesn't fetch the whole archive)
+    # and the no-JS defaults without loading="lazy" (so they render at once).
+    page = parse(built / "404.html")
+    kind, thumbs = None, {"default": [], "pool": []}
+    for tag, attrs in page.elements:
+        if tag == "li":
+            kind = "default" if "data-default-pick" in attrs else "pool" if "data-pick" in attrs else None
+        elif tag == "img" and kind:
+            thumbs[kind].append(attrs)
+    assert len(thumbs["default"]) == 3 and len(thumbs["pool"]) == len(site.comics)
+    assert not [i for i in thumbs["default"] if "loading" in i]
+    assert all(i.get("loading") == "lazy" for i in thumbs["pool"])
+
+
 def test_every_share_link_has_an_icon(built, site):
     html = (built / "comics" / site.latest.slug / "index.html").read_text()
     for host in ("x.com", "bsky.app", "www.facebook.com", "www.linkedin.com"):
