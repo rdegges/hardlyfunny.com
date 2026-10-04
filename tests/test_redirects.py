@@ -207,3 +207,88 @@ def test_no_rule_shadows_a_real_page(built):
 def test_new_urls_are_not_redirected(built, site):
     for path in ["/", urls.ARCHIVE, urls.ABOUT, urls.FEED, *(urls.comic(c) for c in site.comics)]:
         assert follow(built, path) == (None, None), path
+
+
+def test_no_two_rules_share_a_source(built):
+    # With file order unreliable on the edge, two rules for one path would make the result a coin toss.
+    sources = [source for source, _, _ in rules(built)]
+    assert len(sources) == len(set(sources))
+
+
+def test_no_year_catch_all(built):
+    # `/2012/*` beat every post's own splat in production; it must not come back.
+    assert not [s for s, _, _ in rules(built) if s.endswith("/*") and re.fullmatch(r"/\d{4}/\*", s)]
+
+
+@pytest.mark.parametrize("period, spellings", [
+    ("2012", ["2012"]),
+    ("2012/01", ["2012/01", "2012/1"]),
+    ("2012/10", ["2012/10"]),
+    ("2012/12/20", ["2012/12/20"]),
+    ("2012/01/02", ["2012/01/02", "2012/01/2", "2012/1/02", "2012/1/2"]),
+    ("2012/11/05", ["2012/11/05", "2012/11/5"]),
+])
+def test_spellings_add_unpadded_months_and_days_once(period, spellings):
+    assert redirects._spellings(period) == spellings
+
+
+def test_date_archives_of_no_posts_is_empty():
+    assert redirects._date_archives([]) == []
+
+
+def test_date_archives_page_count_follows_posts_per_period():
+    posts = ["/2012/01/02/a/", "/2012/01/02/b/", "/2012/03/04/c/"]
+    sources = {r.source for r in redirects._date_archives(posts)}
+    # Two posts on 2012/01/02, so pages 1 and 2 of that day, its month, and of the year (3 posts: 1..3).
+    assert {"/2012/01/02/page/2/", "/2012/01/page/2/", "/2012/page/3/", "/2012/page/3"} <= sources
+    assert not {"/2012/01/02/page/3/", "/2012/03/04/page/2/", "/2012/page/4/"} & sources
+    # Dates with no post get nothing.
+    assert not [s for s in sources if s.startswith(("/2012/02", "/2012/01/03", "/2013"))]
+
+
+def test_date_archives_unpadded_spellings_get_only_the_listing():
+    sources = {r.source for r in redirects._date_archives(["/2012/01/02/a/"])}
+    assert {"/2012/1/2/", "/2012/1/2", "/2012/1/", "/2012/1"} <= sources
+    assert not [s for s in sources if re.match(r"/2012/(1/|01/2(/|$)|1/02)", s) and ("feed" in s or "page" in s)]
+
+
+def test_date_archives_are_order_independent():
+    posts = [e["post"] for e in OLD]
+    assert redirects._date_archives(posts) == redirects._date_archives(list(reversed(posts)))
+
+
+def test_date_archives_send_listings_to_archive_and_feeds_to_feed():
+    for r in redirects._date_archives([e["post"] for e in OLD]):
+        assert r.destination == (urls.FEED if "/feed" in r.source else urls.ARCHIVE), r.source
+        assert not r.dynamic, r.source
+
+
+def _overlaps(prefixes):
+    return any(a != b and b.startswith(a) for a in prefixes for b in prefixes)
+
+
+def test_overlap_check_agrees_with_a_pairwise_check():
+    # `_check_dynamic` only compares sorted neighbours; this proves that is enough, against every pair.
+    import itertools
+    import random
+
+    rng = random.Random(0)
+    segments = ["a", "a-b", "a0", "ab", "b"]
+    paths = ["/" + "/".join(p) + "/" for n in (1, 2, 3) for p in itertools.product(segments, repeat=n)]
+    for _ in range(3000):
+        chosen = rng.sample(paths, rng.randint(2, 6))
+        rs = [redirects.Redirect(p + "*", "/archive/") for p in chosen]
+        if _overlaps(chosen):
+            with pytest.raises(ValueError):
+                redirects.render(rs)
+        else:
+            redirects.render(rs)
+
+
+@pytest.mark.parametrize("sources", [
+    ["/tag/*", "/tags/*"],
+    ["/a/*", "/a-b/*", "/a0/*"],
+    ["/page/*", "/author/samanthadegges/page/*"],
+])
+def test_render_accepts_sibling_splats_that_share_only_a_string_prefix(sources):
+    redirects.render([redirects.Redirect(s, "/archive/") for s in sources])

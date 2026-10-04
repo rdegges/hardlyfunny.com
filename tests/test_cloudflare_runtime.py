@@ -154,3 +154,26 @@ def test_cache_and_content_type_rules_apply(built):
 def test_build_marker_is_not_published():
     status, _, _ = get("/.hardlyfunny-build")
     assert status == 404
+
+
+def test_every_splat_prefix_without_its_slash_matches_the_python_model(built):
+    # `follow` says `/x/*` also matches `/x`. Nothing else checks that claim against the runtime,
+    # and every other test trusts `follow` for what the edge does.
+    failures = []
+    for source, _, _ in rules(built):
+        path = source[:-2]
+        if source.endswith("/*") and not any(s == path for s, _, _ in rules(built)):
+            dest, _ = follow(built, path)
+            status, headers, _ = get(path)
+            got = (status, location(headers) or None)
+            if got != ((301, dest) if dest else (404, None)):
+                failures.append(f"{path}: model says {dest or 404}, runtime gave {got}")
+    assert not failures, "\n".join(failures)
+
+
+@pytest.mark.parametrize("path", ["/2012/99/", "/2012/01/02/no-such-post/", "/2015/", "/2012/01/03/",
+                                  "/2012/page/999/", "/wp-login.php", "/xmlrpc.php", "/ads.txt"])
+def test_paths_wordpress_never_served_get_the_site_404(built, path):
+    status, _, body = get(path)
+    assert status == 404, path
+    assert body == (built / "404.html").read_bytes(), path
