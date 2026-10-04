@@ -1,5 +1,6 @@
 """Checks on the built site: SEO tags, accessibility basics, links, and machine-readable files."""
 
+import dataclasses
 import json
 import re
 from urllib import robotparser
@@ -9,7 +10,7 @@ from xml.etree import ElementTree as ET
 import pytest
 
 from hardlyfunny import urls
-from hardlyfunny.build import CONTENT
+from hardlyfunny.build import CONTENT, comic_page
 
 SITE_URL = "https://hardlyfunny.com"
 
@@ -39,15 +40,41 @@ def test_pages_have_one_h1_a_title_and_a_description(built, parse):
 
 def test_titles_follow_the_house_format(built, site, parse):
     comics = {built / "comics" / c.slug / "index.html": site.display_title(c) for c in site.comics}
+    others = {
+        built / "archive" / "index.html": f"Archive - {site.title}",
+        built / "about" / "index.html": f"About - {site.title}",
+        built / "random" / "index.html": f"Random comic - {site.title}",
+        built / "404.html": f"Page not found - {site.title}",
+    }
+    checked = set()
     for path in html_pages(built):
         page = parse(path)
-        assert " · " not in page.title, path
+        assert "·" not in page.title, path
         if path in comics:
             assert page.title == f"{comics[path]} - A {site.title} Comic", path
             # Social cards show the bare comic title; the suffix is only for browser tabs and search results.
             assert page.meta("og:title") == page.meta("twitter:title") == comics[path], path
         elif path != built / "index.html":
-            assert page.title.endswith(f" - {site.title}"), path
+            assert page.title == others[path], path
+            assert page.meta("og:title") == page.meta("twitter:title") == page.title, path
+        checked.add(path)
+    assert checked >= comics.keys() | others.keys()
+
+
+def test_comic_title_suffix_keeps_the_number_that_tells_twins_apart(site):
+    # Built from a copy, so the check holds even if the real archive loses its duplicate titles.
+    first, second, *rest = site.comics
+    twins = dataclasses.replace(site, comics=(first, dataclasses.replace(second, title=first.title), *rest))
+    page = comic_page(twins, twins.comics[1])
+    assert page.title == f"{first.title} (No. 2) - A {site.title} Comic"
+    assert page.og_title == f"{first.title} (No. 2)"
+    assert comic_page(twins, twins.comics[0]).title == f"{first.title} (No. 1) - A {site.title} Comic"
+
+
+def test_home_page_title_is_the_site_not_the_latest_comic(built, site, parse):
+    home = parse(built / "index.html")
+    assert home.title.startswith(f"{site.title}: ")
+    assert site.latest.title not in home.title and not home.title.endswith(" Comic")
 
 
 @pytest.mark.parametrize("key", [

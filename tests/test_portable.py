@@ -43,3 +43,9 @@ def test_seo_urls_stay_absolute(portable):
     html = (portable / "comics" / "infinite-recursion" / "index.html").read_text()
     assert '<link rel="canonical" href="https://hardlyfunny.com/comics/infinite-recursion/">' in html
     assert 'content="https://hardlyfunny.com/images/social/infinite-recursion.jpg"' in html
+
+
+def test_titles_match_the_standard_build(portable, built, parse):
+    # The portable rewrite only touches link attributes; tab titles must not drift between the two builds.
+    for page in pages(portable):
+        assert parse(page).title == parse(built / page.relative_to(portable)).title, page
