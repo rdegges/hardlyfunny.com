@@ -74,7 +74,7 @@ To run the site locally on the Cloudflare runtime, build it first. Then run `npm
 - **`hardlyfunny.com`** is a custom domain on the `hardlyfunny` Worker, set by `domains` in `cloudflare.config.ts`. Cloudflare manages its DNS record (a proxied `AAAA 100::`). Every deploy re-asserts the domain. Removing the `domains` line does not detach it; only the dashboard does (Workers & Pages → `hardlyfunny` → Settings → Domains & Routes).
 - **`www.hardlyfunny.com`** 301s to `https://hardlyfunny.com` with the same path and query. A zone Single Redirect rule does this (Rules → Redirect Rules), on a proxied `AAAA www 100::` record. `_redirects` cannot match on the host name.
 - **The deploy token needs no zone access.** Cloudflare attaches a custom domain only when no hand-made DNS record exists for that host name, and then a Workers Scripts Write token is enough.
-- **Zone settings the site depends on:** Always Use HTTPS on, Bot Fight Mode off, managed robots.txt off, security level medium. Cloudflare Web Analytics is on and adds one beacon script to each HTML page. The runtime tests allow exactly that one tag.
+- **Zone settings the site depends on:** Always Use HTTPS on, Bot Fight Mode off, managed robots.txt off, security level medium. Cloudflare Web Analytics is on and adds one beacon script to each HTML page. The runtime tests allow exactly that one tag. Cloudflare injects it by default until you choose otherwise in the zone's Speed → Real user monitoring page (Enable Globally, Exclude EU, or Disable completely).
 
 ### Rollback to WordPress.com
 
