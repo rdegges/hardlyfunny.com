@@ -150,6 +150,7 @@ def test_random_and_404_are_not_indexed(built, parse):
 def test_cloudflare_headers_file_is_published(built):
     headers = (built / "_headers").read_text()
     assert "X-Content-Type-Options: nosniff" in headers
+    assert "Strict-Transport-Security: max-age=31536000\n" in headers
     assert "/fonts/*" in headers and "immutable" in headers
 
 
