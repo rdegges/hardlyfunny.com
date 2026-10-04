@@ -7,7 +7,18 @@ import functools
 import http.server
 from pathlib import Path
 
+from . import urls
 from .build import ROOT, build
+
+
+class Handler(http.server.SimpleHTTPRequestHandler):
+    """Serves the feed as Atom, as Cloudflare does via _headers, though it's built as an index.html."""
+
+    def guess_type(self, path):
+        feed = Path(self.directory) / urls.output_path(urls.FEED)
+        if Path(path).resolve() == feed.resolve():
+            return "application/atom+xml; charset=utf-8"
+        return super().guess_type(path)
 
 
 def main() -> None:
@@ -23,7 +34,7 @@ def main() -> None:
     site = build(args.out, args.site_url, portable=args.portable)
     print(f"Built {len(site.comics)} comics into {args.out}")
     if args.command == "serve":
-        handler = functools.partial(http.server.SimpleHTTPRequestHandler, directory=str(args.out))
+        handler = functools.partial(Handler, directory=str(args.out))
         print(f"Serving on http://localhost:{args.port}/")
         http.server.ThreadingHTTPServer(("", args.port), handler).serve_forever()
 

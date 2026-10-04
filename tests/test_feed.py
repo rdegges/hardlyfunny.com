@@ -10,7 +10,7 @@ def test_feed_is_valid_atom_with_every_comic_newest_first(site):
     assert root.tag == f"{A}feed"
     for required in ("id", "title", "updated", "author"):
         assert root.find(f"{A}{required}") is not None, required
-    assert root.find(f"{A}link[@rel='self']").get("href") == "https://hardlyfunny.com/feed.xml"
+    assert root.find(f"{A}link[@rel='self']").get("href") == "https://hardlyfunny.com/feed/"
 
     entries = root.findall(f"{A}entry")
     assert len(entries) == len(site.comics)

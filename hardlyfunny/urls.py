@@ -8,7 +8,7 @@ HOME = "/"
 ARCHIVE = "/archive/"
 ABOUT = "/about/"
 RANDOM = "/random/"
-FEED = "/feed.xml"
+FEED = "/feed/"
 SITEMAP = "/sitemap.xml"
 
 

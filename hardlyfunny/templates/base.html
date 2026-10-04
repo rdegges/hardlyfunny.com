@@ -82,7 +82,7 @@
       <ul>
         <li><a href="{{ urls.ARCHIVE }}" data-key="a" data-r="ls ./comics" data-label="Archive"{% if page.nav == "archive" %} aria-current="page"{% endif %}>Archive</a></li>
         <li><a href="{{ urls.ABOUT }}" data-key="i" data-r="cat ABOUT.md" data-label="About us"{% if page.nav == "about" %} aria-current="page"{% endif %}>About us</a></li>
-        <li><a href="{{ urls.FEED }}" type="application/atom+xml" data-r="curl /feed.xml" data-label="Feed">Feed</a></li>
+        <li><a href="{{ urls.FEED }}" type="application/atom+xml" data-r="curl /feed/" data-label="Feed">Feed</a></li>
       </ul>
     </nav>
   </header>

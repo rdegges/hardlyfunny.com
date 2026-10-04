@@ -97,7 +97,6 @@ def build(site: Site, wordpress_urls: Path) -> list[Redirect]:
 
     static += [
         Redirect("/wp-content/uploads/2014/01/2011_theme_bannerpng241.png", "/images/brand/banner.png"),
-        *_both("/feed", urls.FEED),
         *_both("/feed/atom", urls.FEED),
         *_both("/feed/rss2", urls.FEED),
         *_both("/comments/feed", urls.FEED),
@@ -111,6 +110,8 @@ def build(site: Site, wordpress_urls: Path) -> list[Redirect]:
         *_both("/author/samanthadegges/feed", urls.FEED),
         *_both("/about/feed", urls.FEED),
         Redirect("/atom.xml", urls.FEED),
+        # The feed lived at /feed.xml from the move off WordPress until it took back /feed/.
+        Redirect("/feed.xml", urls.FEED),
         Redirect("/news-sitemap.xml", urls.SITEMAP),
         Redirect("/favicon.ico", "/favicon.png"),
     ]

@@ -13,7 +13,8 @@ SITE_URL = "https://hardlyfunny.com"
 
 
 def html_pages(built):
-    return sorted(built.rglob("*.html"))
+    feed = built / urls.output_path(urls.FEED)  # Atom, built as an index.html so /feed/ serves it
+    return sorted(p for p in built.rglob("*.html") if p != feed)
 
 
 def test_every_comic_gets_a_clean_permanent_url(built, site):
@@ -126,7 +127,7 @@ def test_feed_is_linked_and_labelled_feed(built, parse):
     alternates = page.all("link", rel="alternate", type="application/atom+xml")
     assert alternates and alternates[0]["href"] == urls.FEED
     assert "RSS" not in (built / "index.html").read_text()
-    ET.parse(built / "feed.xml")
+    ET.parse(built / urls.output_path(urls.FEED))
 
 
 def test_sitemap_robots_and_llms_txt(built, site):

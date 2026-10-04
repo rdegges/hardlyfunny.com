@@ -13,6 +13,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 import pytest
 
+from hardlyfunny import urls
 from tests import test_cloudflare_runtime as rt
 
 
@@ -284,7 +285,8 @@ def test_without_beacon_keeps_a_script_whose_own_src_is_not_the_beacon():
 def test_every_built_html_page_round_trips_through_the_beacon(built):
     # Real pages, not a fixture: none may carry the beacon host itself, and each one with the
     # beacon injected before </body> must come back byte for byte.
-    pages = list(built.rglob("*.html"))
+    feed = built / urls.output_path(urls.FEED)  # Atom, not a page
+    pages = [p for p in built.rglob("*.html") if p != feed]
     assert len(pages) > 80
     for page in pages:
         body = page.read_bytes()
@@ -295,7 +297,7 @@ def test_every_built_html_page_round_trips_through_the_beacon(built):
 
 def beaconing_edge(built, inject=("text/html",)):
     """A fake edge serving the build, adding the beacon to each response whose type is in `inject`."""
-    files = {"/feed.xml": ("application/atom+xml; charset=utf-8", "feed.xml"),
+    files = {urls.FEED: ("application/atom+xml; charset=utf-8", urls.output_path(urls.FEED)),
              "/robots.txt": ("text/plain; charset=utf-8", "robots.txt")}
 
     class Edge(Handler):

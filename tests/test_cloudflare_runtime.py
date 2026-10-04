@@ -131,7 +131,17 @@ def test_runtime_serves_the_same_build(built):
     status, _, body = get("/_redirects")
     assert status == 404
     status, headers, body = get(urls.FEED)
-    assert status == 200 and without_beacon(headers, body) == (built / "feed.xml").read_bytes()
+    assert status == 200 and without_beacon(headers, body) == (built / urls.output_path(urls.FEED)).read_bytes()
+
+
+def test_feed_is_served_as_atom_without_the_beacon(built):
+    # The feed is built as feed/index.html. If the _headers override ever failed, the edge would send
+    # it as HTML and add the beacon, which without_beacon would quietly strip, so check the raw response.
+    status, headers, body = get(urls.FEED)
+    assert status == 200
+    assert headers["content-type"] == "application/atom+xml; charset=utf-8"
+    assert BEACON_HOST not in body
+    assert body == (built / urls.output_path(urls.FEED)).read_bytes()
 
 
 def test_every_static_rule_matches_the_python_model(built):
@@ -157,8 +167,10 @@ def test_every_old_url_lands_on_a_real_page(site):
 
 
 def test_redirects_keep_the_query_string():
-    status, headers, _ = get("/feed/?utm_source=x")
-    assert (status, location(headers)) == (301, "/feed.xml?utm_source=x")
+    status, headers, _ = get("/feed.xml?utm_source=x")
+    assert (status, location(headers)) == (301, "/feed/?utm_source=x")
+    status, _, _ = get("/feed/?utm_source=x")
+    assert status == 200
 
 
 def test_new_urls_are_pages_with_security_headers(site):
@@ -171,7 +183,7 @@ def test_new_urls_are_pages_with_security_headers(site):
 
 def test_slashless_page_urls_reach_the_page():
     # auto-trailing-slash: /about must not 404 now that Pages' own handling is gone.
-    for path in ["/about", "/archive", "/comics/infinite-recursion"]:
+    for path in ["/about", "/archive", "/comics/infinite-recursion", "/feed"]:
         status, headers, _ = get(path)
         assert status in (301, 307, 308) and location(headers) == path + "/", path
 

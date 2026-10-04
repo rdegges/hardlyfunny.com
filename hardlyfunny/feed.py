@@ -1,4 +1,4 @@
-"""Atom 1.0 feed (RFC 4287) at /feed.xml, newest comic first."""
+"""Atom 1.0 feed (RFC 4287) at /feed/, newest comic first."""
 
 from __future__ import annotations
 

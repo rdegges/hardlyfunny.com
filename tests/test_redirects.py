@@ -106,7 +106,8 @@ def old_urls(site):
     for tag in {t for c in site.comics for t in c.tags}:
         for suffix in ("", "page/2/", "feed/"):
             out[f"/tag/{wordpress_slug(tag)}/{suffix}"] = urls.ARCHIVE
-    for path in ("/feed/", "/feed/atom/", "/feed/rss2/", "/feed/rss/", "/feed/rdf/", "/comments/feed/",
+    # /feed/ itself is the feed again; /feed reaches it through Cloudflare's trailing-slash handling.
+    for path in ("/feed/atom/", "/feed/rss2/", "/feed/rss/", "/feed/rdf/", "/comments/feed/",
                  "/comments/feed/atom/", "/comments/feed/rss2/"):
         both(path, urls.FEED)
     both("/category/posts/", urls.ARCHIVE)
@@ -119,6 +120,7 @@ def old_urls(site):
     both("/author/samanthadegges/page/2/", urls.ARCHIVE)
     both("/about/feed/", urls.FEED)
     out["/atom.xml"] = urls.FEED
+    out["/feed.xml"] = urls.FEED
     out["/news-sitemap.xml"] = urls.SITEMAP
     out["/favicon.ico"] = "/favicon.png"
     out["/wp-content/uploads/2014/01/2011_theme_bannerpng241.png"] = "/images/brand/banner.png"
@@ -182,11 +184,11 @@ def test_old_image_hotlinks_land_on_the_same_artwork(built, site):
 
 
 @pytest.mark.parametrize("old, new", [
-    ("/feed/", "/feed.xml"), ("/feed", "/feed.xml"), ("/comments/feed/", "/feed.xml"),
+    ("/feed.xml", "/feed/"), ("/comments/feed/", "/feed/"),
     ("/tag/things-randall-says/", "/archive/"), ("/category/posts/", "/archive/"),
     ("/page/2/", "/archive/"), ("/2013/05/", "/archive/"), ("/2013/05/page/2/", "/archive/"),
-    ("/2013/05/feed/", "/feed.xml"), ("/2012/feed", "/feed.xml"), ("/2012/feed/atom/", "/feed.xml"),
-    ("/2013/05/feed/rss2/", "/feed.xml"), ("/2012/page/1/", "/archive/"), ("/2013/05/page/1", "/archive/"),
+    ("/2013/05/feed/", "/feed/"), ("/2012/feed", "/feed/"), ("/2012/feed/atom/", "/feed/"),
+    ("/2013/05/feed/rss2/", "/feed/"), ("/2012/page/1/", "/archive/"), ("/2013/05/page/1", "/archive/"),
     ("/2012/1/", "/archive/"), ("/2012/1/2/", "/archive/"), ("/2012/01/2", "/archive/"), ("/2012/1/02/", "/archive/"),
     ("/author/samanthadegges/", "/about/"),
 ])
@@ -208,6 +210,13 @@ def test_no_rule_shadows_a_real_page(built):
 def test_new_urls_are_not_redirected(built, site):
     for path in ["/", urls.ARCHIVE, urls.ABOUT, urls.FEED, *(urls.comic(c) for c in site.comics)]:
         assert follow(built, path) == (None, None), path
+
+
+def test_old_feed_url_is_the_feed_again(built):
+    # WordPress subscribers poll /feed/; it must be served, not redirected, and /feed must be left
+    # to Cloudflare's trailing-slash handling (a rule there would shadow feed/index.html).
+    assert urls.FEED == "/feed/" and (built / urls.output_path(urls.FEED)).exists()
+    assert follow(built, "/feed") == (None, None)
 
 
 def test_no_two_rules_share_a_source(built):
