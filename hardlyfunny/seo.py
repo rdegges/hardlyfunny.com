@@ -28,32 +28,45 @@ def _series(site: Site) -> dict:
 
 
 def comic_jsonld(site: Site, comic: Comic) -> str:
-    img = comic.image
-    data = {
-        "@context": "https://schema.org",
+    page = urls.absolute(site.url, urls.comic(comic))
+    author = {"@type": "Person", "name": site.author}
+    story = {
         "@type": "ComicStory",
+        "@id": page + "#comic",
         "name": comic.title,
-        "url": urls.absolute(site.url, urls.comic(comic)),
+        "url": page,
         "position": comic.number,
         "datePublished": comic.published.isoformat(),
-        "author": {"@type": "Person", "name": site.author},
-        "artist": {"@type": "Person", "name": site.author},
+        "author": author,
+        "artist": author,
+        "publisher": author,
         "description": comic.summary,
-        "image": {
-            "@type": "ImageObject",
-            "contentUrl": urls.absolute(site.url, urls.comic_image(img)),
-            "width": img.width,
-            "height": img.height,
-            "caption": img.alt,
-        },
+        "image": [
+            {
+                "@type": "ImageObject",
+                "contentUrl": urls.absolute(site.url, urls.comic_image(img)),
+                "width": img.width,
+                "height": img.height,
+                "caption": img.alt,
+            }
+            for img in comic.images
+        ],
         "isPartOf": _series(site),
         "inLanguage": "en",
     }
     if comic.tags:
-        data["keywords"] = ", ".join(comic.tags)
+        story["keywords"] = ", ".join(comic.tags)
     if comic.transcript:
-        data["text"] = "\n".join(comic.transcript)
-    return _dump(data)
+        story["text"] = "\n".join(comic.transcript)
+    crumbs = [("Home", urls.HOME), ("Archive", urls.ARCHIVE), (site.display_title(comic), urls.comic(comic))]
+    breadcrumbs = {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+            {"@type": "ListItem", "position": i, "name": name, "item": urls.absolute(site.url, path)}
+            for i, (name, path) in enumerate(crumbs, 1)
+        ],
+    }
+    return _dump({"@context": "https://schema.org", "@graph": [story, breadcrumbs]})
 
 
 def home_jsonld(site: Site) -> str:

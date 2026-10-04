@@ -59,15 +59,103 @@ def test_canonical_urls_match_og_urls(built, site, parse):
         assert canonical == page.meta("og:url") == f"{SITE_URL}/comics/{comic.slug}/"
 
 
+def jsonld_blocks(html):
+    return [json.loads(b) for b in re.findall(r'<script type="application/ld\+json">(.*?)</script>', html, re.S)]
+
+
+def jsonld_nodes(value):
+    """Every object in a JSON-LD value, at any depth (top level, @graph, nested and in lists)."""
+    if isinstance(value, dict):
+        yield value
+        for v in value.values():
+            yield from jsonld_nodes(v)
+    elif isinstance(value, list):
+        for v in value:
+            yield from jsonld_nodes(v)
+
+
 def test_structured_data_describes_each_comic(built, site):
     comic = site.comics[69]
-    html = (built / "comics" / comic.slug / "index.html").read_text()
-    block = re.search(r'<script type="application/ld\+json">(.*?)</script>', html, re.S).group(1)
-    data = json.loads(block)
-    assert data["@type"] == "ComicStory"
+    [block] = jsonld_blocks((built / "comics" / comic.slug / "index.html").read_text())
+    [data] = [n for n in block["@graph"] if n["@type"] == "ComicStory"]
     assert data["name"] == comic.title
     assert data["isPartOf"]["@type"] == "ComicSeries"
-    assert data["image"]["caption"] == comic.alt
+    assert data["image"][0]["caption"] == comic.alt
+
+
+def test_every_comic_page_describes_that_comic_and_its_breadcrumb_trail(built, site):
+    # Every page, not one sample: a field that drifts from the comic it sits on is a wrong rich result.
+    for comic in site.comics:
+        page = f"{SITE_URL}/comics/{comic.slug}/"
+        [block] = jsonld_blocks((built / "comics" / comic.slug / "index.html").read_text())
+        assert sorted(n["@type"] for n in block["@graph"]) == ["BreadcrumbList", "ComicStory"], comic.slug
+        [story] = [n for n in block["@graph"] if n["@type"] == "ComicStory"]
+        [trail] = [n for n in block["@graph"] if n["@type"] == "BreadcrumbList"]
+        assert (story["@id"], story["url"], story["position"]) == (page + "#comic", page, comic.number)
+        assert story["datePublished"] == comic.published.isoformat()
+        assert story["text"] == "\n".join(comic.transcript)
+        assert [(i["contentUrl"], i["width"], i["height"], i["caption"]) for i in story["image"]] == [
+            (f"{SITE_URL}/images/{img.file}", img.width, img.height, img.alt) for img in comic.images
+        ]
+        crumbs = trail["itemListElement"]
+        assert [c["position"] for c in crumbs] == list(range(1, len(crumbs) + 1))
+        assert (crumbs[-1]["item"], crumbs[-1]["name"]) == (story["url"], site.display_title(comic))
+
+
+# Adding a type or an off-site URL must be a deliberate edit here. The type list only catches typos.
+# Off-site detection covers http(s) and protocol-relative values under any key, plus every value
+# under JSONLD_LINK_KEYS (sameAs included), which must be an exact allowlist entry or a built page.
+# Samantha's Person node may never carry sameAs or an off-site url: the test enforces that, so no
+# allowlist entry can grant it.
+JSONLD_TYPES = {"WebSite", "ComicSeries", "ComicStory", "Person", "ImageObject", "BreadcrumbList", "ListItem"}
+JSONLD_OFFSITE_URLS: set[str] = set()
+JSONLD_LINK_KEYS = ("url", "item", "contentUrl", "acquireLicensePage", "sameAs")
+
+
+def test_jsonld_is_well_formed_on_site_and_self_contained(built, site, parse):
+    home, comics = built / "index.html", sorted((built / "comics").glob("*/index.html"))
+    assert site.comics and len(comics) == len(site.comics)
+    ids = {}  # target page -> its id= attributes
+
+    def page_ids(path):
+        if path not in ids:
+            ids[path] = {a["id"] for _, a in parse(path).elements if a.get("id")}
+        return ids[path]
+
+    for path in html_pages(built):
+        html = path.read_text()
+        blocks = jsonld_blocks(html)
+        # A block the regex misses would skip every check below, so count script tags separately.
+        assert len(blocks) == len(parse(path).all("script", type="application/ld+json")), path
+        if path == home or path in comics:
+            assert blocks, f"{path} has no JSON-LD"
+        nodes = [n for b in blocks for n in jsonld_nodes(b)]
+        defined = {n["@id"] for n in nodes if "@id" in n and "@type" in n and "name" in n}
+        for n in nodes:
+            types = n.get("@type", [])
+            types = types if isinstance(types, list) else [types]
+            assert set(types) <= JSONLD_TYPES, f"{path}: {types}"
+            if "Person" in types and n.get("name") == site.author:
+                assert "sameAs" not in n, f"{path}: {site.author} has sameAs"
+                urls_on_her = n.get("url", [])
+                for url in urls_on_her if isinstance(urls_on_her, list) else [urls_on_her]:
+                    assert url.startswith(site.url + "/"), f"{path}: {site.author} has url={url}"
+            if "@id" in n:
+                assert n["@id"].startswith(site.url + "/"), f"{path}: {n['@id']}"
+                assert n["@id"] in defined, f"{path}: {n['@id']} is referenced but never defined"
+            # Any absolute URL under any key (sameAs, license, ...) is on-site or allowlisted.
+            values = [(k, v) for k, vs in n.items() if k != "@context" for v in (vs if isinstance(vs, list) else [vs])]
+            for key, value in values:
+                if isinstance(value, str) and re.match(r"(https?:)?//", value, re.I):
+                    assert value.startswith(site.url + "/") or value in JSONLD_OFFSITE_URLS, f"{path}: {key}={value}"
+            for key, value in values:
+                if key not in JSONLD_LINK_KEYS or isinstance(value, dict) or value in JSONLD_OFFSITE_URLS:
+                    continue  # a nested node is checked on its own
+                link = urlparse(value)
+                target = built / urls.output_path(link.path)
+                assert value.startswith(site.url + "/") and target.is_file(), f"{path}: {key}={value}"
+                if link.fragment:
+                    assert link.fragment in page_ids(target), f"{path}: {key}={value} has no anchor on that page"
 
 
 def test_images_have_alt_text_and_dimensions(built, parse):
