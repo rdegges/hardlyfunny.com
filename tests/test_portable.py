@@ -4,6 +4,7 @@ import re
 
 import pytest
 
+from hardlyfunny import urls
 from hardlyfunny.build import build
 
 
@@ -14,13 +15,23 @@ def portable(tmp_path_factory):
     return out
 
 
+def pages(portable):
+    feed = portable / urls.output_path(urls.FEED)  # Atom: its links stay absolute for feed readers
+    return [p for p in portable.rglob("*.html") if p != feed]
+
+
+def test_feed_links_stay_absolute(portable):
+    feed = (portable / urls.output_path(urls.FEED)).read_text()
+    assert 'href="https://hardlyfunny.com/feed/"' in feed and 'href="/' not in feed
+
+
 def test_no_root_relative_references_remain(portable):
-    for page in portable.rglob("*.html"):
+    for page in pages(portable):
         assert not re.search(r'(href|src|data-image)="/(?!/)', page.read_text()), page
 
 
 def test_relative_references_resolve_on_disk(portable):
-    for page in portable.rglob("*.html"):
+    for page in pages(portable):
         for ref in re.findall(r'(?:href|src|data-image)="([^"#]+)"', page.read_text()):
             if ref.startswith(("http:", "https:", "data:", "mailto:")):
                 continue

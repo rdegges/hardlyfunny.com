@@ -100,7 +100,10 @@ def make_portable(out: Path) -> None:
     """Rewrite root-relative links as relative ones with explicit index.html, so the
     built site works opened from disk or hosted under any path. Canonical and OG URLs
     stay absolute."""
+    feed_file = out / urls.output_path(urls.FEED)
     for page in out.rglob("*.html"):
+        if page == feed_file:  # Atom, not a page: its links must stay absolute for feed readers
+            continue
         prefix = "../" * (len(page.relative_to(out).parts) - 1)
 
         def rel(m: re.Match) -> str:

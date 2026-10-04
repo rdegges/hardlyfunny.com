@@ -13,7 +13,8 @@ SITE_URL = "https://hardlyfunny.com"
 
 
 def html_pages(built):
-    return sorted(built.rglob("*.html"))
+    feed = built / urls.output_path(urls.FEED)  # Atom, built as an index.html so /feed/ serves it
+    return sorted(p for p in built.rglob("*.html") if p != feed)
 
 
 def test_every_comic_gets_a_clean_permanent_url(built, site):
@@ -126,7 +127,7 @@ def test_feed_is_linked_and_labelled_feed(built, parse):
     alternates = page.all("link", rel="alternate", type="application/atom+xml")
     assert alternates and alternates[0]["href"] == urls.FEED
     assert "RSS" not in (built / "index.html").read_text()
-    ET.parse(built / "feed.xml")
+    ET.parse(built / urls.output_path(urls.FEED))
 
 
 def test_sitemap_robots_and_llms_txt(built, site):
@@ -185,6 +186,14 @@ def test_hsts_is_sent_on_every_path_and_nowhere_else(built):
     # Every other `/*` header survived the comment line added inside that rule.
     assert set(rules["/*"]) == {"x-content-type-options", "referrer-policy", "x-frame-options",
                                 "permissions-policy", "strict-transport-security"}
+
+
+def test_feed_url_is_sent_as_atom_and_no_stale_rule_remains(built):
+    # The feed is built as an index.html, so without this rule the edge sends it as HTML (with the
+    # analytics beacon). CI skips the runtime check, and the rule must follow urls.FEED if it moves.
+    rules = header_rules((built / "_headers").read_text())
+    assert rules[urls.FEED]["content-type"] == "application/atom+xml; charset=utf-8"
+    assert [p for p, h in rules.items() if "content-type" in h] == [urls.FEED]
 
 
 def test_404_page_offers_scribbles_and_comics_to_try(built, site, parse):

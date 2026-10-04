@@ -21,5 +21,6 @@
 /images/*
   Cache-Control: public, max-age=604800
 
-/feed.xml
+# The feed is built as feed/index.html so /feed/ serves it; this keeps it from going out as HTML.
+/feed/
   Content-Type: application/atom+xml; charset=utf-8
