@@ -124,6 +124,8 @@ def _clear(out: Path) -> None:
     if out.exists():
         if out == ROOT or out in ROOT.parents or (out / ".git").exists() or (out / "comics.json").exists():
             raise SystemExit(f"Refusing to delete {out}: that's not a build directory.")
+        # Recognises builds made before MARKER existed, which wrote feed.xml. Keep these names as they
+        # are: matching what builds write now would let _clear delete more kinds of directories.
         earlier_build = all((out / f).exists() for f in ("index.html", "site.css", "feed.xml"))
         if any(out.iterdir()) and not ((out / MARKER).exists() or earlier_build):
             raise SystemExit(f"Refusing to delete {out}: it isn't empty and wasn't made by this build.")
