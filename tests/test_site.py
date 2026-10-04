@@ -2,6 +2,7 @@
 
 import json
 import re
+from urllib import robotparser
 from urllib.parse import urlparse
 from xml.etree import ElementTree as ET
 
@@ -145,6 +146,103 @@ def test_sitemap_robots_and_llms_txt(built, site):
     llms = (built / "llms.txt").read_text()
     assert llms.startswith("# Hardly Funny") and llms.count("/comics/") == len(site.comics)
     assert "Transcript:" in (built / "llms-full.txt").read_text()
+
+
+ROBOT_AGENTS = ["*", "Googlebot", "Bingbot", "GPTBot", "ClaudeBot", "PerplexityBot", "Google-Extended"]
+
+
+def robots_allows(text, agent, path):
+    """RFC 9309 matching: the group naming the agent (else `*`), longest matching rule wins, Allow
+    wins a tie. The stdlib's robotparser takes the first matching rule instead, so a leading
+    `Allow: /` would hide every Disallow after it."""
+    groups, agents, in_rules = {}, [], False
+    for line in text.splitlines():
+        key, _, value = (part.strip() for part in line.split("#", 1)[0].partition(":"))
+        key = key.lower()
+        if key == "user-agent":
+            if in_rules:
+                agents, in_rules = [], False
+            agents.append(value.lower())
+            for a in agents:
+                groups.setdefault(a, [])
+        elif key in {"allow", "disallow"} and agents:
+            in_rules = True
+            for a in agents:
+                groups[a].append((key == "allow", value))
+    rules = groups.get(agent.lower(), groups.get("*", []))
+    best = (-1, True)
+    for allow, pattern in rules:
+        if not pattern:
+            continue
+        regex = re.escape(pattern).replace(r"\*", ".*")
+        regex = regex[:-2] + "$" if regex.endswith(r"\$") else regex
+        if re.match(regex, path) and (len(pattern), allow) > best:
+            best = (len(pattern), allow)
+    return best[1]
+
+
+def built_url_paths(built):
+    """Every URL path the build serves, the way Cloudflare maps files to URLs."""
+    for file in sorted(built.rglob("*")):
+        if file.is_dir() or file.name in {"_headers", "_redirects"}:
+            continue
+        rel = file.relative_to(built).as_posix()
+        yield "/" + rel.removesuffix("index.html") if file.name == "index.html" else "/" + rel
+
+
+def test_robots_txt_lets_every_crawler_fetch_every_built_url(built):
+    # Parsed, not string-matched: a reformatted robots.txt still passes, and a Disallow anywhere
+    # in the file that blocks a real URL still fails.
+    text = (built / "robots.txt").read_text()
+    paths = list(built_url_paths(built))
+    assert urls.RANDOM in paths and "/404.html" in paths and urls.FEED in paths
+    blocked = [(agent, p) for agent in ROBOT_AGENTS for p in paths if not robots_allows(text, agent, p)]
+    assert blocked == []
+    stdlib = robotparser.RobotFileParser()
+    stdlib.parse(text.splitlines())
+    assert stdlib.site_maps() == [f"{SITE_URL}/sitemap.xml"]
+
+
+@pytest.mark.parametrize("text, agent, path, allowed", [
+    ("User-agent: *\nAllow: /\nDisallow: /fonts/\n", "*", "/fonts/a.woff2", False),
+    ("User-agent: *\nDisallow: /random/\n", "GPTBot", "/random/", False),
+    ("User-agent: *\nDisallow: /random/\n", "GPTBot", "/about/", True),
+    ("User-agent: *\nDisallow: /\n\nUser-agent: GPTBot\nAllow: /\n", "GPTBot", "/x", True),
+    ("User-agent: *\nDisallow: /*.png$\n", "*", "/a.png", False),
+    ("User-agent: *\nDisallow: /*.png$\n", "*", "/a.png?x", True),
+    ("User-agent: *\nDisallow: /a\nAllow: /a\n", "*", "/a", True),
+    ("User-agent: *\nDisallow:\n", "*", "/", True),
+])
+def test_robots_allows_matches_rfc_9309(text, agent, path, allowed):
+    assert robots_allows(text, agent, path) is allowed
+
+
+def test_noindex_pages_are_crawlable_so_the_noindex_is_seen(built, parse):
+    # A page blocked in robots.txt is never fetched, so its noindex is never read and the URL can
+    # still be indexed from links. /random/ used to be disallowed; this keeps that from returning.
+    text = (built / "robots.txt").read_text()
+    noindex = [path for path in html_pages(built) if parse(path).meta("robots") == "noindex"]
+    assert {"random/index.html", "404.html"} <= {p.relative_to(built).as_posix() for p in noindex}
+    for path in noindex:
+        url = "/" + path.relative_to(built).as_posix().removesuffix("index.html")
+        assert all(robots_allows(text, agent, url) for agent in ROBOT_AGENTS), url
+
+
+def test_content_signal_is_well_formed_and_inside_the_wildcard_group(built):
+    # contentsignals.org: a Content-Signal line belongs to the user-agent group above it and
+    # holds comma-separated `signal=yes|no` pairs from a fixed vocabulary.
+    lines = (built / "robots.txt").read_text().splitlines()
+    signals = [i for i, line in enumerate(lines) if line.lower().startswith("content-signal:")]
+    assert len(signals) == 1
+    start = max((i + 1 for i, line in enumerate(lines[:signals[0]]) if not line.strip()), default=0)
+    agents = [l.split(":", 1)[1].strip() for l in lines[start:signals[0]] if l.lower().startswith("user-agent:")]
+    assert agents == ["*"]
+    pairs = [p.strip().split("=") for p in lines[signals[0]].split(":", 1)[1].split(",")]
+    assert all(len(p) == 2 for p in pairs)
+    values = dict(pairs)
+    assert len(values) == len(pairs), "no signal listed twice"
+    assert set(values) <= {"search", "ai-input", "ai-train"}
+    assert set(values.values()) <= {"yes", "no"}
 
 
 def test_random_and_404_are_not_indexed(built, parse):
