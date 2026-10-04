@@ -135,7 +135,13 @@ def test_sitemap_robots_and_llms_txt(built, site):
     locs = [l.text for l in ET.parse(built / "sitemap.xml").getroot().iter(f"{ns}loc")]
     assert len(locs) == len(site.comics) + 3
     assert f"{SITE_URL}/random/" not in locs
-    assert f"Sitemap: {SITE_URL}/sitemap.xml" in (built / "robots.txt").read_text()
+    assert (built / "robots.txt").read_text() == (
+        "User-agent: *\n"
+        "Content-Signal: search=yes, ai-input=yes, ai-train=yes\n"
+        "Allow: /\n"
+        "\n"
+        f"Sitemap: {SITE_URL}/sitemap.xml\n"
+    )
     llms = (built / "llms.txt").read_text()
     assert llms.startswith("# Hardly Funny") and llms.count("/comics/") == len(site.comics)
     assert "Transcript:" in (built / "llms-full.txt").read_text()
