@@ -67,7 +67,13 @@ def test_image_dimensions_match_the_files(site):
 def test_meta_descriptions_are_unique(site):
     descriptions = [site.description(c) for c in site.comics]
     assert len(set(descriptions)) == len(descriptions)
-    assert all(0 < len(d) <= 161 for d in descriptions)
+    assert all(0 < len(d) <= 160 for d in descriptions)
+
+
+def test_comics_with_a_short_note_are_described_by_their_alt_text(site):
+    for number in (1, 6, 43):
+        comic = site.comics[number - 1]
+        assert site.description(comic) == truncate(comic.alt, 160), number
 
 
 @pytest.mark.parametrize("break_it, message", [

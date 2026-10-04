@@ -70,9 +70,10 @@ class Site:
         return self.comics[-1]
 
     def description(self, comic: Comic) -> str:
-        """Meta description. Falls back to the alt text when another comic has the same
-        note (No. 82 is a redraw of No. 20), so no two pages share a description."""
-        if any(c.summary == comic.summary for c in self.comics if c.number < comic.number):
+        """Meta description. Falls back to the alt text when the note is too short to say what
+        the comic shows, or when another comic has the same note (No. 82 is a redraw of No. 20),
+        so no two pages share a description."""
+        if len(comic.summary) < 80 or any(c.summary == comic.summary for c in self.comics if c.number < comic.number):
             return truncate(comic.alt, 160)
         return comic.summary
 

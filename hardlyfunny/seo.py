@@ -54,7 +54,7 @@ def comic_jsonld(site: Site, comic: Comic) -> str:
         "author": author,
         "artist": author,
         "publisher": author,
-        "description": comic.summary,
+        "description": site.description(comic),
         "image": [
             {
                 "@type": "ImageObject",
