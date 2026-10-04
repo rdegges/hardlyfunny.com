@@ -83,6 +83,25 @@ def test_structured_data_describes_each_comic(built, site):
     assert data["image"][0]["caption"] == comic.alt
 
 
+def test_every_comic_page_describes_that_comic_and_its_breadcrumb_trail(built, site):
+    # Every page, not one sample: a field that drifts from the comic it sits on is a wrong rich result.
+    for comic in site.comics:
+        page = f"{SITE_URL}/comics/{comic.slug}/"
+        [block] = jsonld_blocks((built / "comics" / comic.slug / "index.html").read_text())
+        assert sorted(n["@type"] for n in block["@graph"]) == ["BreadcrumbList", "ComicStory"], comic.slug
+        [story] = [n for n in block["@graph"] if n["@type"] == "ComicStory"]
+        [trail] = [n for n in block["@graph"] if n["@type"] == "BreadcrumbList"]
+        assert (story["@id"], story["url"], story["position"]) == (page + "#comic", page, comic.number)
+        assert story["datePublished"] == comic.published.isoformat()
+        assert story["text"] == "\n".join(comic.transcript)
+        assert [(i["contentUrl"], i["width"], i["height"], i["caption"]) for i in story["image"]] == [
+            (f"{SITE_URL}/images/{img.file}", img.width, img.height, img.alt) for img in comic.images
+        ]
+        crumbs = trail["itemListElement"]
+        assert [c["position"] for c in crumbs] == list(range(1, len(crumbs) + 1))
+        assert (crumbs[-1]["item"], crumbs[-1]["name"]) == (story["url"], site.display_title(comic))
+
+
 # Adding a type or an off-site URL should be a deliberate edit here. The type list only catches
 # typos. Off-site URLs start empty; Samantha's profiles must never be added.
 JSONLD_TYPES = {"WebSite", "ComicSeries", "ComicStory", "Person", "ImageObject", "BreadcrumbList", "ListItem"}
