@@ -64,3 +64,14 @@ def test_deploy_secrets_are_scoped_to_the_publishing_step():
 def test_generated_deploy_state_is_not_committed():
     for path in ("_site/", "node_modules/", ".cloudflare/", ".wrangler/"):
         assert path in GITIGNORE, path
+
+
+def test_verify_checks_the_live_domain_after_each_production_deploy():
+    verify = job("verify")
+    assert re.search(r"^    needs: deploy$", verify, re.M)
+    assert re.search(r"^    if: github.event_name == 'push' && github.ref == 'refs/heads/main'$", verify, re.M)
+    assert "HARDLYFUNNY_RUNTIME_URL: https://hardlyfunny.com" in verify
+    assert re.search(r"group: verify-production\n\s+cancel-in-progress: true", verify)
+    assert "tests/test_cloudflare_runtime.py tests/test_live_domain.py --junitxml=verify.xml" in verify
+    # The suites skip themselves without a URL; a run with no tests or any skip must fail.
+    assert "sys.exit(0 if tests > 0 and skipped == 0 else 1)" in verify
