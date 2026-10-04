@@ -6,6 +6,8 @@
   Referrer-Policy: strict-origin-when-cross-origin
   X-Frame-Options: SAMEORIGIN
   Permissions-Policy: camera=(), microphone=(), geolocation=(), interest-cohort=()
+  # Matches what WordPress.com sent, so the domain move doesn't weaken HTTPS. No includeSubDomains or preload.
+  Strict-Transport-Security: max-age=31536000
 
 # Our pages link these with ?v=<content hash>, so they can be cached forever.
 /site.css

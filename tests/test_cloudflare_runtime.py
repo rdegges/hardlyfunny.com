@@ -34,6 +34,8 @@ SECURITY_HEADERS = {
     "referrer-policy": "strict-origin-when-cross-origin",
     "x-frame-options": "SAMEORIGIN",
     "permissions-policy": "camera=(), microphone=(), geolocation=(), interest-cohort=()",
+    # The same HSTS WordPress.com sent, so moving the domain doesn't weaken it.
+    "strict-transport-security": "max-age=31536000",
 }
 IMMUTABLE = "public, max-age=31536000, immutable"
 
