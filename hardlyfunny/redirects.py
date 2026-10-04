@@ -103,9 +103,18 @@ def build(site: Site, wordpress_urls: Path) -> list[Redirect]:
         *_both("/comments/feed", urls.FEED),
         *_both("/category/posts", urls.ARCHIVE),
         *_both("/author/samanthadegges", urls.ABOUT),
+        # Found in the Wayback Machine's captures of the old site, not in the export.
+        *_both("/author/samanthadegges/feed", urls.FEED),
+        *_both("/about/feed", urls.FEED),
+        Redirect("/atom.xml", urls.FEED),
+        Redirect("/news-sitemap.xml", urls.SITEMAP),
+        Redirect("/favicon.ico", "/favicon.png"),
     ]
     static += _date_archives([entry["post"] for entry in old])
-    dynamic += [Redirect(f"/{prefix}/*", urls.ARCHIVE) for prefix in ("tag", "category", "page", "type")]
+    dynamic += [
+        Redirect(f"/{prefix}/*", urls.ARCHIVE)
+        for prefix in ("tag", "category", "page", "type", "author/samanthadegges/page")
+    ]
     return static + dynamic
 
 

@@ -113,6 +113,13 @@ def old_urls(site):
     both("/page/2/", urls.ARCHIVE)
     both("/type/image/", urls.ARCHIVE)
     both("/author/samanthadegges/", urls.ABOUT)
+    # Captured by the Wayback Machine but missing from the export.
+    both("/author/samanthadegges/feed/", urls.FEED)
+    both("/author/samanthadegges/page/2/", urls.ARCHIVE)
+    both("/about/feed/", urls.FEED)
+    out["/atom.xml"] = urls.FEED
+    out["/news-sitemap.xml"] = urls.SITEMAP
+    out["/favicon.ico"] = "/favicon.png"
     out["/wp-content/uploads/2014/01/2011_theme_bannerpng241.png"] = "/images/brand/banner.png"
     return out
 
@@ -142,7 +149,16 @@ def test_render_refuses_order_dependent_rules(sources):
         redirects.render([redirects.Redirect(s, "/archive/") for s in sources])
 
 
-@pytest.mark.parametrize("path", ["/2012/99/", "/2012/01/02/no-such-post/", "/2015/", "/2012/01/03/"])
+# WordPress.com platform files the Wayback Machine captured on the old domain. They were never the
+# comic's content, so the 404 page is the right answer, not a redirect.
+WORDPRESS_PLATFORM = [
+    "/wp-login.php", "/wp-signup.php", "/wp-admin/", "/xmlrpc.php", "/press-this.php", "/remote-login.php",
+    "/osd.xml", "/ads.txt", "/app-ads.txt", "/i/rss/pink-medium.png", "/wp-content/js/bilmur.min.js",
+    "/.well-known/security.txt", "/.well-known/nodeinfo/",
+]
+
+
+@pytest.mark.parametrize("path", ["/2012/99/", "/2012/01/02/no-such-post/", "/2015/", "/2012/01/03/", *WORDPRESS_PLATFORM])
 def test_paths_wordpress_never_served_are_not_redirected(built, path):
     assert follow(built, path) == (None, None)
 
