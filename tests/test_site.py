@@ -77,6 +77,15 @@ def test_home_page_title_is_the_site_not_the_latest_comic(built, site, parse):
     assert site.latest.title not in home.title and not home.title.endswith(" Comic")
 
 
+def test_home_page_says_the_comic_is_complete(built, site):
+    first, latest = site.comics[0].published, site.latest.published
+    [line] = re.findall(r'<p class="intro">(.*?)</p>', (built / "index.html").read_text(), re.S)
+    assert re.sub(r"<[^>]+>", "", line) == (f"{site.title} ran from {first:%B %Y} to {latest:%B %Y} and is complete. "
+                                            f"Read all {len(site.comics)} comics in the archive.")
+    assert f'<a href="{urls.ARCHIVE}">archive</a>' in line
+    assert 'class="intro"' not in (built / "comics" / site.latest.slug / "index.html").read_text()
+
+
 @pytest.mark.parametrize("key", [
     "og:title", "og:description", "og:url", "og:image", "og:image:alt", "og:type",
     "twitter:card", "twitter:image",
@@ -194,6 +203,16 @@ def test_about_page_describes_the_series_and_its_two_people(built, site):
     assert nodes[f"{SITE_URL}/#series"]["character"] == [{"@id": SAMANTHA}, {"@id": randall}]
     assert nodes[SAMANTHA] == {"@type": "Person", "@id": SAMANTHA, "name": site.author, "url": f"{SITE_URL}/about/"}
     assert nodes[randall] == {"@type": "Person", "@id": randall, "name": "Randall Degges", "url": "https://rdegges.com"}
+
+
+def test_about_page_says_the_comic_is_complete_and_links_randall(built):
+    html = (built / urls.output_path(urls.ABOUT)).read_text()
+    # The text itself, not the site nav, which links the archive on every page.
+    [body] = re.findall(r'<div class="body">(.*?)</div>', html, re.S)
+    assert "Hardly Funny is complete.</strong>" in body
+    assert set(re.findall(r'href="([^"]+)"', body)) == {"https://rdegges.com", urls.ARCHIVE}
+    for stale in ("Now, Samantha illustrates", "works from home as a lead developer"):
+        assert stale not in html
 
 
 # Adding a type or an off-site URL must be a deliberate edit here. The type list only catches typos.
@@ -347,6 +366,14 @@ def test_sitemap_robots_and_llms_txt(built, site):
     llms = (built / "llms.txt").read_text()
     assert llms.startswith("# Hardly Funny") and llms.count("/comics/") == len(site.comics)
     assert "Transcript:" in (built / "llms-full.txt").read_text()
+
+
+def test_llms_txt_says_the_comic_is_complete(built, site):
+    first, latest = site.comics[0].published, site.latest.published
+    line = (f"{site.title} ran from {first:%B %Y} to {latest:%B %Y} and is complete. "
+            f"All {len(site.comics)} comics are listed below; no new comics are planned.")
+    for name in ("llms.txt", "llms-full.txt"):
+        assert line in (built / name).read_text().splitlines(), name
 
 
 def test_sitemap_lists_each_comic_image_once_on_its_page(built, parse):
