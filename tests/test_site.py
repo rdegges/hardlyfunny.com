@@ -88,7 +88,7 @@ def test_every_comic_page_describes_that_comic_and_its_breadcrumb_trail(built, s
     for comic in site.comics:
         page = f"{SITE_URL}/comics/{comic.slug}/"
         [block] = jsonld_blocks((built / "comics" / comic.slug / "index.html").read_text())
-        assert sorted(n["@type"] for n in block["@graph"]) == ["BreadcrumbList", "ComicStory"], comic.slug
+        assert sorted(n["@type"] for n in block["@graph"]) == ["BreadcrumbList", "ComicStory", "Person", "Person"], comic.slug
         [story] = [n for n in block["@graph"] if n["@type"] == "ComicStory"]
         [trail] = [n for n in block["@graph"] if n["@type"] == "BreadcrumbList"]
         assert (story["@id"], story["url"], story["position"]) == (page + "#comic", page, comic.number)
@@ -102,18 +102,37 @@ def test_every_comic_page_describes_that_comic_and_its_breadcrumb_trail(built, s
         assert (crumbs[-1]["item"], crumbs[-1]["name"]) == (story["url"], site.display_title(comic))
 
 
+def test_about_page_describes_the_series_and_its_two_people(built, site):
+    [block] = jsonld_blocks((built / "about" / "index.html").read_text())
+    nodes = {n["@id"]: n for n in block["@graph"]}
+    randall = SITE_URL + "/about/#randall"
+    [about] = [n for n in block["@graph"] if n["@type"] == "AboutPage"]
+    assert (about["url"], about["about"]) == (f"{SITE_URL}/about/", {"@id": f"{SITE_URL}/#series"})
+    assert nodes[f"{SITE_URL}/#series"]["character"] == [{"@id": SAMANTHA}, {"@id": randall}]
+    assert nodes[SAMANTHA] == {"@type": "Person", "@id": SAMANTHA, "name": site.author, "url": f"{SITE_URL}/about/"}
+    assert nodes[randall] == {"@type": "Person", "@id": randall, "name": "Randall Degges", "url": "https://rdegges.com"}
+
+
 # Adding a type or an off-site URL must be a deliberate edit here. The type list only catches typos.
 # Off-site detection covers http(s) and protocol-relative values under any key, plus every value
 # under JSONLD_LINK_KEYS (sameAs included), which must be an exact allowlist entry or a built page.
+# An allowlist entry is keyed (node @id, property), so it grants one URL on one property of one node.
 # Samantha's Person node may never carry sameAs or an off-site url: the test enforces that, so no
 # allowlist entry can grant it.
-JSONLD_TYPES = {"WebSite", "ComicSeries", "ComicStory", "Person", "ImageObject", "BreadcrumbList", "ListItem"}
-JSONLD_OFFSITE_URLS: set[str] = set()
+JSONLD_TYPES = {"WebSite", "ComicSeries", "ComicStory", "Person", "ImageObject", "BreadcrumbList", "ListItem",
+                "AboutPage"}
+JSONLD_OFFSITE_URLS = {(SITE_URL + "/about/#randall", "url"): "https://rdegges.com"}
 JSONLD_LINK_KEYS = ("url", "item", "contentUrl", "acquireLicensePage", "sameAs")
+SAMANTHA = SITE_URL + "/about/#samantha"
+
+
+def offsite_allowed(node, key, value):
+    return JSONLD_OFFSITE_URLS.get((node.get("@id"), key)) == value
 
 
 def test_jsonld_is_well_formed_on_site_and_self_contained(built, site, parse):
-    home, comics = built / "index.html", sorted((built / "comics").glob("*/index.html"))
+    home, about = built / "index.html", built / urls.output_path(urls.ABOUT)
+    comics = sorted((built / "comics").glob("*/index.html"))
     assert site.comics and len(comics) == len(site.comics)
     ids = {}  # target page -> its id= attributes
 
@@ -127,7 +146,7 @@ def test_jsonld_is_well_formed_on_site_and_self_contained(built, site, parse):
         blocks = jsonld_blocks(html)
         # A block the regex misses would skip every check below, so count script tags separately.
         assert len(blocks) == len(parse(path).all("script", type="application/ld+json")), path
-        if path == home or path in comics:
+        if path in (home, about) or path in comics:
             assert blocks, f"{path} has no JSON-LD"
         nodes = [n for b in blocks for n in jsonld_nodes(b)]
         defined = {n["@id"] for n in nodes if "@id" in n and "@type" in n and "name" in n}
@@ -135,8 +154,10 @@ def test_jsonld_is_well_formed_on_site_and_self_contained(built, site, parse):
             types = n.get("@type", [])
             types = types if isinstance(types, list) else [types]
             assert set(types) <= JSONLD_TYPES, f"{path}: {types}"
-            if "Person" in types and n.get("name") == site.author:
+            if "Person" in types and (n.get("name") == site.author or n.get("@id") == SAMANTHA):
                 assert "sameAs" not in n, f"{path}: {site.author} has sameAs"
+                # A closed key set, so any new property on her node (a profile link, say) fails here.
+                assert set(n) == {"@type", "@id", "name", "url"}, f"{path}: {site.author} has {sorted(n)}"
                 urls_on_her = n.get("url", [])
                 for url in urls_on_her if isinstance(urls_on_her, list) else [urls_on_her]:
                     assert url.startswith(site.url + "/"), f"{path}: {site.author} has url={url}"
@@ -147,9 +168,9 @@ def test_jsonld_is_well_formed_on_site_and_self_contained(built, site, parse):
             values = [(k, v) for k, vs in n.items() if k != "@context" for v in (vs if isinstance(vs, list) else [vs])]
             for key, value in values:
                 if isinstance(value, str) and re.match(r"(https?:)?//", value, re.I):
-                    assert value.startswith(site.url + "/") or value in JSONLD_OFFSITE_URLS, f"{path}: {key}={value}"
+                    assert value.startswith(site.url + "/") or offsite_allowed(n, key, value), f"{path}: {key}={value}"
             for key, value in values:
-                if key not in JSONLD_LINK_KEYS or isinstance(value, dict) or value in JSONLD_OFFSITE_URLS:
+                if key not in JSONLD_LINK_KEYS or isinstance(value, dict) or offsite_allowed(n, key, value):
                     continue  # a nested node is checked on its own
                 link = urlparse(value)
                 target = built / urls.output_path(link.path)

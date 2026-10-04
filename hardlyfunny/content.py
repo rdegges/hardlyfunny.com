@@ -50,10 +50,17 @@ class Comic:
 
 
 @dataclass(frozen=True)
+class Person:
+    name: str
+    url: str
+
+
+@dataclass(frozen=True)
 class Site:
     title: str
     tagline: str
     author: str
+    randall: Person
     url: str
     about_html: str
     comics: tuple[Comic, ...]
@@ -148,6 +155,7 @@ def load(path: Path) -> Site:
         title=site["title"],
         tagline=site["tagline"],
         author=site["author"],
+        randall=Person(**site["randall"]),
         url=site["url"].rstrip("/"),
         about_html=site["about_html"],
         comics=comics,

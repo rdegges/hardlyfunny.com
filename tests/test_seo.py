@@ -29,7 +29,7 @@ def test_comic_story_lists_every_image_and_names_its_publisher(site):
     story = node(seo.comic_jsonld(site, two), "ComicStory")
     assert story["@id"] == f"{site.url}/comics/{two.slug}/#comic"
     assert [i["contentUrl"] for i in story["image"]] == [f"{site.url}/images/{img.file}" for img in two.images]
-    assert story["publisher"] == story["author"] == {"@type": "Person", "name": site.author}
+    assert story["publisher"] == story["artist"] == story["author"] == {"@id": f"{site.url}/about/#samantha"}
 
 
 def test_breadcrumbs_lead_home_then_archive_then_the_comic(site):
