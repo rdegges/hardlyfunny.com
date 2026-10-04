@@ -56,19 +56,29 @@ def get(path):
     Reuses a keep-alive connection per thread: a fresh TLS handshake per request made the
     full suite take ~27 minutes against the real edge.
     """
-    for attempt in (1, 2):
-        conn = getattr(_local, "conn", None) or _connect()
-        _local.conn = conn
-        try:
-            conn.request("GET", path, headers=HEADERS)
-            res = conn.getresponse()
-            return res.status, {k.lower(): v for k, v in res.getheaders()}, res.read()
-        except (http.client.HTTPException, ConnectionError, TimeoutError):
-            # The server closed an idle connection; retry once on a fresh one.
-            conn.close()
-            _local.conn = None
-            if attempt == 2:
-                raise
+    reused = getattr(_local, "conn", None) is not None
+    try:
+        return _send(path)
+    except (http.client.HTTPException, ConnectionError, TimeoutError):
+        _local.conn.close()
+        _local.conn = None
+        if not reused:
+            raise
+    # The server closed an idle connection; retry once on a fresh one.
+    try:
+        return _send(path)
+    except (http.client.HTTPException, ConnectionError, TimeoutError):
+        _local.conn.close()
+        _local.conn = None
+        raise
+
+
+def _send(path):
+    if getattr(_local, "conn", None) is None:
+        _local.conn = _connect()
+    _local.conn.request("GET", path, headers=HEADERS)
+    res = _local.conn.getresponse()
+    return res.status, {k.lower(): v for k, v in res.getheaders()}, res.read()
 
 
 def location(headers):
