@@ -21,6 +21,19 @@ def test_truncate_prefers_sentence_then_word_boundaries():
     assert truncate("one two three four five six", 12) == "one two…"
 
 
+@pytest.mark.parametrize("text", [
+    "word " * 60,
+    "x" * 300,  # no space to cut at
+    "Short one. " + "A much longer second sentence without a stop " * 5,
+    "Ünïcödé — “quoted” words, and an ellipsis… " * 6,
+    "a" * 159 + " tail",
+])
+@pytest.mark.parametrize("limit", [20, 80, 159, 160, 161])
+def test_truncate_never_exceeds_its_limit(text, limit):
+    # Meta descriptions rely on this: search results cut anything past ~160 characters.
+    assert 0 < len(truncate(text, limit)) <= limit
+
+
 def test_strip_tags_flattens_paragraphs():
     assert strip_tags("<p>Hi &amp; <em>bye</em></p><p>Next</p>") == "Hi & bye Next"
 
@@ -54,7 +67,7 @@ def test_every_comic_has_real_alt_text_and_a_transcript(site):
 
 def test_summaries_fit_meta_description_length(site):
     for c in site.comics:
-        assert 0 < len(c.summary) <= 161, c.number
+        assert 0 < len(c.summary) <= 160, c.number
 
 
 def test_image_dimensions_match_the_files(site):
@@ -67,7 +80,52 @@ def test_image_dimensions_match_the_files(site):
 def test_meta_descriptions_are_unique(site):
     descriptions = [site.description(c) for c in site.comics]
     assert len(set(descriptions)) == len(descriptions)
-    assert all(0 < len(d) <= 161 for d in descriptions)
+    assert all(0 < len(d) <= 160 for d in descriptions)
+
+
+def test_comics_with_a_short_note_are_described_by_their_alt_text(site):
+    for number in (1, 6, 43):
+        comic = site.comics[number - 1]
+        assert site.description(comic) == truncate(comic.alt, 160), number
+
+
+def test_only_short_notes_and_the_redraw_fall_back_to_alt_text(site):
+    # Pins the set this change produced, so a threshold or rule change shows up as a reviewed diff.
+    from_alt = {c.number for c in site.comics if c.note_text and site.description(c) != c.summary}
+    assert from_alt == {1, 6, 43, 82}
+
+
+def _with_notes(site, *notes_and_alts):
+    """The first comics of the real archive, renumbered as-is, with the given (note, alt) pairs."""
+    comics = tuple(
+        dataclasses.replace(c, note_html=f"<p>{note}</p>" if note else "",
+                            images=(dataclasses.replace(c.image, alt=alt), *c.images[1:]))
+        for c, (note, alt) in zip(site.comics, notes_and_alts)
+    )
+    return dataclasses.replace(site, comics=comics)
+
+
+LONG_ALT = "Randall sits at a desk covered in monitors, typing furiously, while Samantha watches from the doorway with a mug of tea."
+
+
+def test_a_note_long_enough_to_describe_the_comic_is_kept(site):
+    note = "Randall spent the whole weekend rebuilding his desk setup and I barely saw him at all."
+    assert len(note) >= 80
+    s = _with_notes(site, (note, LONG_ALT))
+    assert s.description(s.comics[0]) == note
+
+
+def test_a_comic_without_a_note_is_described_by_its_alt_text(site):
+    s = _with_notes(site, ("", LONG_ALT), ("", "A short alt text here."))
+    assert [s.description(c) for c in s.comics] == [LONG_ALT, "A short alt text here."]
+
+
+def test_a_redraw_with_a_short_note_and_the_same_alt_still_gets_its_own_description(site):
+    # The docstring promises no two pages share a description, and here they need not: one page
+    # can use the note and the other the alt. Before this change No. 1 used "Hi." and No. 2 the alt.
+    s = _with_notes(site, ("Hi.", LONG_ALT), ("Hi.", LONG_ALT))
+    first, second = (s.description(c) for c in s.comics)
+    assert first != second
 
 
 @pytest.mark.parametrize("break_it, message", [

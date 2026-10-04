@@ -178,7 +178,8 @@ def build(out: Path, site_url: str | None = None, content: Path = CONTENT, porta
 
     write(out, urls.ARCHIVE, env.get_template("archive.html").render(page=Page(
         path=urls.ARCHIVE, title=f"Archive - {site.title}", nav="archive",
-        description=f"All {len(site.comics)} Hardly Funny comics, {site.comics[0].published:%B %Y} to {latest.published:%B %Y}.")))
+        description=f"All {len(site.comics)} {site.title} comics, {site.comics[0].published.year} to {latest.published.year}: "
+                    f"an autobiographical webcomic by {site.author} about life with Randall, a programmer, and their chihuahua Scribbles.")))
     write(out, urls.ABOUT, env.get_template("about.html").render(page=Page(
         path=urls.ABOUT, title=f"About - {site.title}", nav="about", jsonld=seo.about_jsonld(site),
         description="Hardly Funny is an autobiographical webcomic by Samantha Degges about life with Randall, a programmer, and their chihuahua Scribbles.")))
