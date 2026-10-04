@@ -116,7 +116,12 @@
       var j = Math.floor(Math.random() * (i + 1)), tmp = pool[i]; pool[i] = pool[j]; pool[j] = tmp;
     }
     Array.prototype.forEach.call(document.querySelectorAll("#lost-picks [data-default-pick]"), function (li) { li.hidden = true; });
-    pool.slice(0, 3).forEach(function (li) { li.hidden = false; });
+    pool.slice(0, 3).forEach(function (li) {
+      li.hidden = false;
+      // The pool's thumbnails are lazy so a 404 doesn't fetch all of them; the three shown sit near the top.
+      // skip Randall mode, where .shelf img is display:none.
+      Array.prototype.forEach.call(li.querySelectorAll("img"), function (img) { if (getComputedStyle(img).display !== "none") img.loading = "eager"; });
+    });
   }
 
   // ---- Sharing -------------------------------------------------------------
