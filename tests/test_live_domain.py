@@ -52,3 +52,19 @@ def test_http_www_reaches_the_naked_https_url_in_two_hops_at_most():
 
 def test_http_goes_to_https():
     assert head(f"http://{HOST}/x") == (301, f"https://{HOST}/x")
+
+
+WORKERS_DEV = "https://hardlyfunny.randall-degges.workers.dev/"
+
+
+def test_workers_dev_does_not_serve_a_second_copy_of_the_site():
+    parts = urlsplit(WORKERS_DEV)
+    conn = http.client.HTTPSConnection(parts.hostname, timeout=10)
+    try:
+        conn.request("GET", parts.path, headers=HEADERS)
+        res = conn.getresponse()
+        body = res.read()
+    finally:
+        conn.close()
+    assert res.status == 404, WORKERS_DEV
+    assert b"Hardly Funny" not in body, "workers.dev serves a site page"

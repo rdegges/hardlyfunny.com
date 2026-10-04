@@ -10,7 +10,7 @@ HARDLYFUNNY_RUNTIME_URL is set:
     python -m hardlyfunny build
     npx cf dev                                   # in a Node container, serves _site on :8787
     HARDLYFUNNY_RUNTIME_URL=http://localhost:8787 python -m pytest tests/test_cloudflare_runtime.py
-    HARDLYFUNNY_RUNTIME_URL=https://<worker>.workers.dev python -m pytest tests/test_cloudflare_runtime.py
+    HARDLYFUNNY_RUNTIME_URL=https://hardlyfunny.com python -m pytest tests/test_cloudflare_runtime.py
 
 The server must serve a build of the same checkout the tests run from.
 """
