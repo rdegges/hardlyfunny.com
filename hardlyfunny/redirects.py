@@ -101,6 +101,10 @@ def build(site: Site, wordpress_urls: Path) -> list[Redirect]:
         *_both("/feed/atom", urls.FEED),
         *_both("/feed/rss2", urls.FEED),
         *_both("/comments/feed", urls.FEED),
+        *_both("/feed/rss", urls.FEED),
+        *_both("/feed/rdf", urls.FEED),
+        *_both("/comments/feed/atom", urls.FEED),
+        *_both("/comments/feed/rss2", urls.FEED),
         *_both("/category/posts", urls.ARCHIVE),
         *_both("/author/samanthadegges", urls.ABOUT),
         # Found in the Wayback Machine's captures of the old site, not in the export.

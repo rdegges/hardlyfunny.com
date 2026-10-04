@@ -17,8 +17,8 @@ def rules(built):
 
 
 def splat_matches(source, path):
-    """A trailing /* matches anything below the prefix, and the prefix itself with or without the slash."""
-    return path.startswith(source[:-1]) or path == source[:-2]
+    """A trailing /* matches anything below the prefix, but not the bare prefix itself (`/tag/*` does not match `/tag`; cf dev and the production edge both return 404)."""
+    return path.startswith(source[:-1])
 
 
 def follow(built, path):
@@ -106,7 +106,8 @@ def old_urls(site):
     for tag in {t for c in site.comics for t in c.tags}:
         for suffix in ("", "page/2/", "feed/"):
             out[f"/tag/{wordpress_slug(tag)}/{suffix}"] = urls.ARCHIVE
-    for path in ("/feed/", "/feed/atom/", "/feed/rss2/", "/comments/feed/"):
+    for path in ("/feed/", "/feed/atom/", "/feed/rss2/", "/feed/rss/", "/feed/rdf/", "/comments/feed/",
+                 "/comments/feed/atom/", "/comments/feed/rss2/"):
         both(path, urls.FEED)
     both("/category/posts/", urls.ARCHIVE)
     both("/category/posts/page/2/", urls.ARCHIVE)
