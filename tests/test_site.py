@@ -154,6 +154,39 @@ def test_cloudflare_headers_file_is_published(built):
     assert "/fonts/*" in headers and "immutable" in headers
 
 
+def header_rules(text):
+    """`_headers` as {path: {lower-cased name: value}}, read the way Cloudflare's parser reads it:
+    each line trimmed, `#` lines skipped (indented ones too), a line starting with `/` opens a rule.
+    Any other line without a colon is one Cloudflare would drop, so it fails here."""
+    rules, path = {}, None
+    for number, line in enumerate(text.splitlines(), 1):
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+        if line.startswith("/"):
+            path = line
+            assert path not in rules, f"line {number}: {path} is listed twice"
+            rules[path] = {}
+            continue
+        name, colon, value = line.partition(":")
+        assert path and colon, f"line {number}: Cloudflare would ignore {line!r}"
+        rules[path][name.strip().lower()] = value.strip()
+    return rules
+
+
+def test_hsts_is_sent_on_every_path_and_nowhere_else(built):
+    # The runtime tests check the header on the wire, but CI skips them; this is the CI check.
+    # HSTS belongs on `/*` so pages, 404s and assets all carry it, at the strength WordPress.com
+    # used. includeSubDomains or preload would bind subdomains (and, for preload, browsers' lists)
+    # in ways that are slow to undo, so either one appearing here must be a deliberate change.
+    rules = header_rules((built / "_headers").read_text())
+    assert rules["/*"]["strict-transport-security"] == "max-age=31536000"
+    assert [p for p, h in rules.items() if "strict-transport-security" in h] == ["/*"]
+    # Every other `/*` header survived the comment line added inside that rule.
+    assert set(rules["/*"]) == {"x-content-type-options", "referrer-policy", "x-frame-options",
+                                "permissions-policy", "strict-transport-security"}
+
+
 def test_404_page_offers_scribbles_and_comics_to_try(built, site, parse):
     page = parse(built / "404.html")
     dog = [i for i in page.all("img") if i["src"].endswith("scribbles.png") and i.get("alt")]
