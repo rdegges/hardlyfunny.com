@@ -25,7 +25,7 @@ python -m pytest                   # checks content, SEO tags, accessibility bas
   - Colors meet WCAG AA contrast in both modes.
   - The shortcuts can be turned off, and the site respects `prefers-reduced-motion`.
   - An axe-core audit of WCAG 2.2 AA found no violations in either mode, and Lighthouse scores 100 for accessibility, best practices and SEO.
-- **Privacy and speed**: fonts are self-hosted (`hardlyfunny/static/fonts/`, SIL Open Font License), so pages make no third-party requests and no analytics or trackers run.
+- **Privacy and speed**: fonts are self-hosted (`hardlyfunny/static/fonts/`, SIL Open Font License), so the only third-party request is Cloudflare Web Analytics (cookieless). No other analytics or trackers run.
 - **Samantha / Randall mode**: Randall mode is the dark theme and follows the OS until you pick. Its jokey labels live in `data-r` attributes and are swapped in by JavaScript. The HTML itself only ever contains the plain words, so nothing is duplicated for search engines, and screen readers still hear the plain meaning.
 
 ## Layout
@@ -61,9 +61,29 @@ The site runs on Cloudflare as a Worker with static assets and no Worker code. T
 
 - On a push to `main`, the job builds `_site` and runs `npx cf deploy`. It starts only after the `test` job in the same run passes.
 - On a pull request, the job runs `npx cf deploy --dry-run`. This run uses no credentials and publishes nothing.
+- After a deploy to `main`, the `verify` job runs `tests/test_cloudflare_runtime.py` and `tests/test_live_domain.py` against `https://hardlyfunny.com`. It fails unless the tests ran, so a red `verify` means the live site does not match the build.
 
 Two repository secrets give the job access: `CLOUDFLARE_API_TOKEN` (an account token with only Workers Scripts Write) and `CLOUDFLARE_ACCOUNT_ID`.
 
 `wrangler.config.ts` sets `_site` as the assets directory. `cloudflare.config.ts` names the Worker `hardlyfunny` and makes Cloudflare serve `404.html` for missing pages. The build writes `_headers` (security and cache headers) and `_redirects` (old WordPress URLs) into `_site/`. Cloudflare reads both files as rules and does not serve them as pages.
 
+Cloudflare injects it by default until you choose otherwise in the zone's Speed → Real user monitoring page (Enable Globally, Exclude EU, or Disable completely).
+
 To run the site locally on the Cloudflare runtime, build it first. Then run `npm ci && npx cf dev` in a Node container.
+
+## Domains
+
+- **`hardlyfunny.com`** is a custom domain on the `hardlyfunny` Worker, set by `domains` in `cloudflare.config.ts`. Cloudflare manages its DNS record (a proxied `AAAA 100::`). Every deploy re-asserts the domain. Removing the `domains` line does not detach it; only the dashboard does (Workers & Pages → `hardlyfunny` → Settings → Domains & Routes).
+- **`www.hardlyfunny.com`** 301s to `https://hardlyfunny.com` with the same path and query. A zone Single Redirect rule does this (Rules → Redirect Rules), on a proxied `AAAA www 100::` record. The rule matches `http.host eq "www.hardlyfunny.com"`, redirects dynamically to `concat("https://hardlyfunny.com", http.request.uri.path)` with status 301, and keeps the query string. `_redirects` cannot match on the host name.
+- **The deploy token needs no zone access.** In the rehearsal, Cloudflare refused to attach the domain over hand-made A records (code 100117) with every token scope tried, and after the records were deleted a Workers Scripts Write token was enough. `cf` asks Cloudflare to override existing DNS records when it is not run in a terminal, as in CI, so in a rollback the `domains` removal (step 1) must deploy before the A records come back.
+- **Zone settings the site depends on:** Always Use HTTPS on, Bot Fight Mode off, managed robots.txt off, security level medium, Browser Cache TTL "Respect Existing Headers", Rocket Loader off, Email Address Obfuscation off, and zone HSTS (SSL/TLS → Edge Certificates) off because `_headers` sets it. Cloudflare Web Analytics is on and adds one beacon script to each HTML page. The runtime tests allow exactly that one tag.
+
+### Rollback to WordPress.com
+
+Use this only while the WordPress.com site still exists.
+
+1. In one commit on `main`, remove the `domains` line from `cloudflare.config.ts` and the `domains` assertion (the `domains = re.search(...)` line and the assert after it) from `tests/test_deploy_config.py`. Do not `git revert` the cutover commit. Wait for that commit's CI deploy to finish before step 3. Otherwise a later deploy attaches the domain again.
+2. In the dashboard, detach `hardlyfunny.com` from the `hardlyfunny` Worker.
+3. Create two DNS-only A records for `hardlyfunny.com`: `192.0.78.24` and `192.0.78.25`.
+
+After a rollback, `verify` stays red until the Worker serves the domain again. Rerunning it does not fix anything.

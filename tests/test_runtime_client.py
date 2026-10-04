@@ -217,3 +217,125 @@ def test_assert_all_land_stops_once_the_runtime_stops_answering(serve, monkeypat
     with pytest.raises(TimeoutError):
         rt.assert_all_land([(f"/from/{i}", f"/to/{i}") for i in range(200)])
     assert len(calls) < 100, f"{len(calls)} requests sent after the runtime stopped answering"
+
+
+# The beacon Cloudflare Web Analytics injected on the rehearsal domain (2026-10-04).
+BEACON_TAG = (b'<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495" '
+              b'integrity="sha512-x" data-cf-beacon=\'{"version":"2024.11.0","token":"t","r":1,"spa":2}\' crossorigin="anonymous"></script>\n')
+PAGE = b'<!doctype html>\n<p>hi</p>\n<script src="/site.js?v=1" defer></script>\n</body>\n</html>\n'
+HTML = {"content-type": "text/html"}
+
+
+def with_beacon(page, tag=BEACON_TAG):
+    return page.replace(b"</body>", tag + b"</body>")
+
+
+def test_without_beacon_removes_the_one_cloudflare_injects():
+    assert rt.without_beacon(HTML, with_beacon(PAGE)) == PAGE
+
+
+def test_without_beacon_leaves_a_page_without_one_alone():
+    assert rt.without_beacon(HTML, PAGE) == PAGE
+
+
+def test_without_beacon_rejects_two_beacons():
+    with pytest.raises(AssertionError):
+        rt.without_beacon(HTML, with_beacon(with_beacon(PAGE)))
+
+
+def test_without_beacon_keeps_a_beacon_anywhere_but_right_before_body_end():
+    elsewhere = PAGE.replace(b"<p>hi</p>", BEACON_TAG + b"<p>hi</p>")
+    assert rt.without_beacon(HTML, elsewhere) != PAGE
+
+
+def test_without_beacon_rejects_analytics_outside_html():
+    with pytest.raises(AssertionError):
+        rt.without_beacon({"content-type": "application/atom+xml"}, b"<feed>" + BEACON_TAG + b"</feed>")
+    assert rt.without_beacon({"content-type": "text/plain"}, b"User-agent: *\n") == b"User-agent: *\n"
+
+
+def test_without_beacon_strips_it_with_a_charset_and_without_a_trailing_newline():
+    # The edge sends `text/html; charset=utf-8`, and nothing promises the newline after the tag.
+    html = {"content-type": "text/html; charset=utf-8"}
+    assert rt.without_beacon(html, with_beacon(PAGE, BEACON_TAG.rstrip(b"\n"))) == PAGE
+
+
+def test_without_beacon_treats_a_response_without_content_type_as_not_html():
+    with pytest.raises(AssertionError):
+        rt.without_beacon({}, with_beacon(PAGE))
+
+
+@pytest.mark.parametrize("src", [b"https://static.cloudflareinsights.com.evil.example/beacon.min.js",
+                                 b"https://evil.example/static.cloudflareinsights.com/beacon.min.js",
+                                 b"http://static.cloudflareinsights.com/beacon.min.js"])
+def test_without_beacon_keeps_lookalike_scripts(src):
+    tag = b'<script defer src="' + src + b'"></script>\n'
+    assert rt.without_beacon(HTML, with_beacon(PAGE, tag)) != PAGE
+
+
+def test_without_beacon_keeps_a_script_whose_own_src_is_not_the_beacon():
+    # "Strip exactly that": a script loading from anywhere else must still fail the byte compare,
+    # even when another attribute carries the beacon URL.
+    tag = (b'<script src="https://evil.example/x.js" '
+           b'data-src="https://static.cloudflareinsights.com/beacon.min.js"></script>\n')
+    assert rt.without_beacon(HTML, with_beacon(PAGE, tag)) != PAGE
+
+
+def test_every_built_html_page_round_trips_through_the_beacon(built):
+    # Real pages, not a fixture: none may carry the beacon host itself, and each one with the
+    # beacon injected before </body> must come back byte for byte.
+    pages = list(built.rglob("*.html"))
+    assert len(pages) > 80
+    for page in pages:
+        body = page.read_bytes()
+        assert rt.BEACON_HOST not in body, page
+        assert rt.without_beacon(HTML, body) == body, page
+        assert rt.without_beacon(HTML, with_beacon(body)) == body, page
+
+
+def beaconing_edge(built, inject=("text/html",)):
+    """A fake edge serving the build, adding the beacon to each response whose type is in `inject`."""
+    files = {"/feed.xml": ("application/atom+xml; charset=utf-8", "feed.xml"),
+             "/robots.txt": ("text/plain; charset=utf-8", "robots.txt")}
+
+    class Edge(Handler):
+        def do_GET(self):
+            ctype, name = files.get(self.path, ("text/html; charset=utf-8", "404.html"))
+            body = (built / name).read_bytes()
+            if ctype.split(";")[0] in inject:
+                body = with_beacon(body) if b"</body>" in body else body + BEACON_TAG
+            status = 200 if self.path in files else 404
+            self.reply(status, body, {"Content-Type": ctype, **{k.title(): v for k, v in rt.SECURITY_HEADERS.items()}})
+
+    return Edge
+
+
+def test_runtime_byte_checks_pass_against_an_edge_that_adds_the_beacon_to_html(serve, built):
+    # The wiring, not just the helper: the real test functions, over HTTP, with the header
+    # names lower-cased the way `get` returns them.
+    serve(beaconing_edge(built))
+    rt.test_runtime_serves_the_same_build(built)
+    rt.test_robots_txt_is_the_one_the_build_writes(built)
+    rt.test_missing_and_config_paths_get_the_site_404(built, "/nope/")
+    rt.test_paths_wordpress_never_served_get_the_site_404(built, "/wp-login.php")
+
+
+@pytest.mark.parametrize("ctype, check", [
+    ("application/atom+xml", lambda built: rt.test_runtime_serves_the_same_build(built)),
+    ("text/plain", lambda built: rt.test_robots_txt_is_the_one_the_build_writes(built)),
+], ids=["feed", "robots"])
+def test_runtime_byte_checks_fail_when_the_edge_adds_the_beacon_outside_html(serve, built, ctype, check):
+    serve(beaconing_edge(built, inject=("text/html", ctype)))
+    with pytest.raises(AssertionError):
+        check(built)
+
+
+def test_runtime_404_check_fails_when_the_edge_changes_more_than_the_beacon(serve, built):
+    class Rewriting(beaconing_edge(built)):
+        def reply(self, status, body, headers=()):
+            # e.g. Rocket Loader or email obfuscation rewriting the page besides the beacon
+            super().reply(status, body.replace(b"<script src=", b'<script type="text/rocketscript" src='), headers)
+
+    serve(Rewriting)
+    with pytest.raises(AssertionError):
+        rt.test_missing_and_config_paths_get_the_site_404(built, "/nope/")
