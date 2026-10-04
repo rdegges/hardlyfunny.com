@@ -75,16 +75,20 @@ def _dump(data: dict) -> str:
 
 
 def sitemap(site: Site) -> str:
-    rows = [(urls.HOME, site.latest.published), (urls.ARCHIVE, site.latest.published), (urls.ABOUT, None)]
-    rows += [(urls.comic(c), c.published) for c in site.comics]
+    # Image entries go on comic pages only, so each image is listed once, under its permalink.
+    rows = [(urls.HOME, site.latest.published, ()), (urls.ARCHIVE, site.latest.published, ()), (urls.ABOUT, None, ())]
+    rows += [(urls.comic(c), c.published, c.images) for c in site.comics]
     body = "".join(
         f"  <url><loc>{xml_escape(urls.absolute(site.url, path))}</loc>"
         + (f"<lastmod>{when.isoformat()}</lastmod>" if when else "")
+        + "".join(f"<image:image><image:loc>{xml_escape(urls.absolute(site.url, urls.comic_image(img)))}"
+                  "</image:loc></image:image>" for img in images)
         + "</url>\n"
-        for path, when in rows
+        for path, when, images in rows
     )
     return ('<?xml version="1.0" encoding="utf-8"?>\n'
-            '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' + body + "</urlset>\n")
+            '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"'
+            ' xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">\n' + body + "</urlset>\n")
 
 
 def robots(site: Site) -> str:
