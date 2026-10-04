@@ -119,7 +119,8 @@
     pool.slice(0, 3).forEach(function (li) {
       li.hidden = false;
       // The pool's thumbnails are lazy so a 404 doesn't fetch all of them; the three shown sit near the top.
-      Array.prototype.forEach.call(li.querySelectorAll("img"), function (img) { img.loading = "eager"; });
+      // skip Randall mode, where .shelf img is display:none.
+      Array.prototype.forEach.call(li.querySelectorAll("img"), function (img) { if (getComputedStyle(img).display !== "none") img.loading = "eager"; });
     });
   }
 
