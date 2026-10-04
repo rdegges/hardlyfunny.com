@@ -182,8 +182,16 @@ def test_cache_and_content_type_rules_apply(built):
         assert (status, headers.get("cache-control")) == (200, cache), path
     status, headers, _ = get("/")
     assert "immutable" not in headers.get("cache-control", ""), "HTML must not be cached forever"
+    # Exact value measured on workers.dev; a zone setting like Browser Cache TTL could change it on the domain.
+    assert headers.get("cache-control") == "public, max-age=0, must-revalidate"
     status, headers, _ = get(urls.FEED)
     assert headers["content-type"] == "application/atom+xml; charset=utf-8"
+
+
+def test_robots_txt_is_the_one_the_build_writes(built):
+    # A zone's managed robots.txt would replace ours on the custom domain.
+    status, _, body = get("/robots.txt")
+    assert (status, body) == (200, (built / "robots.txt").read_bytes())
 
 
 def test_build_marker_is_not_published():
