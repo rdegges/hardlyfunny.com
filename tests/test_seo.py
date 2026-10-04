@@ -3,6 +3,7 @@ import json
 from xml.etree import ElementTree as ET
 
 from hardlyfunny import seo
+from hardlyfunny.content import Person
 
 
 def node(block, type_):
@@ -39,6 +40,45 @@ def test_breadcrumbs_lead_home_then_archive_then_the_comic(site):
     assert [c["position"] for c in crumbs] == [1, 2, 3]
     assert [c["item"] for c in crumbs] == [f"{site.url}/", f"{site.url}/archive/", f"{site.url}/comics/{twin.slug}/"]
     assert [c["name"] for c in crumbs] == ["Home", "Archive", f"{twin.title} (No. {twin.number})"]
+
+
+
+def graphs(site):
+    """Every JSON-LD graph the build emits, by page."""
+    return {"home": seo.home_jsonld(site), "about": seo.about_jsonld(site), "comic": seo.comic_jsonld(site, site.comics[0])}
+
+
+def test_each_page_graph_has_its_own_nodes_plus_both_people(site):
+    # The self-contained check in test_site only fails when a reference dangles, so a page that
+    # quietly drops a node nothing points at (the series on the home page) needs this list.
+    types = {page: sorted(n["@type"] for n in json.loads(block)["@graph"]) for page, block in graphs(site).items()}
+    assert types == {
+        "home": ["ComicSeries", "Person", "Person", "WebSite"],
+        "about": ["AboutPage", "ComicSeries", "Person", "Person"],
+        "comic": ["BreadcrumbList", "ComicStory", "Person", "Person"],
+    }
+    assert node(graphs(site)["about"], "AboutPage")["name"] == f"About {site.title}"
+
+
+def test_person_ids_follow_the_site_url_but_randalls_link_does_not(site):
+    moved = dataclasses.replace(site, url="https://example.test")
+    for page, block in graphs(moved).items():
+        people = {n["@id"]: n for n in json.loads(block)["@graph"] if n["@type"] == "Person"}
+        assert set(people) == {"https://example.test/about/#samantha", "https://example.test/about/#randall"}, page
+        assert people["https://example.test/about/#samantha"]["url"] == "https://example.test/about/", page
+        assert people["https://example.test/about/#randall"]["url"] == site.randall.url, page
+        assert "hardlyfunny.com" not in block, page
+
+
+def test_people_and_about_page_cannot_break_out_of_their_script_element(site):
+    nasty = dataclasses.replace(site, title="</script><!--", author="Sam & <i>Co</i>",
+                                randall=Person(name="Rándall 😀 </script>", url="https://rdegges.com/?a=1&b=<2>"))
+    for page, block in graphs(nasty).items():
+        assert "<" not in block and ">" not in block and "&" not in block, page
+        people = {n["@id"].rsplit("#", 1)[1]: n for n in json.loads(block)["@graph"] if n["@type"] == "Person"}
+        assert people["samantha"]["name"] == "Sam & <i>Co</i>", page
+        assert (people["randall"]["name"], people["randall"]["url"]) == ("Rándall 😀 </script>", "https://rdegges.com/?a=1&b=<2>"), page
+    assert node(graphs(nasty)["about"], "AboutPage")["name"] == "About </script><!--"
 
 
 def test_robots_sitemap_follows_the_site_url(site):
