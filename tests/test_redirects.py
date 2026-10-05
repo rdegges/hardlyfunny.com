@@ -2,11 +2,13 @@
 
 import json
 import re
+from collections import Counter
 
 import pytest
 
 from hardlyfunny import redirects, urls
 from hardlyfunny.build import ROOT
+from hardlyfunny.content import Topic
 
 OLD = json.loads((ROOT / "archive" / "wordpress_urls.json").read_text(encoding="utf-8"))["comics"]
 ARCHIVED = json.loads((ROOT / "archive" / "comics.json").read_text(encoding="utf-8"))["comics"]
@@ -70,11 +72,6 @@ VARIANTS = {
 }
 
 
-def wordpress_slug(name):
-    """How WordPress turned a tag name into its URL slug."""
-    return re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
-
-
 def old_urls(site):
     """Every old WordPress URL we know of, with where it must land. Built from the data, not from `_redirects`."""
     out = {}
@@ -104,10 +101,24 @@ def old_urls(site):
         if len(rest) == 2:
             both(f"/{y}/{rest[0]}/{int(rest[1])}/", urls.ARCHIVE)
             both(f"/{y}/{int(rest[0])}/{rest[1]}/", urls.ARCHIVE)
-    # The tags live on in the WordPress export only; content/ has curated topics instead.
-    for tag in {t for c in ARCHIVED for t in c["tags"]}:
-        for suffix in ("", "page/2/", "feed/"):
-            out[f"/tag/{wordpress_slug(tag)}/{suffix}"] = urls.ARCHIVE
+    # The tags live on in the WordPress export only. A tag a topic took over goes to that topic's page,
+    # with its feed and one page per tagged post; every other tag goes to the archive.
+    topic_of = {name: urls.topic(t) for t in site.topics for name in t.wordpress_tags}
+    posts = Counter(t.casefold() for c in ARCHIVED for t in c["tags"])
+    tags = {t for c in ARCHIVED for t in c["tags"]}
+    assert topic_of and set(topic_of) < {t.casefold() for t in tags}, "the tag checks would cover only one side"
+    for tag in tags:
+        base = f"/tag/{redirects.wordpress_slug(tag)}/"
+        dest = topic_of.get(tag.casefold())
+        if dest:
+            both(base, dest)
+            both(base + "feed/", dest)
+            out[base + "feed/atom/"] = out[base + "feed/rss2/"] = dest
+            for n in range(1, posts[tag.casefold()] + 1):
+                both(f"{base}page/{n}/", dest)
+        else:
+            for suffix in ("", "page/2/", "feed/"):
+                both(base + suffix, urls.ARCHIVE)
     # /feed/ itself is the feed again; /feed reaches it through Cloudflare's trailing-slash handling.
     for path in ("/feed/atom/", "/feed/rss2/", "/feed/rss/", "/feed/rdf/", "/comments/feed/",
                  "/comments/feed/atom/", "/comments/feed/rss2/"):
@@ -197,6 +208,99 @@ def test_old_image_hotlinks_land_on_the_same_artwork(built, site):
 def test_feeds_and_listing_pages(built, old, new):
     assert follow(built, old) == (new, 301)
     assert exists(built, new)
+
+
+# Every tag URL the old site had a post under, from WordPress.com's public API
+# (public-api.wordpress.com/rest/v1.1/sites/hardlyfunny.com/tags, fetched 2026-10-05). The export
+# kept only tag names, so this is what proves `wordpress_slug` rebuilds the real URLs.
+WORDPRESS_TAG_SLUGS = {
+    "antisocial", "api", "back-to-the-future", "beard", "caffeine", "chihuahua", "cloudsharing", "code",
+    "computer", "couples", "date-night", "defcon", "django", "first-world-problems", "gaming", "github",
+    "hacker", "hardware", "heroku", "hexadecimal", "home-life", "husband", "irc", "isp", "logic",
+    "married-life", "memcache", "nerd", "nerd-alert", "non-technical", "number-generator", "office",
+    "operating-system", "parking", "political", "priority", "programming", "randall", "random", "reddit",
+    "religion", "samantha", "says", "scribbles-the-chihuahua", "servers", "tech-support", "technical",
+    "telephony", "the-first-comic", "the-heroku-hackers-guide", "things-randall-says", "troubleshooting",
+    "unix", "web-design", "windows", "working-from-home",
+}
+
+# Written out rather than derived, so a mistake shared by the generator and `old_urls` still fails.
+# tests/test_cloudflare_runtime.py sends the same requests to a running server.
+TAG_EXAMPLES = [
+    ("/tag/gaming/", "/topics/gaming/"),
+    ("/tag/working-from-home", "/topics/working-from-home/"),
+    ("/tag/the-heroku-hackers-guide/feed/", "/topics/non-techie-wife/"),
+    ("/tag/religion/feed/atom/", "/topics/holidays/"),
+    ("/tag/code/page/3/", "/topics/working-from-home/"),
+    ("/tag/web-design/", "/topics/dating-and-marriage/"),
+    ("/tag/things-randall-says/", "/archive/"),
+    ("/tag/home-life/page/2/", "/archive/"),
+    ("/tag/married-life/feed/", "/archive/"),
+    ("/tag/code/page/4/", "/archive/"),  # past the tag's last page: the catch-all
+    ("/tag/1337/", "/archive/"),  # a tag the old site had with no posts
+]
+
+
+def test_wordpress_slug_rebuilds_every_old_tag_url():
+    names = {t for c in ARCHIVED for t in c["tags"]}
+    assert len(names) == len(WORDPRESS_TAG_SLUGS)
+    assert {redirects.wordpress_slug(n) for n in names} == WORDPRESS_TAG_SLUGS
+
+
+@pytest.mark.parametrize("old, new", TAG_EXAMPLES)
+def test_old_tag_urls_land_on_their_topic_or_the_archive(built, old, new):
+    assert follow(built, old) == (new, 301)
+    assert exists(built, new)
+
+
+def test_every_old_tag_lands_on_its_topic_or_the_archive(built, site):
+    topic_of = {name: urls.topic(t) for t in site.topics for name in t.wordpress_tags}
+    posts = Counter(t.casefold() for c in ARCHIVED for t in c["tags"])
+    landed = Counter()
+    for tag in {t for c in ARCHIVED for t in c["tags"]}:
+        base = f"/tag/{redirects.wordpress_slug(tag)}/"
+        dest = topic_of.get(tag.casefold(), urls.ARCHIVE)
+        last = posts[tag.casefold()]
+        for path in (base, base.rstrip("/"), base + "feed/", f"{base}page/{last}/"):
+            assert follow(built, path) == (dest, 301), path
+        assert exists(built, dest), dest
+        assert follow(built, f"{base}page/{last + 1}/") == (urls.ARCHIVE, 301), base
+        landed["topic" if dest != urls.ARCHIVE else "archive"] += 1
+    assert landed["topic"] == len(topic_of) > 0 and landed["archive"] > 0, landed
+
+
+def test_only_tags_a_topic_took_over_get_their_own_rules(built, site):
+    expected = {redirects.wordpress_slug(n): urls.topic(t) for t in site.topics for n in t.wordpress_tags}
+    got = {}
+    for source, dest, _ in rules(built):
+        if source.startswith("/tag/") and "*" not in source:
+            assert got.setdefault(source.split("/")[2], dest) == dest, source
+    assert got and got == expected
+
+
+def _topic_with_tags(*names):
+    return Topic(slug="t", title="T", intro_html="<p>An intro.</p>", wordpress_tags=names)
+
+
+def test_tag_listings_cover_the_listing_its_feeds_and_one_page_per_post():
+    rs = redirects._tag_listings((_topic_with_tags("back to the future"),),
+                                 (("Back to the Future",), ("Back to the Future", "other")))
+    base = "/tag/back-to-the-future"
+    assert {r.source for r in rs} == {
+        f"{base}/", base, f"{base}/feed/", f"{base}/feed", f"{base}/feed/atom/", f"{base}/feed/rss2/",
+        f"{base}/page/1/", f"{base}/page/1", f"{base}/page/2/", f"{base}/page/2",
+    }
+    assert len(rs) == 10 and {r.destination for r in rs} == {"/topics/t/"} and not any(r.dynamic for r in rs)
+
+
+@pytest.mark.parametrize("post, listed", [
+    (("Web Design", "web-design"), "web design"),  # two tags, one URL: one of them really had another slug
+    (("gaming",), "games"),                        # not a tag of the old site
+    (("???",), "???"),                             # no slug at all
+])
+def test_tag_listings_refuse_a_tag_without_exactly_one_old_url(post, listed):
+    with pytest.raises(ValueError, match="exactly one old /tag/ URL"):
+        redirects._tag_listings((_topic_with_tags(listed),), (post,))
 
 
 def test_no_rule_shadows_a_real_page(built):

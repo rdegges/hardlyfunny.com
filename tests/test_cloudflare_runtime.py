@@ -25,7 +25,7 @@ from urllib.parse import urlsplit
 import pytest
 
 from hardlyfunny import urls
-from tests.test_redirects import OLD, VARIANTS, follow, old_urls, rules
+from tests.test_redirects import OLD, TAG_EXAMPLES, VARIANTS, follow, old_urls, rules
 
 BASE = os.environ.get("HARDLYFUNNY_RUNTIME_URL")
 pytestmark = pytest.mark.skipif(not BASE, reason="set HARDLYFUNNY_RUNTIME_URL to a running `cf dev`")
@@ -164,6 +164,12 @@ def test_every_old_post_url_lands_on_its_comic(built, site, variant):
 
 def test_every_old_url_lands_on_a_real_page(site):
     assert_all_land(list(old_urls(site).items()))
+
+
+@pytest.mark.parametrize("path, dest", TAG_EXAMPLES)
+def test_old_tag_urls_land_on_their_topic_or_the_archive(path, dest):
+    # Exact tag rules sit next to the /tag/* catch-all; only the edge can show which one wins.
+    assert_lands(path, dest)
 
 
 def test_redirects_keep_the_query_string():

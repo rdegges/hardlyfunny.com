@@ -18,42 +18,95 @@
     {
       "slug": "working-from-home",
       "title": "Working From Home",
-      "intro_html": "<p>Randall works from home, so I get a front-row seat to the energy drinks, the anime \"breaks\" and the APIs he watches from the floor. He says it's all part of the process.</p>"
+      "intro_html": "<p>Randall works from home, so I get a front-row seat to the energy drinks, the anime \"breaks\" and the APIs he watches from the floor. He says it's all part of the process.</p>",
+      "wordpress_tags": [
+        "api",
+        "caffeine",
+        "code",
+        "servers",
+        "telephony",
+        "working from home"
+      ]
     },
     {
       "slug": "programmer-logic",
       "title": "Programmer Logic",
-      "intro_html": "<p>Randall's brain runs on logic, so joggers running in place, whole numbers and \"head over heels\" all get a bug report. These are the times his computery mind met real life.</p>"
+      "intro_html": "<p>Randall's brain runs on logic, so joggers running in place, whole numbers and \"head over heels\" all get a bug report. These are the times his computery mind met real life.</p>",
+      "wordpress_tags": [
+        "isp",
+        "logic",
+        "number generator",
+        "random"
+      ]
     },
     {
       "slug": "out-in-public",
       "title": "Out in the Real World",
-      "intro_html": "<p>I don't take Randall out into the real world very often, and these comics are why. Apple stores, haystacks and Doritos have all been a lot for him.</p>"
+      "intro_html": "<p>I don't take Randall out into the real world very often, and these comics are why. Apple stores, haystacks and Doritos have all been a lot for him.</p>",
+      "wordpress_tags": [
+        "back to the future",
+        "first world problems",
+        "hexadecimal",
+        "office",
+        "parking",
+        "priority"
+      ]
     },
     {
       "slug": "dating-and-marriage",
       "title": "Dating and Marriage",
-      "intro_html": "<p>I took a high school networking class just to be near my crush (now husband), and he still writes &lt;3 in my cards. This is what love looks like when your husband wanted a LAN party wedding.</p>"
+      "intro_html": "<p>I took a high school networking class just to be near my crush (now husband), and he still writes &lt;3 in my cards. This is what love looks like when your husband wanted a LAN party wedding.</p>",
+      "wordpress_tags": [
+        "couples",
+        "web design"
+      ]
     },
     {
       "slug": "gaming",
       "title": "Gaming",
-      "intro_html": "<p>I like games. Randall can stop gaming about as well as he can stop drinking caffeine. These are the comics where Steam and Warcraft came between us, and sometimes brought us together.</p>"
+      "intro_html": "<p>I like games. Randall can stop gaming about as well as he can stop drinking caffeine. These are the comics where Steam and Warcraft came between us, and sometimes brought us together.</p>",
+      "wordpress_tags": [
+        "gaming"
+      ]
     },
     {
       "slug": "holidays",
       "title": "Holidays and Birthdays",
-      "intro_html": "<p>I get very excited about holidays. Randall gets excited about random number generators and Raspberry Pis. This is Thanksgiving, Christmas and my birthday at our house.</p>"
+      "intro_html": "<p>I get very excited about holidays. Randall gets excited about random number generators and Raspberry Pis. This is Thanksgiving, Christmas and my birthday at our house.</p>",
+      "wordpress_tags": [
+        "religion"
+      ]
     },
     {
       "slug": "hacker-culture",
       "title": "Hacker Culture",
-      "intro_html": "<p>Black hats, IRC handles, DEFCON and a closet of identical black T-shirts: welcome to my husband's world. I'm still learning the rules, but I know Comic Sans is not allowed.</p>"
+      "intro_html": "<p>Black hats, IRC handles, DEFCON and a closet of identical black T-shirts: welcome to my husband's world. I'm still learning the rules, but I know Comic Sans is not allowed.</p>",
+      "wordpress_tags": [
+        "antisocial",
+        "beard",
+        "defcon",
+        "hacker",
+        "irc",
+        "programming"
+      ]
     },
     {
       "slug": "non-techie-wife",
       "title": "The Non-Techie Wife",
-      "intro_html": "<p>I'm not a programmer, but I married one, so I know what a ping is and I still don't know what memcached is. These are the comics about being the one who asks, \"What does that mean?\"</p>"
+      "intro_html": "<p>I'm not a programmer, but I married one, so I know what a ping is and I still don't know what memcached is. These are the comics about being the one who asks, \"What does that mean?\"</p>",
+      "wordpress_tags": [
+        "computer",
+        "django",
+        "github",
+        "hardware",
+        "memcache",
+        "nerd",
+        "tech support",
+        "the heroku hackers guide",
+        "troubleshooting",
+        "unix",
+        "windows"
+      ]
     }
   ],
   "comics": [

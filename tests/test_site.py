@@ -909,8 +909,14 @@ def test_no_template_or_module_still_reads_tags():
     for path in (package / "templates").glob("*.html"):
         text = path.read_text().replace('class="tags"', "")
         assert not re.search(r"\btags?\b", text), path
+    # The one exception: content.wordpress_tags reads the frozen export, so topics can take over old tag URLs.
+    export_read = 'tuple(c["tags"]) for c in json.loads(path.read_text(encoding="utf-8"))["comics"]'
     for path in package.glob("*.py"):
-        assert not re.search(r'\.tags\b|"tags"', path.read_text()), path
+        text = path.read_text()
+        if path.name == "content.py":
+            assert text.count(export_read) == 1
+            text = text.replace(export_read, "")
+        assert not re.search(r'\.tags\b|"tags"', text), path
 
 
 def test_randall_labels_on_topic_pages_never_wrap_a_link(built):
