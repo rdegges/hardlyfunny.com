@@ -931,3 +931,55 @@ def test_llms_txt_lists_the_topic_pages_and_each_comics_topics(built, site):
         for comic in site.comics:
             [line] = [l for l in lines if l.startswith(f"- [#{comic.number}: ")]
             assert line.endswith(f" Topics: {', '.join(t.title for t in site.topics_of(comic))}."), name
+
+
+def test_sitemap_dates_each_topic_page_by_its_newest_comic(built):
+    ns = "{http://www.sitemaps.org/schemas/sitemap/0.9}"
+    lastmod = {u.find(f"{ns}loc").text: u.find(f"{ns}lastmod").text
+               for u in ET.parse(built / "sitemap.xml").getroot().iter(f"{ns}url") if u.find(f"{ns}lastmod") is not None}
+    assert lastmod[f"{SITE_URL}/topics/"] == max(c["date"] for c in RAW["comics"])
+    for topic in RAW["topics"]:
+        newest = max(c["date"] for c in RAW["comics"] if topic["slug"] in c["topics"])
+        assert lastmod[f"{SITE_URL}/topics/{topic['slug']}/"] == newest, topic["slug"]
+
+
+def test_topic_link_prefix_stays_out_of_the_accessible_name(built):
+    # "#" / "--tag=" is decoration; the empty alt text after "/" keeps screen readers from
+    # announcing it as part of every topic link.
+    css = (built / "site.css").read_text()
+    assert re.search(r'\.tags a::before \{[^}]*content: var\(--tag-prefix\) / "";', css)
+
+
+def test_comics_without_a_note_show_their_topics_outside_the_bubble(built):
+    for comic in RAW["comics"]:
+        html = (built / "comics" / comic["slug"] / "index.html").read_text()
+        [main] = re.findall(r'<main id="main" tabindex="-1">(.*?)</main>', html, re.S)
+        bubble = re.findall(r'<div class="bubble">(.*?)</section>', main, re.S)
+        assert main.count('aria-label="Topics"') == 1, comic["number"]
+        assert bool(bubble) == bool(comic["note_html"]), comic["number"]
+        if bubble:
+            assert 'aria-label="Topics"' in bubble[0], comic["number"]
+
+
+def test_hostile_topic_titles_are_escaped_everywhere_they_render(tmp_path):
+    # Titles are plain text in comics.json; every output must treat them as text.
+    import shutil
+    from hardlyfunny.build import build
+    content = tmp_path / "content"
+    shutil.copytree(CONTENT, content)
+    data = json.loads((content / "comics.json").read_text(encoding="utf-8"))
+    nasty = 'Café <xss>&amp;</xss> "quotes" ☕'
+    data["topics"][0]["title"] = nasty
+    slug = data["topics"][0]["slug"]
+    (content / "comics.json").write_text(json.dumps(data), encoding="utf-8")
+    out = tmp_path / "site"
+    build(out, content=content, portable=True)
+    escaped = "Café &lt;xss&gt;&amp;amp;&lt;/xss&gt; "
+    comic = next(c for c in data["comics"] if slug in c["topics"])
+    for page in (out / "topics" / slug / "index.html", out / "topics" / "index.html",
+                 out / "comics" / comic["slug"] / "index.html"):
+        html = page.read_text()
+        assert "<xss>" not in html and escaped in html, page
+    assert Html((out / "topics" / slug / "index.html").read_text()).headings[0] == ("h1", nasty)
+    categories = ET.parse(out / "feed" / "index.html").getroot().iter("{http://www.w3.org/2005/Atom}category")
+    assert nasty in {c.get("label") for c in categories}

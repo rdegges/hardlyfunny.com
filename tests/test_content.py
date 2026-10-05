@@ -308,3 +308,54 @@ def test_build_refuses_a_comic_added_without_topics(tmp_path):
     (content / "comics.json").write_text(json.dumps(data), encoding="utf-8")
     with pytest.raises(ContentError, match=r"No\. 2 has no topics"):
         load(content / "comics.json")
+
+
+def test_a_comic_listing_a_topic_twice_is_rejected_or_shown_once(site):
+    # Either policy is fine: refuse the hand-editing slip, or collapse it. What must not happen is
+    # the same topic link, feed category and JSON-LD keyword appearing twice for one comic.
+    c = site.comics[1]
+    doubled = dataclasses.replace(c, topics=(c.topics[0], c.topics[0]))
+    comics = (site.comics[0], doubled, *site.comics[2:])
+    try:
+        validate(comics, site.topics)
+    except ContentError:
+        return
+    shown = [t.slug for t in dataclasses.replace(site, comics=comics).topics_of(doubled)]
+    assert shown == [c.topics[0]]
+
+
+@pytest.mark.parametrize("field, blank", [("title", "  "), ("intro_html", "<p> </p>")])
+def test_a_blank_topic_title_or_intro_is_rejected_or_never_reaches_a_page(site, field, blank):
+    # A blank title is an empty h1 and "Comics about  - Hardly Funny"; a blank intro is an empty
+    # meta description. Comics get the same guard for alt text.
+    from hardlyfunny.build import topic_page
+    topics = (dataclasses.replace(site.topics[0], **{field: blank}), *site.topics[1:])
+    try:
+        validate(site.comics, topics)
+    except ContentError:
+        return
+    topic = topics[0]
+    page = topic_page(dataclasses.replace(site, topics=topics), topic)
+    assert topic.title.strip() and page.description.strip(), (field, page.title, page.description)
+
+
+def test_build_refuses_comics_json_without_a_topics_list(tmp_path):
+    # Without the top-level list every comic's topic is unknown; that must stop the build, not
+    # quietly produce a site with no topic pages.
+    content = tmp_path / "content"
+    shutil.copytree(CONTENT, content)
+    data = json.loads((content / "comics.json").read_text(encoding="utf-8"))
+    del data["topics"]
+    (content / "comics.json").write_text(json.dumps(data), encoding="utf-8")
+    with pytest.raises(ContentError, match=r"No\. 1 has topic “out-in-public”, which isn't in the topics list"):
+        load(content / "comics.json")
+
+
+def test_topics_of_follows_the_comics_order_and_comics_about_is_newest_first(site):
+    # Real data lists every comic's topics in topics-list order, so it can't tell the two apart.
+    c = next(c for c in site.comics if len(c.topics) == 2)
+    flipped = dataclasses.replace(c, topics=c.topics[::-1])
+    assert [t.slug for t in site.topics_of(flipped)] == list(flipped.topics)
+    for topic in site.topics:
+        numbers = [c.number for c in site.comics_about(topic)]
+        assert numbers == sorted(numbers, reverse=True) and len(numbers) >= 3, topic.slug

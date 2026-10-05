@@ -210,7 +210,8 @@ def test_no_rule_shadows_a_real_page(built):
 
 
 def test_new_urls_are_not_redirected(built, site):
-    for path in ["/", urls.ARCHIVE, urls.ABOUT, urls.FEED, *(urls.comic(c) for c in site.comics)]:
+    for path in ["/", urls.ARCHIVE, urls.ABOUT, urls.FEED, urls.TOPICS, *(urls.topic(t) for t in site.topics),
+                 *(urls.comic(c) for c in site.comics)]:
         assert follow(built, path) == (None, None), path
 
 
