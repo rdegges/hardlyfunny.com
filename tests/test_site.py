@@ -411,6 +411,17 @@ def test_footer_copyright_links_to_the_license_on_every_page(built, site):
         assert line in footer, path
 
 
+def test_footer_copyright_and_address_line_keep_their_css_hooks(built):
+    # The phone layout fixes live in site.css; renaming the class on either side would drop them silently.
+    css = (built / "site.css").read_text()
+    assert re.search(r"\.site-footer \.copyright \{[^}]*text-wrap: balance", css)
+    assert re.search(r"\.license-alt a \{[^}]*overflow-wrap: anywhere", css)
+    for path in html_pages(built):
+        [footer] = re.findall(r'<footer class="site-footer">(.*?)</footer>', path.read_text(), re.S)
+        assert f'<p class="copyright"><a href="{urls.ABOUT}#license">' in footer, path
+    assert '<p class="license-alt">' in about_license_section((built / urls.output_path(urls.ABOUT)).read_text())
+
+
 def test_copyright_years_follow_the_data(site):
     small = shortened(site, 5, date(2013, 3, 9))
     assert small.copyright == f"© 2012–2013 {site.author}. All rights reserved."
