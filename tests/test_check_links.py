@@ -1,6 +1,7 @@
 """The link checker's rules, without touching the network."""
 
 import importlib.util
+import json
 import socket
 import sys
 import urllib.error
@@ -42,6 +43,13 @@ def test_extracts_every_external_link_from_notes_and_about():
     assert len(links) >= 30
     assert all(l.url.startswith(("http://", "https://")) for l in links)
     assert any("web.archive.org" in l.url for l in links)
+
+
+def test_mailto_links_are_not_fetched(tmp_path):
+    content = tmp_path / "comics.json"
+    about = '<a href="mailto:someone@example.com?subject=Hi">Ask</a> <a href="https://example.com/">Site</a>'
+    content.write_text(json.dumps({"site": {"about_html": about}, "comics": []}), encoding="utf-8")
+    assert [l.url for l in check_links.extract(content)] == ["https://example.com/"]
 
 
 def test_broken_links_fail_the_run(monkeypatch):

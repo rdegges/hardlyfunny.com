@@ -276,6 +276,8 @@ main { padding-block: 16px 40px; }
 .about .body strong { color: var(--accent-ink); }
 .about .body::before { content: var(--note-open); display: block; color: var(--muted); }
 .about .body::after { content: var(--note-close); display: block; color: var(--muted); }
+.license { margin-top: 30px; text-align: center; }
+.license h2 { font: 600 18px/1.2 var(--display); margin: 0 0 8px; }
 .center { text-align: center; }
 
 /* Footer */
