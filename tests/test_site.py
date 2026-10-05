@@ -11,8 +11,9 @@ from xml.etree import ElementTree as ET
 import pytest
 
 from hardlyfunny import seo, share, urls
-from hardlyfunny.build import CONTENT, comic_page, environment
-from hardlyfunny.content import strip_tags
+from hardlyfunny.build import CONTENT, Page, comic_page, environment
+from hardlyfunny.content import License, strip_tags
+from tests.conftest import Page as Html
 
 SITE_URL = "https://hardlyfunny.com"
 
@@ -393,6 +394,19 @@ def test_copyright_years_follow_the_data(site):
     assert small.copyright == f"© 2012–2013 {site.author}. All rights reserved."
     story = json.loads(seo.comic_jsonld(small, small.comics[0]))["@graph"][0]
     assert story["image"][0]["copyrightNotice"] == small.copyright
+
+
+def test_footer_copyright_and_permission_link_escape_hostile_data(site):
+    # Both come from comics.json and are rendered outside the about_html block that is trusted as markup.
+    hostile = dataclasses.replace(site, author="<i>Sam</i> & Co",
+                                  license=License(credit="c", contact='x"onmouseover="alert(1)@example.com'))
+    [footer] = re.findall(r'<footer class="site-footer">(.*?)</footer>', render_home(hostile), re.S)
+    assert "<i>Sam</i>" not in footer
+    assert f'<a href="{urls.ABOUT}#license">\u00a9 2012\u20132014 &lt;i&gt;Sam&lt;/i&gt; &amp; Co. All rights reserved.</a>' in footer
+    about = environment(hostile).get_template("about.html").render(page=Page(path=urls.ABOUT, title="t", description="d"))
+    [link] = [a for a in Html(about).all("a") if a.get("href", "").startswith("mailto:")]
+    assert "onmouseover" not in link
+    assert link["href"].startswith('mailto:x"onmouseover="alert(1)@example.com?subject=')
 
 
 def test_images_have_alt_text_and_dimensions(built, parse):
