@@ -3,14 +3,16 @@
 import dataclasses
 import json
 import re
+from datetime import date
 from urllib import robotparser
 from urllib.parse import urlparse
 from xml.etree import ElementTree as ET
 
 import pytest
 
-from hardlyfunny import urls
-from hardlyfunny.build import CONTENT, comic_page
+from hardlyfunny import seo, share, urls
+from hardlyfunny.build import CONTENT, comic_page, environment
+from hardlyfunny.content import strip_tags
 
 SITE_URL = "https://hardlyfunny.com"
 
@@ -75,6 +77,15 @@ def test_home_page_title_is_the_site_not_the_latest_comic(built, site, parse):
     home = parse(built / "index.html")
     assert home.title.startswith(f"{site.title}: ")
     assert site.latest.title not in home.title and not home.title.endswith(" Comic")
+
+
+def test_home_page_says_the_comic_is_complete(built, site):
+    first, latest = site.comics[0].published, site.latest.published
+    [line] = re.findall(r'<p class="intro">(.*?)</p>', (built / "index.html").read_text(), re.S)
+    assert re.sub(r"<[^>]+>", "", line) == (f"{site.title} ran from {first:%B %Y} to {latest:%B %Y} and is complete. "
+                                            f"Read all {len(site.comics)} comics in the archive.")
+    assert f'<a href="{urls.ARCHIVE}">archive</a>' in line
+    assert 'class="intro"' not in (built / "comics" / site.latest.slug / "index.html").read_text()
 
 
 @pytest.mark.parametrize("key", [
@@ -195,6 +206,57 @@ def test_about_page_describes_the_series_and_its_two_people(built, site):
     assert nodes[SAMANTHA] == {"@type": "Person", "@id": SAMANTHA, "name": site.author, "url": f"{SITE_URL}/about/"}
     assert nodes[randall] == {"@type": "Person", "@id": randall, "name": "Randall Degges", "url": "https://rdegges.com"}
 
+
+def test_about_page_says_the_comic_is_complete_and_links_randall(built):
+    html = (built / urls.output_path(urls.ABOUT)).read_text()
+    # The text itself, not the site nav, which links the archive on every page.
+    [body] = re.findall(r'<div class="body">(.*?)</div>', html, re.S)
+    assert "Hardly Funny is complete.</strong>" in body
+    assert set(re.findall(r'href="([^"]+)"', body)) == {"https://rdegges.com", urls.ARCHIVE}
+    for stale in ("Now, Samantha illustrates", "works from home as a lead developer"):
+        assert stale not in html
+
+
+
+def test_about_page_counts_and_dates_match_the_comics(site):
+    # The About prose states the count and run as plain text; this ties it to the data so a
+    # corrected date or an added comic can't leave the About page contradicting the archive.
+    text = strip_tags(site.about_html)
+    counts = [int(n) for n in re.findall(r"\b(\d+) comics\b", text)]
+    months = re.findall(r"\b(?:January|February|March|April|May|June|July|August|September|October|November|December) \d{4}\b", text)
+    assert counts and set(counts) == {len(site.comics)}, counts
+    assert f"{site.latest.published:%B %Y}" in months, months
+    assert set(months) <= {f"{site.comics[0].published:%B %Y}", f"{site.latest.published:%B %Y}"}, months
+
+
+def render_home(site):
+    latest = site.latest
+    prev, _ = site.neighbours(latest)
+    links = share.links(urls.absolute(site.url, urls.comic(latest)), latest.title, site.title)
+    return environment(site).get_template("comic.html").render(
+        page=comic_page(site, latest, home=True), comic=latest, prev=prev, next=None, share_links=links, home=True)
+
+
+def shortened(site, count, last_date):
+    """The first `count` comics, with the last one re-dated, so the run and count differ from the real data."""
+    comics = (*site.comics[:count - 1], dataclasses.replace(site.comics[count - 1], published=last_date))
+    return dataclasses.replace(site, comics=comics)
+
+
+def test_home_intro_and_llms_txt_follow_the_data_not_frozen_text(site):
+    # The built-site tests compare against the real data, which a hard-coded sentence would also pass.
+    small = shortened(site, 5, date(2013, 3, 9))
+    expected = f"{small.title} ran from January 2012 to March 2013 and is complete."
+    [line] = re.findall(r'<p class="intro">(.*?)</p>', render_home(small), re.S)
+    assert re.sub(r"<[^>]+>", "", line) == f"{expected} Read all 5 comics in the archive."
+    for full in (False, True):
+        assert f"{expected} All 5 comics are listed below; no new comics are planned." in seo.llms_txt(small, full=full).splitlines()
+
+
+def test_home_intro_escapes_the_site_title(site):
+    hostile = dataclasses.replace(site, title='<script>alert(1)</script> & "Co"')
+    [line] = re.findall(r'<p class="intro">(.*?)</p>', render_home(hostile), re.S)
+    assert "<script>" not in line and line.startswith("&lt;script&gt;alert(1)&lt;/script&gt; &amp; ")
 
 # Adding a type or an off-site URL must be a deliberate edit here. The type list only catches typos.
 # Off-site detection covers http(s) and protocol-relative values under any key, plus every value
@@ -347,6 +409,14 @@ def test_sitemap_robots_and_llms_txt(built, site):
     llms = (built / "llms.txt").read_text()
     assert llms.startswith("# Hardly Funny") and llms.count("/comics/") == len(site.comics)
     assert "Transcript:" in (built / "llms-full.txt").read_text()
+
+
+def test_llms_txt_says_the_comic_is_complete(built, site):
+    first, latest = site.comics[0].published, site.latest.published
+    line = (f"{site.title} ran from {first:%B %Y} to {latest:%B %Y} and is complete. "
+            f"All {len(site.comics)} comics are listed below; no new comics are planned.")
+    for name in ("llms.txt", "llms-full.txt"):
+        assert line in (built / name).read_text().splitlines(), name
 
 
 def test_sitemap_lists_each_comic_image_once_on_its_page(built, parse):

@@ -151,6 +151,9 @@ def llms_txt(site: Site, full: bool = False) -> str:
         f"> {site.tagline}. An autobiographical webcomic drawn by {site.author}, "
         f"{len(site.comics)} comics published {site.comics[0].published:%B %Y} to {site.latest.published:%B %Y}.",
         "",
+        f"{site.title} ran from {site.comics[0].published:%B %Y} to {site.latest.published:%B %Y} and is complete. "
+        f"All {len(site.comics)} comics are listed below; no new comics are planned.",
+        "",
         strip_tags(site.about_html),
         "",
         "## Pages",

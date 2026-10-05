@@ -8,6 +8,9 @@
 {% endmacro %}
 {% block main %}
 {% set permalink = urls.comic(comic) %}
+{% if home %}
+<p class="intro">{{ site.title }} ran from {{ site.comics[0].published.strftime("%B %Y") }} to {{ site.latest.published.strftime("%B %Y") }} and is complete. Read all {{ site.comics | length }} comics in the <a href="{{ urls.ARCHIVE }}">archive</a>.</p>
+{% endif %}
 <article class="comic" aria-labelledby="comic-title">
   <header class="comic-head">
     {% if home %}
