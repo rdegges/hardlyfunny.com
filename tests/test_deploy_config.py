@@ -18,6 +18,7 @@ WRANGLER = (ROOT / "wrangler.config.ts").read_text(encoding="utf-8")
 CLOUDFLARE = (ROOT / "cloudflare.config.ts").read_text(encoding="utf-8")
 CI = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
 GITIGNORE = (ROOT / ".gitignore").read_text(encoding="utf-8").split()
+WORKFLOWS = {path.name: path.read_text(encoding="utf-8") for path in sorted((ROOT / ".github" / "workflows").glob("*.yml"))}
 
 
 def job(name):
@@ -83,6 +84,26 @@ def test_verify_checks_the_live_domain_after_each_production_deploy():
     assert "sys.exit(0 if tests > 0 and skipped == 0 else 1)" in verify
     # continue-on-error would turn a red verify green without anyone noticing.
     assert "continue-on-error" not in verify
+
+
+def test_every_workflow_runs_the_python_the_repo_pins():
+    # .python-version is what local tools and Docker runs read; a workflow left on an older
+    # Python passes CI on a version nobody develops against (links.yml has no tests to notice).
+    pinned = (ROOT / ".python-version").read_text(encoding="utf-8").strip()
+    found = {name: re.findall(r'^\s+python-version:\s*"?([^"\s]+)"?\s*$', text, re.M) for name, text in WORKFLOWS.items()}
+    assert found["ci.yml"] and found["links.yml"], found
+    assert {name: set(versions) for name, versions in found.items() if versions} == {
+        name: {pinned} for name, versions in found.items() if versions}
+
+
+def test_each_action_is_pinned_to_one_version_across_workflows():
+    # A bump that misses one `uses:` line leaves that job on the old runtime with no failure to flag it.
+    pins = {}
+    for name, text in WORKFLOWS.items():
+        for action, ref in re.findall(r"^\s*-?\s*uses:\s*([\w./-]+)@(\S+)", text, re.M):
+            pins.setdefault(action, set()).add(ref)
+    assert {"actions/checkout", "actions/setup-python", "actions/setup-node"} <= pins.keys(), pins
+    assert {action: refs for action, refs in pins.items() if len(refs) > 1} == {}
 
 
 def verify_gate():
