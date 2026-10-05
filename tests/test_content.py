@@ -139,6 +139,28 @@ def test_validation_catches_hand_editing_mistakes(site, break_it, message):
         validate(break_it(site.comics))
 
 
+@pytest.mark.parametrize("file", [
+    "comics/two words.png",
+    "comics/Shouting.png",
+    "comics/this&that.png",
+    "comics/no-extension",
+    "comics/animated.gif",
+    "../x.png",
+    "comics/../x.png",
+])
+def test_validation_rejects_image_files_that_are_not_url_safe(site, file):
+    # These names reach <img src>, the image sitemap, JSON-LD and the feed without percent-encoding.
+    second = site.comics[1]
+    broken = dataclasses.replace(second, images=(dataclasses.replace(second.image, file=file),))
+    with pytest.raises(ContentError, match=r"No\. 2 image"):
+        validate((site.comics[0], broken, *site.comics[2:]))
+
+
+def test_every_real_image_file_passes_validation(site):
+    assert {img.file.rsplit(".", 1)[1] for c in site.comics for img in c.images} == {"png", "jpg"}
+    validate(site.comics)
+
+
 def test_archived_links_are_well_formed_wayback_snapshots(site):
     archived = [h for c in site.comics for h in re.findall(r'href="([^"]+)"', c.note_html) if "archive.org" in h]
     assert archived, "dead links in notes are replaced with Internet Archive snapshots"
