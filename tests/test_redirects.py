@@ -303,6 +303,62 @@ def test_tag_listings_refuse_a_tag_without_exactly_one_old_url(post, listed):
         redirects._tag_listings((_topic_with_tags(listed),), (post,))
 
 
+def test_tag_listings_without_topics_or_wordpress_tags_add_no_rules():
+    old = (("gaming",), ("gaming", "code"))
+    assert redirects._tag_listings((), old) == []
+    assert redirects._tag_listings((_topic_with_tags(),), old) == []
+
+
+def test_tag_listings_match_the_export_case_insensitively():
+    # The export spells it "API"; topics list it case-folded, and the URL WordPress gave it is lowercase.
+    rs = redirects._tag_listings((_topic_with_tags("api"),), (("API",),))
+    assert {r.source for r in rs} >= {"/tag/api/", "/tag/api"} and all(r.source.startswith("/tag/api") for r in rs)
+
+
+def test_tag_rules_are_exactly_six_plus_two_per_tagged_post(built, site):
+    # Pins the rule budget: listing, feed and atom/rss2 (6), plus one page per tagged post in both spellings.
+    posts = Counter(t.casefold() for c in ARCHIVED for t in c["tags"])
+    want = sum(6 + 2 * posts[n] for t in site.topics for n in t.wordpress_tags)
+    got = [s for s, _, _ in rules(built) if s.startswith("/tag/") and "*" not in s]
+    assert len(got) == want
+
+
+# Every feed spelling the site-level rules accept for /feed/ (see old_urls), under a tag.
+FEED_SPELLINGS = ["feed/", "feed", "feed/atom/", "feed/atom", "feed/rss2/", "feed/rss2", "feed/rss/", "feed/rdf/"]
+
+
+def test_every_feed_spelling_under_a_mapped_tag_lands_on_a_real_page(built, site):
+    for t in site.topics:
+        for name in t.wordpress_tags:
+            for spelling in FEED_SPELLINGS:
+                path = f"/tag/{redirects.wordpress_slug(name)}/{spelling}"
+                dest, status = follow(built, path)
+                assert status == 301 and exists(built, dest), path
+
+
+@pytest.mark.skip(reason="PROPOSED CONTRACT: today /tag/gaming/feed/atom/ goes to the topic but "
+                         "/tag/gaming/feed/atom, /feed/rss/ and /feed/rdf/ fall to /tag/* and land on /archive/")
+def test_proposed_contract_every_feed_spelling_of_a_tag_lands_in_one_place(built, site):
+    for t in site.topics:
+        for name in t.wordpress_tags:
+            base = f"/tag/{redirects.wordpress_slug(name)}/"
+            assert {follow(built, base + s)[0] for s in FEED_SPELLINGS} == {follow(built, base + "feed/")[0]}, base
+
+
+def test_redirects_file_is_the_same_under_any_hash_seed(tmp_path):
+    # Tags are gathered through sets; a hash-dependent order would reshuffle _redirects on every deploy.
+    import os
+    import subprocess
+    import sys
+
+    code = ("from hardlyfunny import redirects; from hardlyfunny.build import CONTENT, ROOT; "
+            "from hardlyfunny.content import load; "
+            "print(redirects.render(redirects.build(load(CONTENT / 'comics.json'), ROOT / 'archive' / 'wordpress_urls.json')))")
+    outs = {subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, check=True, cwd=ROOT,
+                           env={**os.environ, "PYTHONHASHSEED": seed}).stdout for seed in ("0", "1", "12345")}
+    assert len(outs) == 1 and "/tag/gaming/ /topics/gaming/ 301" in outs.pop()
+
+
 def test_no_rule_shadows_a_real_page(built):
     # Cloudflare applies _redirects even when a file exists at the path.
     for source, _, _ in rules(built):

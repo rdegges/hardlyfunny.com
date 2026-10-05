@@ -304,9 +304,29 @@ def test_topics_take_over_real_wordpress_tags_once_each(site):
     names = [n for t in site.topics for n in t.wordpress_tags]
     old = {t.casefold() for post in wordpress_tags() for t in post}
     assert names and len(names) == len(set(names)) and set(names) < old
-    # The check reads the frozen export, not just whatever the caller passes in.
+    # By default the check reads the frozen export: a real name passes, an invented one does not.
+    validate(site.comics, site.topics)
+    invented = (dataclasses.replace(site.topics[0], wordpress_tags=("video games",)), *site.topics[1:])
+    with pytest.raises(ContentError, match="isn't a tag in archive/comics.json"):
+        validate(site.comics, invented)
+    # A caller's old_tags replaces the export rather than adding to it.
+    validate(site.comics, invented, old_tags=frozenset(old - set(site.topics[0].wordpress_tags) | {"video games"}))
     with pytest.raises(ContentError, match="isn't a tag in archive/comics.json"):
         validate(site.comics, site.topics, old_tags=frozenset())
+
+
+def test_wordpress_tags_given_as_one_string_is_never_split_into_letters(tmp_path):
+    # tuple("api") is ("a", "p", "i"); a hand-edit that drops the brackets must not pass that way.
+    content = tmp_path / "content"
+    shutil.copytree(CONTENT, content)
+    data = json.loads((content / "comics.json").read_text(encoding="utf-8"))
+    data["topics"][0]["wordpress_tags"] = "api"
+    (content / "comics.json").write_text(json.dumps(data), encoding="utf-8")
+    try:
+        topics = load(content / "comics.json").topics
+    except (ContentError, TypeError):
+        return
+    assert topics[0].wordpress_tags == ("api",)
 
 
 def test_build_refuses_a_wordpress_tag_the_old_site_never_had(tmp_path):
