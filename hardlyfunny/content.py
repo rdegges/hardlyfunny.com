@@ -13,6 +13,9 @@ from pathlib import Path
 # Shorter notes are asides ("We love dinosaurs…") that don't say what the comic shows.
 MIN_NOTE_DESCRIPTION = 80
 
+# Slugs and image file names go into URLs unescaped, so both must already be URL-safe.
+SAFE_NAME = r"[a-z0-9]+(-[a-z0-9]+)*"
+
 
 @dataclass(frozen=True)
 class Image:
@@ -149,8 +152,11 @@ def validate(comics: tuple[Comic, ...]) -> None:
         if c.slug in seen:
             raise ContentError(f"Slug “{c.slug}” is used twice. Every comic needs its own.")
         seen.add(c.slug)
-        if not re.fullmatch(r"[a-z0-9]+(-[a-z0-9]+)*", c.slug):
+        if not re.fullmatch(SAFE_NAME, c.slug):
             raise ContentError(f"Slug “{c.slug}” must be lowercase letters, digits and hyphens.")
+        for img in c.images:
+            if not re.fullmatch(rf"comics/{SAFE_NAME}\.(png|jpg)", img.file):
+                raise ContentError(f"No. {c.number} image “{img.file}” must be comics/ then lowercase letters, digits and hyphens, ending .png or .jpg.")
         if not c.images or any(not img.alt.strip() for img in c.images):
             raise ContentError(f"No. {c.number} needs at least one image, and every image needs alt text.")
 
