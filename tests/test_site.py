@@ -4,6 +4,7 @@ import dataclasses
 import json
 import re
 from datetime import date
+from html.parser import HTMLParser
 from urllib import robotparser
 from urllib.parse import unquote, urlparse
 from xml.etree import ElementTree as ET
@@ -420,6 +421,37 @@ def test_footer_copyright_and_address_line_keep_their_css_hooks(built):
         [footer] = re.findall(r'<footer class="site-footer">(.*?)</footer>', path.read_text(), re.S)
         assert f'<p class="copyright"><a href="{urls.ABOUT}#license">' in footer, path
     assert '<p class="license-alt">' in about_license_section((built / urls.output_path(urls.ABOUT)).read_text())
+
+
+class AncestorAttrs(HTMLParser):
+    """Records, for each <a href>, which data-* attributes it or any enclosing element carries."""
+
+    VOID = {"area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "source", "track", "wbr"}
+
+    def __init__(self):
+        super().__init__()
+        self.stack, self.links = [], {}
+
+    def handle_starttag(self, tag, attrs):
+        attrs = dict(attrs)
+        if tag in self.VOID:
+            return
+        self.stack.append((tag, attrs))
+        if tag == "a" and "href" in attrs:
+            self.links.setdefault(attrs["href"], []).append([a for _, el in self.stack for a in el])
+
+    def handle_endtag(self, tag):
+        while self.stack and self.stack.pop()[0] != tag:
+            pass
+
+
+def test_plain_address_link_is_never_inside_a_relabelled_element(built, site):
+    # site.js relabel() empties every [data-r] element's text, so data-r on the link or any ancestor
+    # would silently delete the address in Randall mode.
+    parser = AncestorAttrs()
+    parser.feed((built / urls.output_path(urls.ABOUT)).read_text())
+    [ancestry] = parser.links[f"mailto:{site.license.contact}"]
+    assert "data-r" not in ancestry, ancestry
 
 
 def test_copyright_years_follow_the_data(site):
