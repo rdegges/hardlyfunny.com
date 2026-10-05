@@ -19,10 +19,17 @@ def test_jsonld_cannot_break_out_of_its_script_element(site):
     assert node(block, "ComicStory")["name"] == "</script><!--<script>"
 
 
-def test_keywords_are_omitted_when_a_comic_has_no_tags(site):
-    untagged = dataclasses.replace(site.comics[0], tags=())
+def test_keywords_are_omitted_when_a_comic_has_no_topics(site):
+    untagged = dataclasses.replace(site.comics[0], topics=())
     story = node(seo.comic_jsonld(site, untagged), "ComicStory")
     assert story["name"] == untagged.title and "keywords" not in story
+
+
+def test_keywords_are_the_comics_topic_titles_in_order(site):
+    for comic in site.comics:
+        story = node(seo.comic_jsonld(site, comic), "ComicStory")
+        titles = [next(t.title for t in site.topics if t.slug == slug) for slug in comic.topics]
+        assert story["keywords"] == ", ".join(titles), comic.number
 
 
 def test_comic_story_lists_every_image_and_names_its_publisher(site):
@@ -42,10 +49,31 @@ def test_breadcrumbs_lead_home_then_archive_then_the_comic(site):
     assert [c["name"] for c in crumbs] == ["Home", "Archive", f"{twin.title} (No. {twin.number})"]
 
 
+def test_topic_page_graph_has_its_breadcrumb_trail_and_points_at_the_series(site):
+    topic = site.topics[1]
+    block = seo.topic_jsonld(site, topic, "A description.")
+    page = f"{site.url}/topics/{topic.slug}/"
+    collection = node(block, "CollectionPage")
+    assert (collection["@id"], collection["url"], collection["description"]) == (page, page, "A description.")
+    assert collection["isPartOf"] == {"@id": f"{site.url}/#series"} == {"@id": node(block, "ComicSeries")["@id"]}
+    crumbs = node(block, "BreadcrumbList")["itemListElement"]
+    assert [(c["position"], c["name"], c["item"]) for c in crumbs] == [
+        (1, "Home", f"{site.url}/"), (2, "Topics", f"{site.url}/topics/"), (3, topic.title, page)]
+
+
+def test_topic_jsonld_cannot_break_out_of_its_script_element(site):
+    nasty = dataclasses.replace(site.topics[0], title="</script><!--<b>&</b>")
+    block = seo.topic_jsonld(site, nasty, "We <3 & </script>")
+    assert "<" not in block and ">" not in block and "&" not in block
+    assert node(block, "CollectionPage")["name"] == "Comics about </script><!--<b>&</b>"
+    assert node(block, "CollectionPage")["description"] == "We <3 & </script>"
+
+
 
 def graphs(site):
     """Every JSON-LD graph the build emits, by page."""
-    return {"home": seo.home_jsonld(site), "about": seo.about_jsonld(site), "comic": seo.comic_jsonld(site, site.comics[0])}
+    return {"home": seo.home_jsonld(site), "about": seo.about_jsonld(site), "comic": seo.comic_jsonld(site, site.comics[0]),
+            "topic": seo.topic_jsonld(site, site.topics[0], "A description.")}
 
 
 def test_each_page_graph_has_its_own_nodes_plus_both_people(site):
@@ -56,6 +84,7 @@ def test_each_page_graph_has_its_own_nodes_plus_both_people(site):
         "home": ["ComicSeries", "Person", "Person", "WebSite"],
         "about": ["AboutPage", "ComicSeries", "Person", "Person"],
         "comic": ["BreadcrumbList", "ComicStory", "Person", "Person"],
+        "topic": ["BreadcrumbList", "CollectionPage", "ComicSeries", "Person", "Person"],
     }
     assert node(graphs(site)["about"], "AboutPage")["name"] == f"About {site.title}"
 

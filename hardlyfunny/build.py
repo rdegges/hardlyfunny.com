@@ -12,7 +12,7 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 from markupsafe import Markup
 
 from . import feed, images, redirects, seo, share, urls
-from .content import Comic, Site, load
+from .content import Comic, Site, Topic, load, truncate
 
 ROOT = Path(__file__).resolve().parent.parent
 CONTENT = ROOT / "content"
@@ -90,6 +90,12 @@ def comic_page(site: Site, comic: Comic, *, home: bool = False) -> Page:
         jsonld=seo.comic_jsonld(site, comic),
         published=comic.published.isoformat(),
     )
+
+
+def topic_page(site: Site, topic: Topic) -> Page:
+    description = truncate(topic.intro_text, 160)
+    return Page(path=urls.topic(topic), title=f"Comics about {topic.title} - {site.title}", description=description,
+                jsonld=seo.topic_jsonld(site, topic, description))
 
 
 # Root-relative references in src/href/data-image attributes, e.g. href="/archive/".
@@ -180,6 +186,13 @@ def build(out: Path, site_url: str | None = None, content: Path = CONTENT, porta
         path=urls.ARCHIVE, title=f"Archive - {site.title}", nav="archive",
         description=f"All {len(site.comics)} {site.title} comics, {site.comics[0].published.year} to {latest.published.year}: "
                     f"an autobiographical webcomic by {site.author} about life with Randall, a programmer, and their chihuahua Scribbles.")))
+    topic_tpl = env.get_template("topic.html")
+    for topic in site.topics:
+        write(out, urls.topic(topic), topic_tpl.render(page=topic_page(site, topic), topic=topic, comics=site.comics_about(topic)))
+    write(out, urls.TOPICS, env.get_template("topics.html").render(page=Page(
+        path=urls.TOPICS, title=f"Topics - {site.title}",
+        description=truncate(f"Every {site.title} comic, sorted into {len(site.topics)} topics, "
+                             f"from {site.topics[0].title} to {site.topics[-1].title}.", 160))))
     write(out, urls.ABOUT, env.get_template("about.html").render(page=Page(
         path=urls.ABOUT, title=f"About - {site.title}", nav="about", jsonld=seo.about_jsonld(site),
         description="Hardly Funny is an autobiographical webcomic by Samantha Degges about life with Randall, a programmer, and their chihuahua Scribbles.")))

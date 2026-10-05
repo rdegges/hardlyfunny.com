@@ -48,6 +48,17 @@ def test_license_links_keep_their_fragment(portable):
     assert 'id="license"' in (portable / "about" / "index.html").read_text()
 
 
+def test_topic_links_work_from_disk(portable):
+    # Comic page -> topic page -> topics index -> back to a comic, as relative links.
+    comic = (portable / "comics" / "engineers" / "index.html").read_text()
+    assert 'href="../../topics/out-in-public/index.html"' in comic
+    topic = (portable / "topics" / "out-in-public" / "index.html").read_text()
+    assert 'href="../../topics/index.html"' in topic and 'href="../../comics/engineers/index.html"' in topic
+    index = (portable / "topics" / "index.html").read_text()
+    assert 'href="../topics/out-in-public/index.html"' in index
+    assert 'href="../topics/index.html"' in (portable / "archive" / "index.html").read_text()
+
+
 def test_seo_urls_stay_absolute(portable):
     html = (portable / "comics" / "infinite-recursion" / "index.html").read_text()
     assert '<link rel="canonical" href="https://hardlyfunny.com/comics/infinite-recursion/">' in html

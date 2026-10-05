@@ -67,8 +67,8 @@ def render(site: Site) -> str:
         sub(entry, "published", _timestamp(comic.published))
         sub(entry, "updated", _timestamp(comic.published))
         sub(entry, "summary", comic.alt)
-        for tag in comic.tags:
-            sub(entry, "category", term=tag)
+        for topic in site.topics_of(comic):
+            sub(entry, "category", term=topic.slug, label=topic.title)
         sub(entry, "content", entry_html(site, comic), type="html")
 
     ET.indent(feed)

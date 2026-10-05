@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% from "_comic_card.html" import comic_card %}
+{% block main %}
+<h1 class="page-title" data-r="$ ls ./topics/{{ topic.slug }}">{{ topic.title }}</h1>
+<div class="page-lede topic-intro">{{ topic.intro_html | safe }}</div>
+<p class="page-lede">{{ comics | length }} comics, newest first. See <a href="{{ urls.TOPICS }}">all topics</a>.</p>
+<ol class="shelf">
+  {% for comic in comics %}
+  {{ comic_card(comic, lazy=loop.index > 8) }}
+  {% endfor %}
+</ol>
+{% endblock %}

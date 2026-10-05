@@ -7,7 +7,7 @@ import pytest
 from PIL import Image as PILImage
 
 from hardlyfunny.build import CONTENT
-from hardlyfunny.content import ContentError, slugify, strip_tags, truncate, validate
+from hardlyfunny.content import ContentError, Topic, load, slugify, strip_tags, truncate, validate
 
 
 def test_slugify_makes_readable_ascii_slugs():
@@ -137,7 +137,7 @@ def test_a_redraw_with_a_short_note_and_the_same_alt_still_gets_its_own_descript
 ])
 def test_validation_catches_hand_editing_mistakes(site, break_it, message):
     with pytest.raises(ContentError, match=message):
-        validate(break_it(site.comics))
+        validate(break_it(site.comics), site.topics)
 
 
 @pytest.mark.parametrize("file", [
@@ -178,13 +178,13 @@ def test_validation_rejects_image_files_that_are_not_url_safe(site, file):
     second = site.comics[1]
     broken = dataclasses.replace(second, images=(dataclasses.replace(second.image, file=file),))
     with pytest.raises(ContentError, match=r"No\. 2 image") as excinfo:
-        validate((site.comics[0], broken, *site.comics[2:]))
+        validate((site.comics[0], broken, *site.comics[2:]), site.topics)
     assert file in str(excinfo.value)
 
 
 def test_every_real_image_file_passes_validation(site):
     assert {img.file.rsplit(".", 1)[1] for c in site.comics for img in c.images} == {"png", "jpg"}
-    validate(site.comics)
+    validate(site.comics, site.topics)
 
 
 def test_archived_links_are_well_formed_wayback_snapshots(site):
@@ -199,7 +199,7 @@ def test_validation_accepts_minimal_url_safe_image_files(site, file):
     # Boundaries of the rule: one-character names, digits only, hyphen-joined runs, both extensions.
     second = site.comics[1]
     ok = dataclasses.replace(second, images=(dataclasses.replace(second.image, file=file),))
-    validate((site.comics[0], ok, *site.comics[2:]))
+    validate((site.comics[0], ok, *site.comics[2:]), site.topics)
 
 
 def test_validation_checks_every_image_not_just_the_first(site):
@@ -209,7 +209,7 @@ def test_validation_checks_every_image_not_just_the_first(site):
     assert len(c.images) > 1
     broken = dataclasses.replace(c, images=(c.images[0], dataclasses.replace(c.images[1], file="comics/Panel 2.png")))
     with pytest.raises(ContentError, match=r"No\. 17 image") as excinfo:
-        validate((*site.comics[:i], broken, *site.comics[i + 1:]))
+        validate((*site.comics[:i], broken, *site.comics[i + 1:]), site.topics)
     assert "comics/Panel 2.png" in str(excinfo.value)
 
 
@@ -220,7 +220,7 @@ def test_image_name_check_does_not_mask_the_missing_image_and_alt_text_checks(si
     for broken in (dataclasses.replace(second, images=()),
                    dataclasses.replace(second, images=(dataclasses.replace(second.image, alt="  "),))):
         with pytest.raises(ContentError, match="alt text"):
-            validate((site.comics[0], broken, *site.comics[2:]))
+            validate((site.comics[0], broken, *site.comics[2:]), site.topics)
 
 
 def test_build_refuses_unsafe_image_file_before_touching_the_output(tmp_path):
@@ -241,3 +241,70 @@ def test_build_refuses_unsafe_image_file_before_touching_the_output(tmp_path):
         build(out, content=content)
     assert (out / "index.html").read_text() == "previous build"
     assert not (tmp_path / "escape.png").exists()
+
+
+def _tag_first(cs, n, slug):
+    """The comics with `slug` added to the topics of the first n."""
+    return tuple(dataclasses.replace(c, topics=(*c.topics, slug)) if i < n else c for i, c in enumerate(cs))
+
+
+def _topic(slug):
+    return Topic(slug=slug, title=slug.title(), intro_html="<p>An intro.</p>")
+
+
+@pytest.mark.parametrize("break_it, message", [
+    (lambda cs, ts: ((dataclasses.replace(cs[0], topics=()), *cs[1:]), ts), r"No\. 1 has no topics"),
+    (lambda cs, ts: ((cs[0], dataclasses.replace(cs[1], topics=("gaming", "nope")), *cs[2:]), ts),
+     r"No\. 2 has topic “nope”, which isn't in the topics list"),
+    (lambda cs, ts: (cs, (*ts, _topic("unused"))), r"Topic “unused” has 0 comics\. Every topic needs at least 3"),
+    (lambda cs, ts: (_tag_first(cs, 2, "thin"), (*ts, _topic("thin"))), r"Topic “thin” has 2 comics"),
+    (lambda cs, ts: (cs, (*ts, ts[0])), r"Topic slug “working-from-home” is used twice"),
+])
+def test_validation_catches_topic_mistakes(site, break_it, message):
+    with pytest.raises(ContentError, match=message):
+        validate(*break_it(site.comics, site.topics))
+
+
+@pytest.mark.parametrize("slug", ["Gaming", "two words", "tag/gaming", "x_y", "-x", "x-", "x--y", "", "café"])
+def test_validation_rejects_topic_slugs_that_are_not_url_safe(site, slug):
+    # Topic slugs go into /topics/<slug>/ unescaped, like comic slugs.
+    comics = _tag_first(site.comics, 3, slug)
+    with pytest.raises(ContentError, match=f"Topic slug “{re.escape(slug)}” must be lowercase"):
+        validate(comics, (*site.topics, _topic(slug)))
+
+
+def test_a_topic_with_exactly_three_comics_is_allowed(site):
+    validate(_tag_first(site.comics, 3, "trio"), (*site.topics, _topic("trio")))
+
+
+def test_every_real_comic_has_known_topics_and_every_topic_has_enough_comics(site):
+    slugs = [t.slug for t in site.topics]
+    assert len(slugs) == len(set(slugs)) == 8
+    for c in site.comics:
+        assert c.topics and set(c.topics) <= set(slugs), c.number
+    for t in site.topics:
+        assert len(site.comics_about(t)) >= 3, t.slug
+
+
+def test_comics_json_uses_topics_not_tags():
+    # Tags were replaced by curated topics; a leftover "tags" field would be silently ignored.
+    raw = json.loads((CONTENT / "comics.json").read_text(encoding="utf-8"))
+    assert all("tags" not in c and c["topics"] for c in raw["comics"])
+    assert [t["slug"] for t in raw["topics"]]
+
+
+def test_topic_intro_html_escapes_its_text(site):
+    # The Dating and Marriage intro says "<3": it must reach the page as text, not as a broken tag.
+    [dating] = [t for t in site.topics if t.slug == "dating-and-marriage"]
+    assert "&lt;3" in dating.intro_html and "<3" in dating.intro_text
+
+
+def test_build_refuses_a_comic_added_without_topics(tmp_path):
+    # The loader must not default a missing "topics" field to nothing and carry on.
+    content = tmp_path / "content"
+    shutil.copytree(CONTENT, content)
+    data = json.loads((content / "comics.json").read_text(encoding="utf-8"))
+    data["comics"][1]["tags"] = data["comics"][1].pop("topics")
+    (content / "comics.json").write_text(json.dumps(data), encoding="utf-8")
+    with pytest.raises(ContentError, match=r"No\. 2 has no topics"):
+        load(content / "comics.json")

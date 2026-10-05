@@ -207,8 +207,13 @@ main { padding-block: 16px 40px; }
 .bubble .body a, .about .body a { overflow-wrap: anywhere; }
 .bubble .body p:last-child { margin-bottom: 0; }
 .tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0 0; padding: 0; list-style: none; }
-.tags li { font-size: 13px; padding: 3px 10px; border-radius: var(--r-sm); background: var(--ground); color: var(--muted); }
-.tags li::before { content: var(--tag-prefix); }
+.tags a { display: inline-block; font-size: 13px; padding: 3px 10px; border-radius: var(--r-sm); background: var(--ground); color: var(--accent-ink); text-decoration: none; }
+.tags a:hover { text-decoration: underline; }
+/* The empty alt text keeps the prefix out of the link's accessible name. */
+.tags a::before { content: var(--tag-prefix) / ""; color: var(--muted); }
+/* A comic without a note shows its topics on the page, not in the bubble. */
+.comic > .tags { max-width: 660px; margin: 24px auto 0; justify-content: center; }
+.comic > .tags a { background: var(--surface); }
 
 /* Sharing */
 .share { margin: 30px auto 0; max-width: 660px; text-align: center; }
@@ -259,6 +264,17 @@ main { padding-block: 16px 40px; }
   :root:not([data-mode="samantha"]) .shelf .t { font: 400 13px/1.5 var(--body); color: var(--accent-ink); order: 4; }
   :root:not([data-mode="samantha"]) .shelf .d { font-size: 13px; order: 3; }
 }
+
+/* Topics */
+.topic-intro { max-width: 60ch; margin: 0 auto 8px; }
+.topic-intro p { margin: 0; }
+.topic-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr)); gap: 14px; margin: 0; padding: 0; list-style: none; }
+.topic-list li { background: var(--surface); border-radius: calc(var(--r) * .6); padding: 16px 20px; box-shadow: var(--shadow); }
+.topic-list h2 { font: 600 20px/1.2 var(--display); margin: 0; }
+.topic-list h2 a { text-decoration: none; }
+.topic-list h2 a:hover { text-decoration: underline; }
+.topic-list .count { margin: 2px 0 8px; font-size: 14px; color: var(--muted); }
+.topic-list li > p:last-child { margin: 0; font-size: 15px; }
 
 /* 404 */
 .lost { text-align: center; padding-top: 12px; }

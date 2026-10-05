@@ -14,6 +14,48 @@
     },
     "about_html": "<p><strong>Hardly Funny is an autobiographical webcomic that was created in 2012.</strong></p>\n<p>Randall and Samantha (myself) are opposites who married in 2010 and have since suffered frustrating moments of disagreement that teeter on our different outlooks. Randall is a self-taught hacker who worked from home as a lead developer while I drew these comics, and <em>claims</em> to be nearly perfectly organized, obsessively ambitious, and logical. (His own writing lives at <a href=\"https://rdegges.com\">rdegges.com</a>.) Compared to that, I consider myself traditionally “normal”. I’m also witty and artistic, and back then I kept busy with my creative interests and hobbies: writing spec screenplays, video editing, learning full stack JavaScript, and making lots of vector illustrations.</p>\n<p>The beloved and pampered Scribbles (2003–2014) is our late chihuahua, who often took sides in her mother and fathers disputes when she wasn’t succumbing to sleeping or running around excitedly in small circles.</p>\n<p><strong>About the Making Of:</strong></p>\n<p>Hardly Funny showcases the comical and absurd outcomes of day-to-day situations when living with a programmer. I began documenting the unusual acts and behavior of unusual Randall soon after living together as husband and wife. The idea for the webcomic was born when others simply laughed at our tribulations. It stayed an idea for quite some time until summer 2012. From then until January 2014, I illustrated and posted Hardly Funny while Randall inadvertently came up with the material just by being himself.</p>\n<p><strong>Hardly Funny is complete.</strong> I drew 82 comics, and the last one went up in January 2014. Every one of them is in the <a href=\"/archive/\">archive</a>. No new comics are planned.</p>"
   },
+  "topics": [
+    {
+      "slug": "working-from-home",
+      "title": "Working From Home",
+      "intro_html": "<p>Randall works from home, so I get a front-row seat to the energy drinks, the anime \"breaks\" and the APIs he watches from the floor. He says it's all part of the process.</p>"
+    },
+    {
+      "slug": "programmer-logic",
+      "title": "Programmer Logic",
+      "intro_html": "<p>Randall's brain runs on logic, so joggers running in place, whole numbers and \"head over heels\" all get a bug report. These are the times his computery mind met real life.</p>"
+    },
+    {
+      "slug": "out-in-public",
+      "title": "Out in the Real World",
+      "intro_html": "<p>I don't take Randall out into the real world very often, and these comics are why. Apple stores, haystacks and Doritos have all been a lot for him.</p>"
+    },
+    {
+      "slug": "dating-and-marriage",
+      "title": "Dating and Marriage",
+      "intro_html": "<p>I took a high school networking class just to be near my crush (now husband), and he still writes &lt;3 in my cards. This is what love looks like when your husband wanted a LAN party wedding.</p>"
+    },
+    {
+      "slug": "gaming",
+      "title": "Gaming",
+      "intro_html": "<p>I like games. Randall can stop gaming about as well as he can stop drinking caffeine. These are the comics where Steam and Warcraft came between us, and sometimes brought us together.</p>"
+    },
+    {
+      "slug": "holidays",
+      "title": "Holidays and Birthdays",
+      "intro_html": "<p>I get very excited about holidays. Randall gets excited about random number generators and Raspberry Pis. This is Thanksgiving, Christmas and my birthday at our house.</p>"
+    },
+    {
+      "slug": "hacker-culture",
+      "title": "Hacker Culture",
+      "intro_html": "<p>Black hats, IRC handles, DEFCON and a closet of identical black T-shirts: welcome to my husband's world. I'm still learning the rules, but I know Comic Sans is not allowed.</p>"
+    },
+    {
+      "slug": "non-techie-wife",
+      "title": "The Non-Techie Wife",
+      "intro_html": "<p>I'm not a programmer, but I married one, so I know what a ping is and I still don't know what memcached is. These are the comics about being the one who asks, \"What does that mean?\"</p>"
+    }
+  ],
   "comics": [
     {
       "number": 1,
@@ -33,9 +75,8 @@
         "Samantha: Not again! Why do engineers have to be fascinated with cranes? We’re gonna crash!"
       ],
       "note_html": "<p>A childhood of erector sets produces an easily distracted engineer.</p>",
-      "tags": [
-        "home life",
-        "married life"
+      "topics": [
+        "out-in-public"
       ]
     },
     {
@@ -55,9 +96,8 @@
         "Randall: This is all your fault... You got me sick because YOU talk to REAL people."
       ],
       "note_html": "",
-      "tags": [
-        "the first comic",
-        "working from home"
+      "topics": [
+        "working-from-home"
       ]
     },
     {
@@ -79,7 +119,9 @@
         "Samantha: You measure time by reading Reddit? Interesting."
       ],
       "note_html": "",
-      "tags": []
+      "topics": [
+        "out-in-public"
+      ]
     },
     {
       "number": 4,
@@ -100,9 +142,8 @@
         "Caption: I don’t know what conversion rates are but he says this to me...."
       ],
       "note_html": "<p>Congrats on writing your first book honey! I’ll read all of it and understand some of it. Yay! <a href=\"http://www.theherokuhackersguide.com/\">http://www.theherokuhackersguide.com/</a></p>",
-      "tags": [
-        "home life",
-        "technical"
+      "topics": [
+        "non-techie-wife"
       ]
     },
     {
@@ -123,8 +164,8 @@
         "Randall: How about a LAN party?!"
       ],
       "note_html": "<p>When we planned our wedding in college, Randall thought a LAN party would be the perfect setting. He said that everybody could mingle in their swivel chairs and game together. Nope!</p>",
-      "tags": [
-        "married life"
+      "topics": [
+        "dating-and-marriage"
       ]
     },
     {
@@ -144,9 +185,8 @@
         "Randall: Pretty 1337, huh? I’ve got them organized categorically: web design, Python, Unix internals, algorithms, cryptography, databases and C!"
       ],
       "note_html": "<p>I only understand what 1337 means, and <em>that concept</em> took awhile to accept. :s</p>",
-      "tags": [
-        "married life",
-        "programming"
+      "topics": [
+        "hacker-culture"
       ]
     },
     {
@@ -169,7 +209,8 @@
         "Caption: Steam for Linux: why everything will stop in 2012"
       ],
       "note_html": "<p>Steam for Linux will smother our marriage and shatter my world. I do like to game and Randall introduced me to Steam years ago. I, however, can stop gaming to do things like eat and sleep and live, whereas Randall simply cannot. Thanks to Steam finally coming out on Linux, I must strategically plan a few electricity outages to remind Randall who I am and that we have a relationship. My life got harder and his better. I see the fate of 2012 now, just when I thought we would make it.</p>",
-      "tags": [
+      "topics": [
+        "dating-and-marriage",
         "gaming"
       ]
     },
@@ -192,8 +233,8 @@
         "Samantha: You really want to be the Ron Burgundy of programming huh?"
       ],
       "note_html": "<p>It is very rarely that Randall lays his programming hands on an “old fashioned and outdated medium” such as paper. He often makes fun of me for even owning pencils and pens (just type everything instead, right?). However, <em>he</em> recently ordered this special moleskin notebook on Amazon along with an architect drafting pencil. He said they were the best and oh so special! He talked it about constantly until it finally arrived, and I asked him what he planned to do with it. If you know my husband, you know he is very motivated-or obsessive- about what he wants. He wants to be his personal best and plans to sleep when he dies. He also apparently plans to be remembered by his contributions and APIs. That’s great! The problem is, I am still wrapping my head around the definition of an API because I’ve never used one personally as a developer. While Randall is very motivating, the things he says are, yet again, unusual and entertaining at times. I do admire his ambitions, and perhaps someday I can fully appreciate his APIs.</p>",
-      "tags": [
-        "programming"
+      "topics": [
+        "hacker-culture"
       ]
     },
     {
@@ -215,10 +256,8 @@
         "Randall: Running in place defies logic! He’s not going anywhere! Oh the inefficiency!"
       ],
       "note_html": "<p>Randall has explained to me several times that the basis of programming or telling a computer what to do, comes down to positive and negative input and output. Just like binary is clearly made up of only zeros and ones, a program’s data is objective. This objectivity is logic. Every now and then, Randall will point out something that disturbs his paradigm of logic in our reality. People who run in place are a violation of logic according to my husband’s computery mind.</p>",
-      "tags": [
-        "chihuahua",
-        "logic",
-        "programming"
+      "topics": [
+        "programmer-logic"
       ]
     },
     {
@@ -239,10 +278,8 @@
         "Randall: ...Except that programs don’t have emotions, so that kind of nullifies the whole thing..."
       ],
       "note_html": "<p>Randall is lucky enough to work at home, where we work and end up watching a lot of movies. He remarked on this obvious plothole when we were watching TRON, right after we cheered for the open source resolution! We’re still fans of the film though. Just yesterday, Randall was listening to some pretty loud music with a narrator talking about being on “The Grid….in a motorcycle…”. Yup my little geek listens to the soundtrack while coding. 😀</p>",
-      "tags": [
-        "date night",
-        "married life",
-        "technical"
+      "topics": [
+        "programmer-logic"
       ]
     },
     {
@@ -263,9 +300,8 @@
         "Randall: This is all I can carry, Samantha! I tried to get more!"
       ],
       "note_html": "<p>Programmers often assume you’re telling them to get MORE caffeine when you’re trying to tell them that they have had enough.</p>",
-      "tags": [
-        "caffeine",
-        "non technical"
+      "topics": [
+        "working-from-home"
       ]
     },
     {
@@ -285,11 +321,8 @@
         "Randall: No this is a good time... I’m available. What’s up? Sure, let’s start the conference call then..."
       ],
       "note_html": "",
-      "tags": [
-        "chihuahua",
-        "non technical",
-        "Randall",
-        "working from home"
+      "topics": [
+        "working-from-home"
       ]
     },
     {
@@ -309,8 +342,8 @@
         "Randall: STOP!! I’m begging! Tickling is against the Geneva Coventions!"
       ],
       "note_html": "<p>Who says that? Randall does. He hates being tickled–even if he laughs while he’s being tickled. He doesn’t fight back though; he just yells reasons to stop. I guess, as a developer, he is accustomed to using his mind instead of his body to solve problems, so he doesn’t physically stop me from tickling him.</p>",
-      "tags": [
-        "married life"
+      "topics": [
+        "dating-and-marriage"
       ]
     },
     {
@@ -332,8 +365,8 @@
         "Randall: That’s a heart sweetie!"
       ],
       "note_html": "<p>My husband is not used to using pencils and paper; perhaps most developers are this way. Most writing is illegible and occasionally, there are symbols or binary. In our love notes from high school, he would jot down code and it bewildered me. Now he writes hearts in all of the cards he gives me. They are written as if he typed them with a keyboard and had to resort to &lt;3. He’s like a computer or a little WallE. At least I understand what the hearts mean!</p>",
-      "tags": [
-        "married life"
+      "topics": [
+        "dating-and-marriage"
       ]
     },
     {
@@ -354,8 +387,9 @@
         "Randall: Sounds like those programmers forgot to seed their random number generator!"
       ],
       "note_html": "<p>If you get overexcited about holidays like me, you might make pilgrim and Native American seating place cards with specially generated names on them for everyone at your table! It’s almost fun for everyone until someone points out the flaws in the application. I ended up using a better pilgrim-name generator online that Randall is sure to approve of.</p>",
-      "tags": [
-        "technical"
+      "topics": [
+        "programmer-logic",
+        "holidays"
       ]
     },
     {
@@ -376,9 +410,9 @@
         "Samantha: Oh... I thought you noticed that I just cleaned the kitchen."
       ],
       "note_html": "<p>Tonight my honey spent the rest of his holiday weekend cleaning out his <a href=\"https://web.archive.org/web/20121101152918/https://www.dropbox.com/tour/1\">Dropbox </a>(cloud drive). I spent the day cooking two pies and then cleaning up the mess just as Randall declared how great it was to finally sort through like years of files and pictures online. I thought it was funny and a bit nerdy that even his “winter cleaning” is virtual. It is comforting to know he’s been using Dropbox (and <a href=\"http://youtu.be/wKJ9KzGQq0w\">Google Drive</a>) for a long time now since free cloudsharing is so awesome!. Unfortunately, not everyone uses it yet. I’ve spent some time answering questions from curious friends and family about <a href=\"http://en.wikipedia.org/wiki/Cloud_storage\">cloudsharing</a>; sometimes being the wife of a developer makes you a sort of tech support or advisor. Well, I recommend you try the cloud! It is safe and private, <em>so far</em>, and free!</p>",
-      "tags": [
-        "cloudsharing",
-        "home life"
+      "topics": [
+        "dating-and-marriage",
+        "holidays"
       ]
     },
     {
@@ -411,9 +445,9 @@
         "Excerpt: A \"black hat hacker\" (also known as a cracker) is a hacker who violates computer security with malicious intent or for personal gain. Black hat hackers form the stereotypical illegal hacking groups often portrayed in pop culture, and are \"the epitome of all that the public fears in a computer criminal\". Black hat hackers break into secure networks to destroy data or make the network unusable for those who are authorized to use the network. They choose their targets using a two-pronged process known as the \"pre-hacking stage\"."
       ],
       "note_html": "<p>This post is dedicated to my sweet little cousin who is like a little sister to me. She was asked out by the boy she likes and she said yes! It reminded me of when Randall and I started dating about seven years ago. He would interrogate me with unusual questions like this one, “Are you a Black Hat or a White Hat?” (You can see why I found him very interesting.) Randall taught me that there are different kinds of hackers, such as black hats and white hats. Black hats hack to exploit for malicious intentions while white hats exploit to test or improve code. The good thing is doing either could get you a job after serving some jailtime. 😀</p>\n<p>Just two kinds of hackers. Excerpt from Wikipedia. <a href=\"http://en.wikipedia.org/wiki/Black_hat_hacking#Black_hat\">http://en.wikipedia.org/wiki/Black_hat_hacking#Black_hat</a></p>\n<p>Congrats Cisa. Here’s to all the new experiences and feelings that a new relationship can bring! We’ll be black hats together if anything goes wrong!</p>",
-      "tags": [
-        "hacker",
-        "married life"
+      "topics": [
+        "dating-and-marriage",
+        "hacker-culture"
       ]
     },
     {
@@ -433,10 +467,8 @@
         "Randall: No! When you talk to my friends online, you have to use my handle, not my real name!"
       ],
       "note_html": "<p>Dating a developer can be lonely if you’re not a developer yourself. You may notice that there are definitely less people around, few social outings and lots of solitude and indoor time. Well, developers are not always antisocial; they just socialize online with selective humans and bots. I finally got to meet my honey’s friends online through a mystery called IRC. I was immediately lectured for referring to Randall as Randall since he preferred his alias or handle at the time (which was in leet speak!). His friends only knew his identity by his handle so I just confused everyone. I felt really bad, like I made a embarrassing impression. I’m glad everything worked out though. You learn something new everyday when you date a developer!</p>",
-      "tags": [
-        "antisocial",
-        "IRC",
-        "married life"
+      "topics": [
+        "hacker-culture"
       ]
     },
     {
@@ -461,13 +493,8 @@
         "Samantha: What’s memcached?"
       ],
       "note_html": "<p>Well, I wouldn’t call it a discussion actually. But this is an example of our daily coexisting. Sometimes it would be nice if Randall was a girl, or just almost normal. I know he wishes I was a gifted developer like him (Right now, I joke that I’m pretty good at concatenating strings and creating directories in Python). As different as we are, we find each other entertaining and intriguing. It definitely keeps things new. I get to learn about tech galore while he learns things from me, like what’s going on outside or offline. Today, I showed him how to cook chicken in the oven! I think I’ll have to spend today studying up on how exactly <a href=\"http://memcached.org/\">memcached </a>works because I just don’t grasp the definition yet unfortunately.</p>",
-      "tags": [
-        "home life",
-        "memcache",
-        "nerd",
-        "non technical",
-        "says",
-        "troubleshooting"
+      "topics": [
+        "non-techie-wife"
       ]
     },
     {
@@ -488,9 +515,9 @@
         "Samantha: Wow, you’re so much cooler than I thought."
       ],
       "note_html": "<p>I rarely take Randall shopping with me when I shop for myself. He usually dies inside while feigning contentment. It kills me to see him so unhappy. He recalled this pretty nerdy anecdote when we <em>did</em> happen to go shopping together for the holidays and had passed by an office supply store. Yup, he actually said “the cool guys” did this. I just hope they had something to eat for lunch since they weren’t spending their money on a meal. There are more interesting comics to come of other times I take Randall into the real world on shopping trips where he does and says weird things.</p>",
-      "tags": [
-        "home life",
-        "non technical"
+      "topics": [
+        "out-in-public",
+        "holidays"
       ]
     },
     {
@@ -511,11 +538,8 @@
         "Samantha: Omg, the Syrian government might use chemical weapons!"
       ],
       "note_html": "<p>About two mornings ago, we had a candid moment while we were lazily reading the headlines in bed. I subscribe to the<a href=\"http://www.latimes.com/news/nationworld/world/\"> L.A. Times world news </a>and Randall, to the <a href=\"http://www.reddit.com/r/aww/\">subreddit, Awww</a>. I was silently lamenting over the Syrian conflict and how their government may resort to using <a href=\"https://web.archive.org/web/20121205105619/http://articles.latimes.com/2012/dec/03/world/la-fg-syria-violence-20121204\">alleged chemical weapons</a> on their own people… while Randall clamors over and exclaims an offbeat remark about this cute <a href=\"http://www.reddit.com/r/aww/comments/149uj7/pug_puppy_working_on_highfive/\">wittle puppy.</a> He usually shows me a cute fuzzy wuzzy link every other morning, and I’ve come to realize that he reads <em>these</em> things first everyday! I have yet to catch up to his developer lifestyle. He is a dependent consumer as much as he is a faithful loyalist to his beloved Reddit and Hackernews communities– so much that if I ever use them, he finds it attractive. Nerd alert.</p>",
-      "tags": [
-        "home life",
-        "non technical",
-        "political",
-        "reddit"
+      "topics": [
+        "dating-and-marriage"
       ]
     },
     {
@@ -536,10 +560,8 @@
         "Randall: That’s because I rotate my headphones every 30 minutes to equally distribute the pressure on my scalp."
       ],
       "note_html": "<p>The pattern had bewildered me. Its hair was strangely dented at random times and felt crinkled. One day, it felt compelled to expose its secretive habit, and I immediately felt remorse and affection for this characteristic hermit.</p>",
-      "tags": [
-        "home life",
-        "non technical",
-        "Randall"
+      "topics": [
+        "working-from-home"
       ]
     },
     {
@@ -560,10 +582,9 @@
         "Samantha: Okay, I’ll join a guild with you if that’s what you want."
       ],
       "note_html": "<p>My Honeybuns and I are very different, so this concern of Randall’s comes up at times. In desperation to assure him we will always have something to enjoy together, I have offered to join a guild<a href=\"http://us.battle.net/wow/en/\">(World of Warcraft)</a>. I <em>like</em> computer games where as Randall can become ultimately consumed in them. Therefore, out of our own safety and sanity, we haven’t joined a guild yet. He says his <a href=\"http://www.ubuntu.com/\">Ubuntu operating system</a> would also be an <a href=\"https://web.archive.org/web/20120707024746/https://help.ubuntu.com/community/WorldofWarcraft\">obstacle to accessing the game</a>; this is the main reason I appreciate Ubuntu. 😀 I’m sure <a href=\"https://web.archive.org/web/20121224092959/http://www.steadyhealth.com/Divorce_because_of_husband_s_computer_games_addiction_t134969.html\">it saves marriages.</a></p>",
-      "tags": [
-        "gaming",
-        "home life",
-        "samantha"
+      "topics": [
+        "dating-and-marriage",
+        "gaming"
       ]
     },
     {
@@ -590,9 +611,8 @@
         "Samantha: Hmph!"
       ],
       "note_html": "<p>My sassy Lovebug said that to me! What a clever little brat. Still doesn’t pick his underwear up off the floor, nope!</p>",
-      "tags": [
-        "home life",
-        "non technical"
+      "topics": [
+        "dating-and-marriage"
       ]
     },
     {
@@ -613,10 +633,8 @@
         "Samantha: Not again, Randall!"
       ],
       "note_html": "<p><br>\nToday we’re going out of town to do some holiday shopping for my husbands family. If there’s an Apple store at the mall, then I’ll literally have to talk Randall out of waltzing in there and quizzing the associates about the history, hardware, and sourcecode of just about anything computer related. It’s the only time he scoffs at people.</p>",
-      "tags": [
-        "operating system",
-        "Randall",
-        "technical"
+      "topics": [
+        "out-in-public"
       ]
     },
     {
@@ -637,9 +655,8 @@
         "Randall: Don’t you love it? It uploads our BMI,fat percentage and weight to an online chart so we can keep track!"
       ],
       "note_html": "<p><br>\nI just realized there’s no point in hiding my weight from him since he can just go online and analyze it. I really should cut back on the holiday feasting.</p>",
-      "tags": [
-        "home life",
-        "Randall"
+      "topics": [
+        "programmer-logic"
       ]
     },
     {
@@ -660,9 +677,8 @@
         "[Randall's thought bubble shows the Flying Spaghetti Monster, a tangle of noodles with two meatballs and eyes on stalks, in front of the cross.]"
       ],
       "note_html": "<p>I’m going to church tonight with my in laws and my love, who taught me all about “his Holiness”, the Flying Spaghetti Monster. I’m sure that’s what he’ll be pondering about at tonights service.</p>",
-      "tags": [
-        "home life",
-        "religion"
+      "topics": [
+        "holidays"
       ]
     },
     {
@@ -685,9 +701,9 @@
         "Samantha: ...Oh."
       ],
       "note_html": "<p> Recently, our friend was bragging about his new raspberry pi while on the phone with Randall. Poor Randall was very jealous. I know how much he loves all kind of berries and pies, although I’ve never seen him have a slice of raspberry pie. I, relying on my wifey skills, offered to bake him one. I felt like I could solve this problem! That’s when he told me it had nothing to do with my baking potential or scope of knowledge. Apparently, a raspberry pi is a new kind of tiny <a href=\"https://web.archive.org/web/20130109104512/http://www.raspberrypi.org/faqs\">programmable computer </a>that only costs like 35$. I felt stupid because this happens when he talks about <a href=\"http://django-tastypie.readthedocs.org/en/latest/\">Tastypie</a> too.</p>",
-      "tags": [
-        "computer",
-        "django"
+      "topics": [
+        "holidays",
+        "non-techie-wife"
       ]
     },
     {
@@ -707,10 +723,8 @@
         "Samantha: Wait! What’s India like? Don’t go! Please, it’s so boring here!"
       ],
       "note_html": "<p>It was exhilarating when I got to call India for the first time! Everything seemed outdated at my first internship. The official company-assigned emails were administered through Microsoft Outlook, and nobody knew what was going on or cared much about the big picture. That’s where I learned that most people hate their jobs and are miserable yet content enough. You can imagine how enthralled I was when I could call India on speed dial and they instantly listened AND helped me! My new Indian contact was halfway around the world and I knew immediately that we had the potential to be best friends! We <em>could </em>be spending hours and hours exchanging cultural stories! But no, my Indian guide with a computer-generated, American name wouldn’t spend anymore time with me unless it was purely for tech support. It was just like being at home with Randall when he’s focused on something. And I was alone again. Emo, I know.</p>",
-      "tags": [
-        "non technical",
-        "samantha",
-        "tech support"
+      "topics": [
+        "non-techie-wife"
       ]
     },
     {
@@ -731,10 +745,8 @@
         "[Samantha has a thought bubble with a question mark.]"
       ],
       "note_html": "<p>Randall claims that he programs in his dreams and I’ve heard that other programmers do too. I hear him mumbling commands in his sleep until he wakes up super excited to code! On the other hand, I can recall some of his bad dreams where he will yelp about zombies or installing servers. I suppose those two are equally bad. Poor thing.</p>",
-      "tags": [
-        "home life",
-        "non technical",
-        "servers"
+      "topics": [
+        "working-from-home"
       ]
     },
     {
@@ -758,8 +770,8 @@
         "Samantha: Thanks a lot."
       ],
       "note_html": "<p>I learned all about pings when I first took a networking class in high school to be near my then-crush (now husband). I like to show off that I know what a ping is but it doesn’t necessarily help in certain situations…. like when the internet crapped out at work and tech support said it was fine.</p>",
-      "tags": [
-        "samantha"
+      "topics": [
+        "non-techie-wife"
       ]
     },
     {
@@ -786,10 +798,8 @@
         "[Their shared thought bubble shows a radiant man with a huge white beard standing on a hill above tiny cheering stick figures.]"
       ],
       "note_html": "<p>Our friend has natural <a href=\"http://en.wikipedia.org/wiki/Billy_Mays\">Billy Mays-like</a> powers for beard growing and he mentioned that he is under some playful pressure to grow it out. Randall has burst with beard envy twice now. The beard will need a name.</p>",
-      "tags": [
-        "beard",
-        "non technical",
-        "Randall"
+      "topics": [
+        "hacker-culture"
       ]
     },
     {
@@ -810,9 +820,8 @@
         "Friend: ....Interesting. My husband complains when his patients don’t brush their 2nd bicuspids. He’s a dentist."
       ],
       "note_html": "<p><br>I thought it was pretty funny when my coworker could recall the formal names of teeth just because her husband talks about them all the time. It’s entertaining what we pick up from our family members and their lines of work.</p>",
-      "tags": [
-        "non technical",
-        "samantha"
+      "topics": [
+        "non-techie-wife"
       ]
     },
     {
@@ -833,10 +842,8 @@
         "Samantha: Don’t hate me ‘cause I’m beautiful!"
       ],
       "note_html": "<p><br> <br> <a href=\"http://www.theherokuhackersguide.com/\"></a></p>\n<p>Sorry babe. That’s life. Most people identify with <a href=\"https://www.youtube.com/watch?v=jaxE2TXfank\">Scribbles the Chihuahua</a> more than <a href=\"http://en.wikipedia.org/wiki/Platform_as_a_service\">PaaS</a>. I sure do!</p>",
-      "tags": [
-        "home life",
-        "non technical",
-        "the heroku hackers guide"
+      "topics": [
+        "non-techie-wife"
       ]
     },
     {
@@ -865,10 +872,9 @@
         "[Samantha looks horrified.]"
       ],
       "note_html": "<p>Now we have a <em>personalized-by-Randall</em> ceramic candle holder that reads Hail Satan in hexadecimal. Not good. Not good at all. I regret taking Randall there but it’s my favorite place and I’m counting down until our next visit on Valentines Day!</p>",
-      "tags": [
-        "date night",
-        "Hexadecimal",
-        "Randall"
+      "topics": [
+        "out-in-public",
+        "dating-and-marriage"
       ]
     },
     {
@@ -893,9 +899,8 @@
         "Dad: Heroku is a type of karate, Honey!"
       ],
       "note_html": "<p>I believe Randalls dad actually said he should “open up a can of Heroku” if anybody gives him a hard time.</p>",
-      "tags": [
-        "Heroku",
-        "Randall"
+      "topics": [
+        "non-techie-wife"
       ]
     },
     {
@@ -916,9 +921,8 @@
         "Samantha: We need $2.7 million!"
       ],
       "note_html": "<p>Randall determined this equation after we both started working our first jobs and hated it. I don’t know if we’ll ever attain an account balance of $2.7 million dollars while there’s a still a bank that offers a 2% interest rate. However, the idea makes him happy and hopeful, and that is priceless.</p>",
-      "tags": [
-        "home life",
-        "Randall"
+      "topics": [
+        "programmer-logic"
       ]
     },
     {
@@ -939,9 +943,8 @@
         "Samantha: That’s soo nerdy!"
       ],
       "note_html": "<p>Randall has special music for programming. I guess it isn’t <em>that </em>nerdy, considering that people have music for working out to or music for romance. It just sounded so nerdy when he told me about it.</p>",
-      "tags": [
-        "nerd alert",
-        "Randall"
+      "topics": [
+        "working-from-home"
       ]
     },
     {
@@ -961,9 +964,8 @@
         "Randall: Damn! One 'ab' command and I'm locked out of my new web service!"
       ],
       "note_html": "<p>So I don’t personally, fully understand this command, however another weird situation has happened in my life of living with a programmer. Randall exclaimed at the computer again. His friend messaged me online to let me know what kind of trouble Randall was in. It turns out my husband, Randall, accidentally locked himself out of his own application by typing the wrong command. Thanks to <a href=\"http://www.craigkerstiens.com/\">Craig</a> for letting me know(uh, Randall says that you distracted him and it’s your fault he ran this command!). 😀</p>",
-      "tags": [
-        "code",
-        "technical"
+      "topics": [
+        "working-from-home"
       ]
     },
     {
@@ -991,9 +993,9 @@
         "Randall: It’s tower defense!"
       ],
       "note_html": "<p>Yup. Randall got some snazzy posters for his home office and the first thing he did while being surrounded by pure positivity, was play tower defense for three days! So….the posters definitely work. If you get any of these <a href=\"http://www.startupvitamins.com/\">Startup Vitamins</a>, as they’re called, be sure to have enough willpower to use them for good.</p>",
-      "tags": [
-        "gaming",
-        "home life"
+      "topics": [
+        "working-from-home",
+        "gaming"
       ]
     },
     {
@@ -1016,10 +1018,8 @@
         "Randall: I’m never reading fiction again."
       ],
       "note_html": "<p>When Randall read <a href=\"http://www.amazon.com/The-Bug-Novel-Ellen-Ullman/dp/1250002494\">The Bug by Ellen Ullman</a>, he withdrew himself and complained of how sad he felt in response to the story. I knew it was the first time (in a long time) that he had read fiction <em>and </em>I assumed it must’ve been a good book! I’ve heard that the protagonist is a programmer in the 1980’s, and <em>the bug</em> is actually referring to a bug in code. I don’t want to attempt to summarize it any further, because I haven’t read it yet. I can say that Randall does recommend it, despite his reaction.</p>",
-      "tags": [
-        "home life",
-        "non technical",
-        "samantha"
+      "topics": [
+        "programmer-logic"
       ]
     },
     {
@@ -1039,10 +1039,8 @@
         "Randall: You signed up for Github!"
       ],
       "note_html": "<p>Randall went ooh la la over me when I made my first Github account and repository this week! I will use it for my new static html site that I plan to host through Amazon Web Services.</p>",
-      "tags": [
-        "Github",
-        "married life",
-        "Randall"
+      "topics": [
+        "non-techie-wife"
       ]
     },
     {
@@ -1063,10 +1061,8 @@
         "Samantha: ...nerd alert!"
       ],
       "note_html": "<p>We love dinosaurs, but sometimes we have to call each other nerds.</p>",
-      "tags": [
-        "home life",
-        "Randall",
-        "samantha"
+      "topics": [
+        "programmer-logic"
       ]
     },
     {
@@ -1087,10 +1083,8 @@
         "Samantha: Why?!"
       ],
       "note_html": "<p> Randall speeds sometimes and tells me we just <em>have</em> to get to 88 mph. It took me a few years to realize that this is because he pretends he’s in the movie, Back to the Future. He wasn’t proud that it took me so long to understand. Now, we speed if there’s a van behind us because it means that <a href=\"http://www.youtube.com/watch?v=NDS81Ibazdk\">“the Libyans are coming.”</a></p>",
-      "tags": [
-        "Back to the Future",
-        "home life",
-        "non technical"
+      "topics": [
+        "out-in-public"
       ]
     },
     {
@@ -1111,10 +1105,8 @@
         "Randall: I unpacked everything we need."
       ],
       "note_html": "<p>We are moving again in three weeks to San Francisco/East Bay area to attend fellow hackathons and such. The last two times that we moved, I worked full time and left the unpacking to Randall. It turned out like this image above each time; he only unpacked his laptop and some books on hacking. That was it! He didn’t see the problem, just “the essentials”.</p>",
-      "tags": [
-        "home life",
-        "married life",
-        "non technical"
+      "topics": [
+        "programmer-logic"
       ]
     },
     {
@@ -1135,10 +1127,9 @@
         "Samantha: I guess this means that we're taking our relationship to the next level!"
       ],
       "note_html": "<p>I guess I’ll be learning UNIX. I knew it was coming to this, because he tries to reformat my computer with different operating systems when I’m not home. I’m sure UNIX is great. I just didn’t know that we were ready to take this step together. Gulp.</p>",
-      "tags": [
-        "married life",
-        "Randall",
-        "UNIX"
+      "topics": [
+        "dating-and-marriage",
+        "non-techie-wife"
       ]
     },
     {
@@ -1159,10 +1150,8 @@
         "Randall: Nope! There's a new OS update, and I have to try it before anyone else does!"
       ],
       "note_html": "<p>Randall loves updates (and watching progress bars load). He reformats for each OS update, which can take hours!</p>",
-      "tags": [
-        "home life",
-        "married life",
-        "operating system"
+      "topics": [
+        "dating-and-marriage"
       ]
     },
     {
@@ -1183,8 +1172,8 @@
         "Randall: HAH! Your kernal updates messed up the NIC drivers!!"
       ],
       "note_html": "<p>When we go out, there is occasionally a downed computer. It always serves Randall an opportunity to interpret the code and have a ball with it.</p>",
-      "tags": [
-        "things randall says"
+      "topics": [
+        "out-in-public"
       ]
     },
     {
@@ -1206,8 +1195,8 @@
         "Randall: Essentially....yes."
       ],
       "note_html": "<p><br>\nThis is why we pay Amazon Prime to deliver an almost steady supply of caffeinated drinks to our door. </p>",
-      "tags": [
-        "home life"
+      "topics": [
+        "working-from-home"
       ]
     },
     {
@@ -1228,11 +1217,8 @@
         "Randall: Oh my god! It's the blue screen OF DEATH!!!"
       ],
       "note_html": "<p>I didn’t know about the Blue Screen of Death until it appeared on my computer, and my husband had this reaction. This famous crash message even has a <a href=\"http://en.wikipedia.org/wiki/Blue_Screen_of_Death\">Wikipedia page with a slideshow of public sightings</a>. How nerdy!</p>",
-      "tags": [
-        "home life",
-        "operating system",
-        "things randall says",
-        "Windows"
+      "topics": [
+        "non-techie-wife"
       ]
     },
     {
@@ -1253,9 +1239,8 @@
         "Samantha: You dream of that stuff?"
       ],
       "note_html": "<p><br>\nMy husband doesn’t always code in his best dreams… He designs things, like ebooks or rest APIs. I get to hear all about it in the morning! I fill him in on my dreams- usually something about me and our chihuahua, Scribbles.</p>",
-      "tags": [
-        "married life",
-        "things randall says"
+      "topics": [
+        "working-from-home"
       ]
     },
     {
@@ -1286,10 +1271,8 @@
         "Randall: I'm waiting for my data to populate!"
       ],
       "note_html": "<p>I’ve gotten used to having a husband who’s always online, but I’m not used to seeing him watch cartoons all day long. The sad thing is, I’ve come to accept that it means he’s working. I don’t know how exactly–how does one code while reading subtitles at the same time? It’s just a weird trait of a developer husband that is unexplainable and therefore hardly funny to me.</p>",
-      "tags": [
-        "code",
-        "things randall says",
-        "working from home"
+      "topics": [
+        "working-from-home"
       ]
     },
     {
@@ -1311,8 +1294,9 @@
         "Samantha: I don't know who that is but okay!"
       ],
       "note_html": "<p>My honey said this when we went shopping and I found this cutesy green hat! I’ve only played Zelda once, but I found a picture of this character, <a href=\"http://zeldawiki.org/Link\">Link</a> online. Now I know!</p>",
-      "tags": [
-        "things randall says"
+      "topics": [
+        "out-in-public",
+        "gaming"
       ]
     },
     {
@@ -1333,8 +1317,8 @@
         "Randall: Cora was my old computer! This one is named Death, and he's doing just fine."
       ],
       "note_html": "<p>I try to make conversation with my busy programmer husband by asking how his computer is doing. I forgot he got a new computer a while ago and that I hadn’t learned the name of it yet. Whoops! It’s not easy to get used to the fact that he names computers, let alone remembering their names! Well, this one is called Death, and it lives with us. I didn’t like Cora because Randall spent all his time with her. Death’s been okay so far.</p>",
-      "tags": [
-        "things randall says"
+      "topics": [
+        "dating-and-marriage"
       ]
     },
     {
@@ -1354,10 +1338,9 @@
         "Randall: Wow! We should build computers together more often... your fingers are the perfect size!"
       ],
       "note_html": "<p>Randall and I built my desktop together. It was the first computer and only computer that I’ve built. We picked out all the parts from <a href=\"http://www.newegg.com/\">Newegg.com</a> and built it for like 500 bucks. I think that was about four or five years ago. I still use it. After we built it, I got to learn about drivers and opensource software. We had to find all the applications and the operating system online to download and install. It was a totally new experience and a bargain. Randall said my small fingers saved him hours of struggle too! (We would do it more often but have since happened to buy only laptops.)</p>",
-      "tags": [
-        "hardware",
-        "home life",
-        "things randall says"
+      "topics": [
+        "dating-and-marriage",
+        "non-techie-wife"
       ]
     },
     {
@@ -1378,10 +1361,8 @@
         "Randall: The only thing that matters is the internet service provider!"
       ],
       "note_html": "<p>I’ve learned that the internet service provider is the most important amenity when choosing a home. In Los Angeles, we couldn’t find <a href=\"https://en.wikipedia.org/wiki/Fiber-optic_communication\">fiber </a>anywhere that we had lived but now that we’re moving to Walnut Creek/East Bay, I think there is hope for a home sweet home.</p>",
-      "tags": [
-        "home life",
-        "ISP",
-        "things randall says"
+      "topics": [
+        "programmer-logic"
       ]
     },
     {
@@ -1406,8 +1387,8 @@
         "Partygoer: Mm hmm. He got contacts instead of glasses."
       ],
       "note_html": "<p>So this happened at <a href=\"https://web.archive.org/web/20130325052803/https://waza.heroku.com/2013\">Waza</a> and everyone wanted a comic about Waza. I don’t know who said it to me and there was a lot of free drinks being consumed but it happened. Good times.</p>",
-      "tags": [
-        "Heroku"
+      "topics": [
+        "hacker-culture"
       ]
     },
     {
@@ -1431,8 +1412,8 @@
         "Randall: That's so typical. You'd choose a whole number."
       ],
       "note_html": "<p>That little bratty programmer husband of mine said this to me! And then he went on and on about Pi and how amazing it is. That will be the next comic…</p>",
-      "tags": [
-        "things randall says"
+      "topics": [
+        "programmer-logic"
       ]
     },
     {
@@ -1456,8 +1437,8 @@
         "Label: Black shirts"
       ],
       "note_html": "<p>So we just moved and I unpacked my husband’s clothes for him (because I’m amazing). It was pretty easy considering he only owns a few essential hacker necessities. He has tons of tech shirts but usually opts for a black t-shirt. In fact, ever since we started dating, I told him that he reminds me of a cartoon character because he wears the same thing all the time. I like that he values comfort and simplicity but he needs to at least start dressing up for Halloween.</p>",
-      "tags": [
-        "home life"
+      "topics": [
+        "hacker-culture"
       ]
     },
     {
@@ -1478,8 +1459,8 @@
         "Randall: I haven't used one of these in years!"
       ],
       "note_html": "<p>My hacker husband has awful handwriting. It looks like someone dipped a chicken’s feet in ink and let them scurry all over a poor sheet of paper. But how fast can he type you ask? Incredibly fast! He is a ninja with the keyboard yet defeated with the old-fashioned paper and pen. When we signed our last lease, he said this quote above out loud and I found it quite embarrassing.</p>",
-      "tags": [
-        "things randall says"
+      "topics": [
+        "out-in-public"
       ]
     },
     {
@@ -1503,9 +1484,8 @@
         "Samantha: And you never told me?!"
       ],
       "note_html": "<p>I’ve done some research after rudely finding out Randall was watching me use up my limited amount of heartbeats….I found that most sources say mammal and human hearts will beat between 2 and 3 billion times. That’s a pretty big discrepancy, but it depends on how long the person lives. The worldwide average life expectancy is supposedly 65 years old (2 billion beats), but I might be lucky enough to reach 95 years of age (3 billion beats). All in all, doing cardio regularly actually slows your sitting heart rate and therefore helps you out in the long run. Hah! (I made a pun.) So Randall started running with me!</p>",
-      "tags": [
-        "married life",
-        "things randall says"
+      "topics": [
+        "programmer-logic"
       ]
     },
     {
@@ -1526,10 +1506,9 @@
         "Randall: What's wrong?"
       ],
       "note_html": "<p>Today is my birthday(and Easter)! I just remembered it’s my twin sister’s birthday too, so happy birthday Allison! Anyway, one year Randall gave me Warcraft ( in a little software box-remember those?) as a present. I was livid. First of all, I hadn’t played the game in years! Secondly, it cost money to play! That turned into a fight… especially when I found out he threw out the receipt. Oh well, it was still nice of him.</p>",
-      "tags": [
+      "topics": [
         "gaming",
-        "home life",
-        "samantha"
+        "holidays"
       ]
     },
     {
@@ -1551,8 +1530,8 @@
         "[A card on the table reads: 3 years]"
       ],
       "note_html": "<p>Happy Anniversary Baby! Congrats on three years of marriage. It doesn’t feel like forever yet, so that’s a good sign!</p>",
-      "tags": [
-        "things randall says"
+      "topics": [
+        "dating-and-marriage"
       ]
     },
     {
@@ -1573,9 +1552,8 @@
         "Samantha: Ooohh!"
       ],
       "note_html": "<p>It takes a lot to anger Randall, but he never fails to yell this after talking to Comcast. I just learned what <a href=\"https://en.wikipedia.org/wiki/Bash_(Unix_shell)\">Bash</a> is the other day even though I’ve been using it for almost a year. I initially thought it was a language! Wow. Even a simple shell script can replace a job.</p>",
-      "tags": [
-        "home life",
-        "things randall says"
+      "topics": [
+        "programmer-logic"
       ]
     },
     {
@@ -1596,9 +1574,8 @@
         "Samantha: How many times do I have to tell you? This is not that kind of contest!"
       ],
       "note_html": "<p>We attended our first robotics competition! That’s what we do for fun now….yeah. It was a regional <a href=\"https://web.archive.org/web/20130415200022/http://www.usfirst.org/roboticsprograms/frc/\">F.I.R.S.T. Robotics Competition</a> at San Jose State. My geeky husband, who pirates too many violent shows, kept asking when the robots were going to destroy each other. Thankfully, they never did and instead displayed their many impressive and uber exciting skills. All the robots were built by teenagers and were sponsored by some pretty big names including NASA and Google! We’ve added robotics to our list of things to do this year as a couple. You should definitely check out some video of the competition here: <a href=\"https://web.archive.org/web/20130414054558/http://techland.time.com/2013/04/08/first-robotics-competition-students-teaching-robots-and-vice-versa/\">Time Magazine covers FIRST</a>.</p>",
-      "tags": [
-        "married life",
-        "things randall says"
+      "topics": [
+        "out-in-public"
       ]
     },
     {
@@ -1623,10 +1600,8 @@
         "Samantha: Oh no."
       ],
       "note_html": "<p>Randall’s newest evil plot: a hackathon that will probably attract black hats. Eeek! On the safer side, we are considering starting a coding group for the East Bay on Meetups.com.</p>",
-      "tags": [
-        "samantha",
-        "Scribbles the chihuahua",
-        "things randall says"
+      "topics": [
+        "hacker-culture"
       ]
     },
     {
@@ -1651,8 +1626,8 @@
         "Samantha: Oh god!"
       ],
       "note_html": "<p>Theoretically, he’s right. We can possibly make more money than a savings account’s interest rate offers if we invest in things instead. It is always a gamble however. At least my husband is excited about getting ready for the financial future now. Randall was so excited that the next day he built a command line app to handle your personal <a href=\"http://bitcoin.org/en/how-it-works\">BitCoin</a> called BTC. Check it out here, <a href=\"http://rdegges.github.io/btc/\">http://rdegges.github.io/btc/</a>.</p>",
-      "tags": [
-        "married life"
+      "topics": [
+        "dating-and-marriage"
       ]
     },
     {
@@ -1680,9 +1655,8 @@
         "Randall: Yes. I’m going to fix them later. This is an important part! Trust me!"
       ],
       "note_html": "<p>Yes, my honey buns likes to lay down all the time when he’s working from home. I found out he’s actually “watching the API run” and monitoring errors. Then he looks through the data later to troubleshoot! What a long process. I can tell he likes laying down almost as much as coding APIs.</p>",
-      "tags": [
-        "API",
-        "working from home"
+      "topics": [
+        "working-from-home"
       ]
     },
     {
@@ -1708,8 +1682,8 @@
         "Randall: Wha? How on earth do you get that?"
       ],
       "note_html": "<p>So programmers are programmed (like the programs that they write) to think <strong>logically</strong> and that creates a sort of, human error problem for Randall sometimes. When I told him that I was “head over heels” for him once, he was very confused as illustrated in exhibit A above. I suppose that I sound just as confusing to him too.</p>",
-      "tags": [
-        "things randall says"
+      "topics": [
+        "programmer-logic"
       ]
     },
     {
@@ -1734,9 +1708,9 @@
         "Randall: It’s INFINITE RECURSION!"
       ],
       "note_html": "<p>It was really embarrassing when Randall started yelling “Infinite recursion!” in the grocery store. I didn’t know how to calm him down. I didn’t want to explain, to strangers, the excitement of his epiphany, mostly because people just won’t understand. There’s a new taco at Taco Bell, flavored like Dorito chips. After it became popular, Doritos had to continue flavoring things…. Doritos now has a new chip that is flavored after the taco that was initially flavored after themselves…. It is like a never ending loop!</p>",
-      "tags": [
-        "married life",
-        "things randall says"
+      "topics": [
+        "programmer-logic",
+        "out-in-public"
       ]
     },
     {
@@ -1759,8 +1733,8 @@
         "Randall: I’m just proud that you’re gaming, sweetie!"
       ],
       "note_html": "<p>Randall bought me a Steam account after we got married. I use it mostly to play Left 4 Dead, a fun, easy, zombie crazy, first person shooter game. I’m not very good at most other games on Steam. You have to get through a zombie ridden level of play with three strangers online as teammates. This requires teamwork, communication and smart decision making to ensure team survival, just like a real zombie apocalypse! Sometimes I get really into it, (you get a lot of chances to try and win), but everything can be ruined when other online gamers act stupid or fail.</p>",
-      "tags": [
-        "married life"
+      "topics": [
+        "gaming"
       ]
     },
     {
@@ -1786,8 +1760,8 @@
         "Randall: Oh."
       ],
       "note_html": "<p>My programmer of a husband said this one time as we drove past a field, while on a road trip. He doesn’t get out much, and I guess that he doesn’t see a lot of haystacks online. He’s so weird. I would know; I’m pretty weird myself.</p>",
-      "tags": [
-        "things randall says"
+      "topics": [
+        "out-in-public"
       ]
     },
     {
@@ -1811,9 +1785,9 @@
         "Randall: Nope!"
       ],
       "note_html": "<p>Some things aren’t tolerated by computer programmers, such as people who type in all capitals and people who use Comic Sans font. It’s kind of like saying, “Look at me, I’m a douchebag.” It makes my Lovebug yell, “Nope!” which is something else unique about his kind….</p>",
-      "tags": [
-        "married life",
-        "things randall says"
+      "topics": [
+        "dating-and-marriage",
+        "hacker-culture"
       ]
     },
     {
@@ -1835,9 +1809,8 @@
         "Randall: Double Facepalm!"
       ],
       "note_html": "<p>Yup, poor lovebug just dies when the internet is slow. At least it taught me what a facepalm is. I didn’t know he has to title actions now. Must be a Reddit thing.</p>",
-      "tags": [
-        "home life",
-        "things randall says"
+      "topics": [
+        "working-from-home"
       ]
     },
     {
@@ -1862,11 +1835,8 @@
         "Samantha: Oh"
       ],
       "note_html": "<p>Another Randall epiphany moment. Maybe one day my site designing skills will be good enough for us to be potentially perfect too!</p>",
-      "tags": [
-        "code",
-        "couples",
-        "things randall says",
-        "web design"
+      "topics": [
+        "dating-and-marriage"
       ]
     },
     {
@@ -1889,12 +1859,9 @@
         "Randall: What about hackers?! Seriously, we should get priority parking!"
       ],
       "note_html": "<p>I am miffed that uber pregnant people get priority parking over everybody else at certain Targets and grocery stores. And then Randall proposed that he should get the priority parking! …our first-world problems…</p>",
-      "tags": [
-        "first world problems",
-        "hacker",
-        "parking",
-        "priority",
-        "things randall says"
+      "topics": [
+        "out-in-public",
+        "hacker-culture"
       ]
     },
     {
@@ -1922,9 +1889,8 @@
         "Samantha: Oh no..."
       ],
       "note_html": "<p>Poor lovebug and I went to a concert, where he said this to me. I know what he means though, especially if being offline means talking to strangers, who he calls “not programmers”.</p>",
-      "tags": [
-        "husband",
-        "things randall says"
+      "topics": [
+        "out-in-public"
       ]
     },
     {
@@ -1951,9 +1917,8 @@
         "Randall: Muahahaha!"
       ],
       "note_html": "<p>Evil Randall and his telephony (an actual industry) tricks. I always get random phone calls, sometimes with automated voices telling me weird things like this or just a series of beeps. I’m tired of answering my phone and being hung up on and then hearing, “Samantha! My program was able to correctly identify your voice and parse the data!” It’s so annoying when you’re a guinea pig and you don’t know it.</p>",
-      "tags": [
-        "married life",
-        "telephony"
+      "topics": [
+        "working-from-home"
       ]
     },
     {
@@ -1975,9 +1940,8 @@
         "[The book cover reads: html 5]"
       ],
       "note_html": "<p>So I couldn’t get into the bath the other day because Randall had cozied up with none other than “HTML 5: an Overview”. Now, whenever I read code books, which is not very often, I do it in front of a keyboard. Maybe this is why Randall takes a bazillion baths and buys a bazillion books.</p>",
-      "tags": [
-        "married life",
-        "things randall says"
+      "topics": [
+        "working-from-home"
       ]
     },
     {
@@ -2004,11 +1968,9 @@
         "Randall: Whoever made that forgot to seed the random number generator!"
       ],
       "note_html": "<p>I made placecards for Thanksgiving and found a way to look up pilgrim names. Don’t worry realists, I made Native American ones too. Anyway, Randall was pretty upset that a not-so-passionate programmer <em>forgot</em> to seed his random number generator and therefore, made our names the same.</p>",
-      "tags": [
-        "number generator",
-        "random",
-        "technical",
-        "things randall says"
+      "topics": [
+        "programmer-logic",
+        "holidays"
       ]
     },
     {
@@ -2034,9 +1996,8 @@
         "Samantha: ...Oh my!"
       ],
       "note_html": "<p>So this is what my hacker husband, Randall, said to me when I asked him about the conference he was going to (last year). Yup. Pretty rogue-hackerish-sounding to me, and pretty normal – or “badass”- to him. <a href=\"http://www.defcon.org/\">DEFCON</a> is an annual pro-hacking conference in the US that’s pretty well known for its often rebellious attitude. And just so I don’t get shot, I’ll clear the air by saying that “rebellious” can mean something like “rebellion via hacking in a righteous effort to create transparency”. And that’s all I know about DEFCON! I like how Scribbles looks in this comic. She’s just as cute in real life by the way.</p>",
-      "tags": [
-        "DEFCON",
-        "things randall says"
+      "topics": [
+        "hacker-culture"
       ]
     },
     {
@@ -2064,9 +2025,9 @@
         "Samantha: Please don’t tell anyone else what your idea of cool is!"
       ],
       "note_html": "<p>I rarely take Randall shopping with me when I shop for myself. He usually dies inside while feigning contentment. It kills me to see him so unhappy. He recalled this pretty nerdy anecdote when we <em>did</em> happen to go shopping together for the holidays and had passed by an office supply store. Yup, he actually said “the cool guys” did this. I just hope they had something to eat for lunch since they weren’t spending their money on a meal. There are more interesting comics to come, of other times that I take Randall into the real world on shopping trips, where he does and says weird things.</p>",
-      "tags": [
-        "office",
-        "things randall says"
+      "topics": [
+        "out-in-public",
+        "holidays"
       ]
     }
   ]
