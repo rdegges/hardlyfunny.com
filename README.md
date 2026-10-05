@@ -44,7 +44,7 @@ python -m pytest                   # checks content, SEO tags, accessibility bas
 | `scripts/` | `export_wordpress.py` (WordPress → `archive/`), `migrate_to_content.py` (one-time `archive/` → `content/`), `compress_pngs.py` (lossless PNG recompression) and `check_links.py` (link checker run by CI) |
 | `index.html`, `designs/` | The design review page and the four clickable mockups it previews |
 
-The PNGs in `content/` are losslessly recompressed (zopflipng or oxipng, whichever is smaller), and `tests/test_images.py` proves each one has the same pixels as its twin in `archive/`. To do it again: `docker run --rm -v "$PWD":/app -w /app python:3.13 sh -c "apt-get update -qq && apt-get install -y -qq zopfli && pip install -q -r requirements.txt pyoxipng && python scripts/compress_pngs.py"`.
+The PNGs in `content/` are losslessly recompressed (zopflipng or oxipng, whichever is smaller), and `tests/test_images.py` proves each one has the same pixels as its twin in `archive/`. To do it again: `docker run --rm -v "$PWD":/app -w /app python:3.14 sh -c "apt-get update -qq && apt-get install -y -qq zopfli && pip install -q -r requirements.txt pyoxipng && python scripts/compress_pngs.py"`.
 
 ## Link checking
 
