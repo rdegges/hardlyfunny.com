@@ -14,6 +14,8 @@
     {% set subject = "Permission to use a Hardly Funny comic" %}
     {% set body = "Hi Samantha,\r\n\r\nI'd like to use a Hardly Funny comic.\r\n\r\nComic (title or link):\r\nWhere it will appear:\r\nHow it will be used (and whether it's commercial):\r\n\r\nThanks," %}
     <p><a class="button" href="mailto:{{ site.license.contact }}?subject={{ subject | urlencode }}&amp;body={{ body | urlencode }}" data-r="mail samantha" data-label="Request permission">Request permission</a></p>
+    {# For visitors with no mail app: the address as text they can copy. #}
+    <p class="license-alt">Or write to me at <a href="mailto:{{ site.license.contact }}">{{ site.license.contact }}</a>.</p>
   </section>
 </article>
 {% endblock %}

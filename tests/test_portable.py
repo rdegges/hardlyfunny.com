@@ -58,3 +58,11 @@ def test_titles_match_the_standard_build(portable, built, parse):
     # The portable rewrite only touches link attributes; tab titles must not drift between the two builds.
     for page in pages(portable):
         assert parse(page).title == parse(built / page.relative_to(portable)).title, page
+
+
+def test_permission_mailto_links_match_the_standard_build(portable, built):
+    # The portable rewrite edits href attributes; mailto links must come through it untouched.
+    def mailtos(root):
+        return re.findall(r'href="(mailto:[^"]*)"', (root / "about" / "index.html").read_text())
+    assert len(mailtos(portable)) == 2
+    assert mailtos(portable) == mailtos(built)
