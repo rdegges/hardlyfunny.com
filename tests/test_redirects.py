@@ -102,7 +102,7 @@ def old_urls(site):
             both(f"/{y}/{rest[0]}/{int(rest[1])}/", urls.ARCHIVE)
             both(f"/{y}/{int(rest[0])}/{rest[1]}/", urls.ARCHIVE)
     # The tags live on in the WordPress export only. A tag a topic took over goes to that topic's page,
-    # with its feed and one page per tagged post; every other tag goes to the archive.
+    # with one page per tagged post, and its feed to /feed/; every other tag goes to the archive.
     topic_of = {name: urls.topic(t) for t in site.topics for name in t.wordpress_tags}
     posts = Counter(t.casefold() for c in ARCHIVED for t in c["tags"])
     tags = {t for c in ARCHIVED for t in c["tags"]}
@@ -112,8 +112,8 @@ def old_urls(site):
         dest = topic_of.get(tag.casefold())
         if dest:
             both(base, dest)
-            both(base + "feed/", dest)
-            out[base + "feed/atom/"] = out[base + "feed/rss2/"] = dest
+            both(base + "feed/", urls.FEED)
+            out[base + "feed/atom/"] = out[base + "feed/rss2/"] = urls.FEED
             for n in range(1, posts[tag.casefold()] + 1):
                 both(f"{base}page/{n}/", dest)
         else:
@@ -229,8 +229,8 @@ WORDPRESS_TAG_SLUGS = {
 TAG_EXAMPLES = [
     ("/tag/gaming/", "/topics/gaming/"),
     ("/tag/working-from-home", "/topics/working-from-home/"),
-    ("/tag/the-heroku-hackers-guide/feed/", "/topics/non-techie-wife/"),
-    ("/tag/religion/feed/atom/", "/topics/holidays/"),
+    ("/tag/the-heroku-hackers-guide/feed/", "/feed/"),
+    ("/tag/religion/feed/atom/", "/feed/"),
     ("/tag/code/page/3/", "/topics/working-from-home/"),
     ("/tag/web-design/", "/topics/dating-and-marriage/"),
     ("/tag/things-randall-says/", "/archive/"),
@@ -261,8 +261,9 @@ def test_every_old_tag_lands_on_its_topic_or_the_archive(built, site):
         base = f"/tag/{redirects.wordpress_slug(tag)}/"
         dest = topic_of.get(tag.casefold(), urls.ARCHIVE)
         last = posts[tag.casefold()]
-        for path in (base, base.rstrip("/"), base + "feed/", f"{base}page/{last}/"):
+        for path in (base, base.rstrip("/"), f"{base}page/{last}/"):
             assert follow(built, path) == (dest, 301), path
+        assert follow(built, base + "feed/") == (urls.ARCHIVE if dest == urls.ARCHIVE else urls.FEED, 301), base
         assert exists(built, dest), dest
         assert follow(built, f"{base}page/{last + 1}/") == (urls.ARCHIVE, 301), base
         landed["topic" if dest != urls.ARCHIVE else "archive"] += 1
@@ -271,11 +272,16 @@ def test_every_old_tag_lands_on_its_topic_or_the_archive(built, site):
 
 def test_only_tags_a_topic_took_over_get_their_own_rules(built, site):
     expected = {redirects.wordpress_slug(n): urls.topic(t) for t in site.topics for n in t.wordpress_tags}
-    got = {}
+    got, slugs = {}, set()
     for source, dest, _ in rules(built):
         if source.startswith("/tag/") and "*" not in source:
-            assert got.setdefault(source.split("/")[2], dest) == dest, source
-    assert got and got == expected
+            slug, *rest = source.split("/")[2:]
+            slugs.add(slug)
+            if rest[:1] == ["feed"]:
+                assert dest == urls.FEED, source
+            else:
+                assert got.setdefault(slug, dest) == dest, source
+    assert got and got == expected and slugs == set(expected)
 
 
 def _topic_with_tags(*names):
@@ -286,11 +292,13 @@ def test_tag_listings_cover_the_listing_its_feeds_and_one_page_per_post():
     rs = redirects._tag_listings((_topic_with_tags("back to the future"),),
                                  (("Back to the Future",), ("Back to the Future", "other")))
     base = "/tag/back-to-the-future"
-    assert {r.source for r in rs} == {
-        f"{base}/", base, f"{base}/feed/", f"{base}/feed", f"{base}/feed/atom/", f"{base}/feed/rss2/",
-        f"{base}/page/1/", f"{base}/page/1", f"{base}/page/2/", f"{base}/page/2",
+    feeds = {f"{base}/feed/", f"{base}/feed", f"{base}/feed/atom/", f"{base}/feed/rss2/"}
+    assert {r.source for r in rs} == feeds | {
+        f"{base}/", base, f"{base}/page/1/", f"{base}/page/1", f"{base}/page/2/", f"{base}/page/2",
     }
-    assert len(rs) == 10 and {r.destination for r in rs} == {"/topics/t/"} and not any(r.dynamic for r in rs)
+    assert len(rs) == 10 and not any(r.dynamic for r in rs)
+    assert all(r.destination == ("/feed/" if r.source in feeds else "/topics/t/") for r in rs)
+    assert Counter(r.destination for r in rs) == {"/feed/": 4, "/topics/t/": 6}
 
 
 @pytest.mark.parametrize("post, listed", [

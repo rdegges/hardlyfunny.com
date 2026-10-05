@@ -89,7 +89,8 @@ def wordpress_slug(name: str) -> str:
 
 
 def _tag_listings(topics: tuple[Topic, ...], old_posts: tuple[tuple[str, ...], ...]) -> list[Redirect]:
-    """Each old tag a topic took over: its listing, pages and feed go to the topic page.
+    """Each old tag a topic took over: its listing and pages go to the topic page, and its feed
+    goes to /feed/, as for the date archives.
 
     Exact rules win over the `/tag/*` catch-all, so every other tag still lands on the archive.
     Pages go up to one per tagged post, as for the date archives.
@@ -106,8 +107,8 @@ def _tag_listings(topics: tuple[Topic, ...], old_posts: tuple[tuple[str, ...], .
             if len(found) != 1 or not found[0] or owners[found[0]] != 1:
                 raise ValueError(f"WordPress tag “{name}” on topic “{topic.slug}” must match exactly one old /tag/ URL, not {found}")
             base, dest = f"/tag/{found[0]}", urls.topic(topic)
-            out += _both(base, dest) + _both(f"{base}/feed", dest)
-            out += [Redirect(f"{base}/feed/{fmt}/", dest) for fmt in ("atom", "rss2")]
+            out += _both(base, dest) + _both(f"{base}/feed", urls.FEED)
+            out += [Redirect(f"{base}/feed/{fmt}/", urls.FEED) for fmt in ("atom", "rss2")]
             for n in range(1, posts[name] + 1):
                 out += _both(f"{base}/page/{n}", dest)
     return out
