@@ -44,6 +44,8 @@ def _series(site: Site) -> dict:
 def comic_jsonld(site: Site, comic: Comic) -> str:
     page = urls.absolute(site.url, urls.comic(comic))
     author = {"@id": _samantha_id(site)}
+    # Google's image license metadata: makes each comic eligible for the "Licensable" badge in Images.
+    terms = urls.absolute(site.url, urls.ABOUT) + "#license"
     story = {
         "@type": "ComicStory",
         "@id": page + "#comic",
@@ -62,6 +64,11 @@ def comic_jsonld(site: Site, comic: Comic) -> str:
                 "width": img.width,
                 "height": img.height,
                 "caption": img.alt,
+                "license": terms,
+                "acquireLicensePage": terms,
+                "creator": author,
+                "creditText": site.license.credit,
+                "copyrightNotice": site.copyright,
             }
             for img in comic.images
         ],

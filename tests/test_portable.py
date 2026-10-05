@@ -39,6 +39,15 @@ def test_relative_references_resolve_on_disk(portable):
             assert target.exists(), f"{page}: {ref}"
 
 
+def test_license_links_keep_their_fragment(portable):
+    # The check above skips refs with a "#", so the footer's /about/#license link is checked here.
+    for page, ref in ((portable / "index.html", "about/index.html#license"),
+                      (portable / "comics" / "infinite-recursion" / "index.html", "../../about/index.html#license")):
+        assert f'href="{ref}"' in page.read_text(), page
+        assert (page.parent / ref.split("#")[0]).resolve().is_file()
+    assert 'id="license"' in (portable / "about" / "index.html").read_text()
+
+
 def test_seo_urls_stay_absolute(portable):
     html = (portable / "comics" / "infinite-recursion" / "index.html").read_text()
     assert '<link rel="canonical" href="https://hardlyfunny.com/comics/infinite-recursion/">' in html

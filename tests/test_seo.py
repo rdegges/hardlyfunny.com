@@ -2,8 +2,8 @@ import dataclasses
 import json
 from xml.etree import ElementTree as ET
 
-from hardlyfunny import seo
-from hardlyfunny.content import Person
+from hardlyfunny import feed, seo
+from hardlyfunny.content import License, Person
 
 
 def node(block, type_):
@@ -87,6 +87,31 @@ def test_robots_sitemap_follows_the_site_url(site):
     text = seo.robots(moved)
     assert text.splitlines()[-1] == "Sitemap: https://example.test/sitemap.xml"
     assert "hardlyfunny.com" not in text
+
+
+def test_image_license_fields_follow_the_data_and_cannot_break_out(site):
+    # The built-site test only sees the real values, which hard-coded strings would also pass.
+    contact = "sentinel-contact@example.invalid"
+    moved = dataclasses.replace(site, url="https://example.test", author="Sam </script> & Co",
+                                license=License(credit="Credit </script><!-- & Co", contact=contact))
+    two = next(c for c in moved.comics if len(c.images) > 1)
+    block = seo.comic_jsonld(moved, two)
+    assert "<" not in block and ">" not in block and "&" not in block
+    graph = json.loads(block)["@graph"]
+    images = node(block, "ComicStory")["image"]
+    assert len(images) == len(two.images)
+    for image in images:
+        assert image["license"] == image["acquireLicensePage"] == "https://example.test/about/#license"
+        assert image["creditText"] == "Credit </script><!-- & Co"
+        assert image["copyrightNotice"] == moved.copyright == "\u00a9 2012\u20132014 Sam </script> & Co. All rights reserved."
+        # creator is a bare @id, so Google reads its name only from the Person node in the same graph.
+        assert image["creator"] == {"@id": "https://example.test/about/#samantha"}
+        [creator] = [n for n in graph if n.get("@id") == image["creator"]["@id"] and "@type" in n]
+        assert (creator["@type"], creator["name"]) == ("Person", moved.author)
+    # The contact is for the About page only: no machine-readable output may carry it.
+    for name, text in {**graphs(moved), "comic": block, "feed": feed.render(moved), "sitemap": seo.sitemap(moved),
+                       "llms": seo.llms_txt(moved), "llms-full": seo.llms_txt(moved, full=True)}.items():
+        assert contact not in text and "sentinel-contact" not in text, name
 
 
 SM = "{http://www.sitemaps.org/schemas/sitemap/0.9}"

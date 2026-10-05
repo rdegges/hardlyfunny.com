@@ -5,14 +5,15 @@ import json
 import re
 from datetime import date
 from urllib import robotparser
-from urllib.parse import urlparse
+from urllib.parse import unquote, urlparse
 from xml.etree import ElementTree as ET
 
 import pytest
 
 from hardlyfunny import seo, share, urls
-from hardlyfunny.build import CONTENT, comic_page, environment
-from hardlyfunny.content import strip_tags
+from hardlyfunny.build import CONTENT, Page, comic_page, environment
+from hardlyfunny.content import License, strip_tags
+from tests.conftest import Page as Html
 
 SITE_URL = "https://hardlyfunny.com"
 
@@ -267,7 +268,7 @@ def test_home_intro_escapes_the_site_title(site):
 JSONLD_TYPES = {"WebSite", "ComicSeries", "ComicStory", "Person", "ImageObject", "BreadcrumbList", "ListItem",
                 "AboutPage"}
 JSONLD_OFFSITE_URLS = {(SITE_URL + "/about/#randall", "url"): "https://rdegges.com"}
-JSONLD_LINK_KEYS = ("url", "item", "contentUrl", "acquireLicensePage", "sameAs")
+JSONLD_LINK_KEYS = ("url", "item", "contentUrl", "license", "acquireLicensePage", "sameAs")
 SAMANTHA = SITE_URL + "/about/#samantha"
 
 
@@ -330,6 +331,82 @@ def test_jsonld_is_well_formed_on_site_and_self_contained(built, site, parse):
                 assert value.startswith(site.url + "/") and target.is_file(), f"{path}: {key}={value}"
                 if link.fragment:
                     assert link.fragment in page_ids(target), f"{path}: {key}={value} has no anchor on that page"
+
+
+def test_every_comic_image_carries_its_license_metadata(built, site):
+    # Google's image license fields, on every image (No. 17 has two), not just the first.
+    expected = {"license": f"{SITE_URL}/about/#license", "acquireLicensePage": f"{SITE_URL}/about/#license",
+                "creator": {"@id": SAMANTHA}, "creditText": "Samantha Degges / Hardly Funny",
+                "copyrightNotice": "© 2012–2014 Samantha Degges. All rights reserved."}
+    for comic in site.comics:
+        [block] = jsonld_blocks((built / "comics" / comic.slug / "index.html").read_text())
+        [story] = [n for n in block["@graph"] if n["@type"] == "ComicStory"]
+        assert len(story["image"]) == len(comic.images), comic.slug
+        for image in story["image"]:
+            assert {k: image.get(k) for k in expected} == expected, comic.slug
+
+
+def test_contact_address_is_only_in_the_about_page_html(built, site):
+    # Samantha agreed to publish it as a link for people asking permission, not as structured data.
+    contact = site.license.contact
+    for path in html_pages(built):
+        assert contact not in json.dumps(jsonld_blocks(path.read_text()), ensure_ascii=False), path
+    for name in ("llms.txt", "llms-full.txt", "sitemap.xml", urls.output_path(urls.FEED)):
+        assert contact not in (built / name).read_text(), name
+    holders = sorted(p.relative_to(built).as_posix() for p in html_pages(built) if contact in p.read_text())
+    assert holders == ["about/index.html"]
+
+
+PERMISSION_BODY = """Hi Samantha,
+
+I'd like to use a Hardly Funny comic.
+
+Comic (title or link):
+Where it will appear:
+How it will be used (and whether it's commercial):
+
+Thanks,"""
+
+
+def test_about_page_says_how_to_ask_permission(built, site, parse):
+    page = parse(built / urls.output_path(urls.ABOUT))
+    assert page.all("section", id="license") and ("h2", "Using these comics") in page.headings
+    [link] = [a for a in page.all("a") if a.get("href", "").startswith("mailto:")]
+    address, _, query = link["href"].removeprefix("mailto:").partition("?")
+    assert address == site.license.contact
+    # RFC 6068: %20 for spaces (mail clients keep "+" as a literal plus) and CRLF line breaks.
+    assert "+" not in query and " " not in query
+    fields = dict(pair.split("=", 1) for pair in query.split("&"))
+    assert unquote(fields["subject"]) == "Permission to use a Hardly Funny comic"
+    assert unquote(fields["body"]) == PERMISSION_BODY.replace("\n", "\r\n")
+
+
+def test_footer_copyright_links_to_the_license_on_every_page(built, site):
+    assert site.copyright == "© 2012–2014 Samantha Degges. All rights reserved."
+    line = f'<a href="{urls.ABOUT}#license">{site.copyright}</a>'
+    for path in html_pages(built):
+        [footer] = re.findall(r'<footer class="site-footer">(.*?)</footer>', path.read_text(), re.S)
+        assert line in footer, path
+
+
+def test_copyright_years_follow_the_data(site):
+    small = shortened(site, 5, date(2013, 3, 9))
+    assert small.copyright == f"© 2012–2013 {site.author}. All rights reserved."
+    story = json.loads(seo.comic_jsonld(small, small.comics[0]))["@graph"][0]
+    assert story["image"][0]["copyrightNotice"] == small.copyright
+
+
+def test_footer_copyright_and_permission_link_escape_hostile_data(site):
+    # Both come from comics.json and are rendered outside the about_html block that is trusted as markup.
+    hostile = dataclasses.replace(site, author="<i>Sam</i> & Co",
+                                  license=License(credit="c", contact='x"onmouseover="alert(1)@example.com'))
+    [footer] = re.findall(r'<footer class="site-footer">(.*?)</footer>', render_home(hostile), re.S)
+    assert "<i>Sam</i>" not in footer
+    assert f'<a href="{urls.ABOUT}#license">\u00a9 2012\u20132014 &lt;i&gt;Sam&lt;/i&gt; &amp; Co. All rights reserved.</a>' in footer
+    about = environment(hostile).get_template("about.html").render(page=Page(path=urls.ABOUT, title="t", description="d"))
+    [link] = [a for a in Html(about).all("a") if a.get("href", "").startswith("mailto:")]
+    assert "onmouseover" not in link
+    assert link["href"].startswith('mailto:x"onmouseover="alert(1)@example.com?subject=')
 
 
 def test_images_have_alt_text_and_dimensions(built, parse):

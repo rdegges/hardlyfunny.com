@@ -59,18 +59,30 @@ class Person:
 
 
 @dataclass(frozen=True)
+class License:
+    credit: str  # creditText on every comic image
+    contact: str  # permission requests; shown only in HTML, never in JSON-LD
+
+
+@dataclass(frozen=True)
 class Site:
     title: str
     tagline: str
     author: str
     randall: Person
     url: str
+    license: License
     about_html: str
     comics: tuple[Comic, ...]
 
     @property
     def latest(self) -> Comic:
         return self.comics[-1]
+
+    @property
+    def copyright(self) -> str:
+        """The copyright line, with years from the comics so it can't drift from the archive."""
+        return f"© {self.comics[0].published.year}–{self.latest.published.year} {self.author}. All rights reserved."
 
     def description(self, comic: Comic) -> str:
         """Meta description: the first of these that no earlier comic already uses (No. 82 redraws No. 20):
@@ -166,6 +178,7 @@ def load(path: Path) -> Site:
         author=site["author"],
         randall=Person(**site["randall"]),
         url=site["url"].rstrip("/"),
+        license=License(**site["license"]),
         about_html=site["about_html"],
         comics=comics,
     )

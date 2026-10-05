@@ -7,5 +7,13 @@
     <div class="body">{{ site.about_html | safe }}</div>
   </div>
   <p class="center"><a class="button" href="/" data-r="cd ~" data-label="Read the latest comic">Read the latest comic</a></p>
+  <section class="license" id="license" aria-labelledby="license-title">
+    <h2 id="license-title" data-r="$ cat LICENSE">Using these comics</h2>
+    <p>I drew every Hardly Funny comic, and I keep all rights to them. Please ask me before you reuse one, online or in print.</p>
+    {# CRLF line breaks, as RFC 6068 asks for in a mailto body. #}
+    {% set subject = "Permission to use a Hardly Funny comic" %}
+    {% set body = "Hi Samantha,\r\n\r\nI'd like to use a Hardly Funny comic.\r\n\r\nComic (title or link):\r\nWhere it will appear:\r\nHow it will be used (and whether it's commercial):\r\n\r\nThanks," %}
+    <p><a class="button" href="mailto:{{ site.license.contact }}?subject={{ subject | urlencode }}&amp;body={{ body | urlencode }}" data-r="mail samantha" data-label="Request permission">Request permission</a></p>
+  </section>
 </article>
 {% endblock %}
