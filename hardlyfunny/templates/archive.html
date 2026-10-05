@@ -2,7 +2,7 @@
 {% from "_comic_card.html" import comic_card %}
 {% block main %}
 <h1 class="page-title" data-r="$ ls -la ./comics">Every comic, ever</h1>
-<p class="page-lede">{{ site.comics | length }} comics, {{ site.comics[0].published.strftime("%B %Y") }} to {{ site.latest.published.strftime("%B %Y") }}. Newest first.</p>
+<p class="page-lede">{{ site.comics | length }} comics, {{ site.comics[0].published.strftime("%B %Y") }} to {{ site.latest.published.strftime("%B %Y") }}. Newest first. Or <a href="{{ urls.TOPICS }}">browse by topic</a>.</p>
 <ol class="shelf" reversed>
   {% for comic in site.comics | reverse %}
   {{ comic_card(comic, lazy=loop.index > 8) }}

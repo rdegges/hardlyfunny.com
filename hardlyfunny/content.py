@@ -6,7 +6,7 @@ import html
 import json
 import re
 import unicodedata
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
 
@@ -15,6 +15,9 @@ MIN_NOTE_DESCRIPTION = 80
 
 # Slugs and image file names go into URLs unescaped, so both must already be URL-safe.
 SAFE_NAME = r"[a-z0-9]+(-[a-z0-9]+)*"
+
+# A topic page with one or two comics is a thin page that search engines treat as low quality.
+MIN_TOPIC_COMICS = 3
 
 
 @dataclass(frozen=True)
@@ -34,7 +37,7 @@ class Comic:
     images: tuple[Image, ...]
     transcript: tuple[str, ...]
     note_html: str
-    tags: tuple[str, ...] = field(default_factory=tuple)
+    topics: tuple[str, ...]  # Topic slugs
 
     @property
     def image(self) -> Image:
@@ -53,6 +56,17 @@ class Comic:
     def summary(self) -> str:
         """One or two sentences that describe this comic (meta description, og:description)."""
         return truncate(self.note_text or self.alt, 160)
+
+
+@dataclass(frozen=True)
+class Topic:
+    slug: str
+    title: str
+    intro_html: str
+
+    @property
+    def intro_text(self) -> str:
+        return strip_tags(self.intro_html)
 
 
 @dataclass(frozen=True)
@@ -77,6 +91,7 @@ class Site:
     license: License
     about_html: str
     comics: tuple[Comic, ...]
+    topics: tuple[Topic, ...]
 
     @property
     def latest(self) -> Comic:
@@ -105,6 +120,13 @@ class Site:
         if sum(c.title == comic.title for c in self.comics) > 1:
             return f"{comic.title} (No. {comic.number})"
         return comic.title
+
+    def topics_of(self, comic: Comic) -> list[Topic]:
+        return [t for slug in comic.topics for t in self.topics if t.slug == slug]
+
+    def comics_about(self, topic: Topic) -> list[Comic]:
+        """The topic's comics, newest first."""
+        return [c for c in reversed(self.comics) if topic.slug in c.topics]
 
     def neighbours(self, comic: Comic) -> tuple[Comic | None, Comic | None]:
         i = comic.number - 1
@@ -141,8 +163,19 @@ class ContentError(ValueError):
     """content/comics.json is inconsistent; the message says what to fix."""
 
 
-def validate(comics: tuple[Comic, ...]) -> None:
+def validate(comics: tuple[Comic, ...], topics: tuple[Topic, ...]) -> None:
     """Catch hand-editing mistakes before they become broken navigation."""
+    topic_slugs: set[str] = set()
+    for t in topics:
+        if not re.fullmatch(SAFE_NAME, t.slug):
+            raise ContentError(f"Topic slug “{t.slug}” must be lowercase letters, digits and hyphens.")
+        if t.slug in topic_slugs:
+            raise ContentError(f"Topic slug “{t.slug}” is used twice. Every topic needs its own.")
+        if not t.title.strip():
+            raise ContentError(f"Topic “{t.slug}” needs a title.")
+        if not strip_tags(t.intro_html).strip():
+            raise ContentError(f"Topic “{t.slug}” needs an intro.")
+        topic_slugs.add(t.slug)
     seen: set[str] = set()
     for i, c in enumerate(comics):
         if c.number != i + 1:
@@ -159,6 +192,18 @@ def validate(comics: tuple[Comic, ...]) -> None:
                 raise ContentError(f"No. {c.number} image “{img.file}” must be comics/ then lowercase letters, digits and hyphens, ending .png or .jpg.")
         if not c.images or any(not img.alt.strip() for img in c.images):
             raise ContentError(f"No. {c.number} needs at least one image, and every image needs alt text.")
+        if not c.topics:
+            raise ContentError(f"No. {c.number} has no topics. Give it at least one slug from the topics list.")
+        if len(set(c.topics)) != len(c.topics):
+            repeated = next(s for s in c.topics if c.topics.count(s) > 1)
+            raise ContentError(f"No. {c.number} lists topic “{repeated}” twice. List each topic once.")
+        for slug in c.topics:
+            if slug not in topic_slugs:
+                raise ContentError(f"No. {c.number} has topic “{slug}”, which isn't in the topics list.")
+    for t in topics:
+        count = sum(t.slug in c.topics for c in comics)
+        if count < MIN_TOPIC_COMICS:
+            raise ContentError(f"Topic “{t.slug}” has {count} comics. Every topic needs at least {MIN_TOPIC_COMICS}.")
 
 
 def load(path: Path) -> Site:
@@ -172,11 +217,12 @@ def load(path: Path) -> Site:
             images=tuple(Image(**img) for img in c["images"]),
             transcript=tuple(c["transcript"]),
             note_html=c["note_html"],
-            tags=tuple(c.get("tags", ())),
+            topics=tuple(c.get("topics", ())),
         )
         for c in data["comics"]
     )
-    validate(comics)
+    topics = tuple(Topic(**t) for t in data.get("topics", ()))
+    validate(comics, topics)
     site = data["site"]
     return Site(
         title=site["title"],
@@ -187,4 +233,5 @@ def load(path: Path) -> Site:
         license=License(**site["license"]),
         about_html=site["about_html"],
         comics=comics,
+        topics=topics,
     )

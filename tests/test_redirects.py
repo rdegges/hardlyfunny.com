@@ -9,6 +9,7 @@ from hardlyfunny import redirects, urls
 from hardlyfunny.build import ROOT
 
 OLD = json.loads((ROOT / "archive" / "wordpress_urls.json").read_text(encoding="utf-8"))["comics"]
+ARCHIVED = json.loads((ROOT / "archive" / "comics.json").read_text(encoding="utf-8"))["comics"]
 
 
 def rules(built):
@@ -103,7 +104,8 @@ def old_urls(site):
         if len(rest) == 2:
             both(f"/{y}/{rest[0]}/{int(rest[1])}/", urls.ARCHIVE)
             both(f"/{y}/{int(rest[0])}/{rest[1]}/", urls.ARCHIVE)
-    for tag in {t for c in site.comics for t in c.tags}:
+    # The tags live on in the WordPress export only; content/ has curated topics instead.
+    for tag in {t for c in ARCHIVED for t in c["tags"]}:
         for suffix in ("", "page/2/", "feed/"):
             out[f"/tag/{wordpress_slug(tag)}/{suffix}"] = urls.ARCHIVE
     # /feed/ itself is the feed again; /feed reaches it through Cloudflare's trailing-slash handling.
@@ -208,7 +210,8 @@ def test_no_rule_shadows_a_real_page(built):
 
 
 def test_new_urls_are_not_redirected(built, site):
-    for path in ["/", urls.ARCHIVE, urls.ABOUT, urls.FEED, *(urls.comic(c) for c in site.comics)]:
+    for path in ["/", urls.ARCHIVE, urls.ABOUT, urls.FEED, urls.TOPICS, *(urls.topic(t) for t in site.topics),
+                 *(urls.comic(c) for c in site.comics)]:
         assert follow(built, path) == (None, None), path
 
 

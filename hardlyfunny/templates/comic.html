@@ -6,6 +6,11 @@
 <li><span class="button" aria-disabled="true" data-r="{{ randall }}" data-label="{{ label }}">{{ label }}</span></li>
   {% endif %}
 {% endmacro %}
+{% macro topic_links() %}
+      <ul class="tags" aria-label="Topics">
+        {% for topic in site.topics_of(comic) %}<li><a href="{{ urls.topic(topic) }}">{{ topic.title }}</a></li>{% endfor %}
+      </ul>
+{% endmacro %}
 {% block main %}
 {% set permalink = urls.comic(comic) %}
 {% if home %}
@@ -67,13 +72,12 @@
     <div class="bubble">
       <h2 id="note-title" data-r="// commit message from samantha">Samantha says…</h2>
       <div class="body">{{ comic.note_html | safe }}</div>
-      {% if comic.tags %}
-      <ul class="tags" aria-label="Topics">
-        {% for tag in comic.tags %}<li>{{ tag | lower | replace(" ", "-") }}</li>{% endfor %}
-      </ul>
-      {% endif %}
+      {{ topic_links() }}
     </div>
   </section>
+  {% else %}
+  {# No note to sit under: the links stand alone, so every comic still leads to its topics. #}
+  {{ topic_links() }}
   {% endif %}
 
   <section class="share" aria-labelledby="share-title">

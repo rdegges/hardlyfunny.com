@@ -49,6 +49,8 @@ def test_titles_follow_the_house_format(built, site, parse):
         built / "about" / "index.html": f"About - {site.title}",
         built / "random" / "index.html": f"Random comic - {site.title}",
         built / "404.html": f"Page not found - {site.title}",
+        built / "topics" / "index.html": f"Topics - {site.title}",
+        **{built / "topics" / t.slug / "index.html": f"Comics about {t.title} - {site.title}" for t in site.topics},
     }
     checked = set()
     for path in html_pages(built):
@@ -267,7 +269,7 @@ def test_home_intro_escapes_the_site_title(site):
 # Samantha's Person node may never carry sameAs or an off-site url: the test enforces that, so no
 # allowlist entry can grant it.
 JSONLD_TYPES = {"WebSite", "ComicSeries", "ComicStory", "Person", "ImageObject", "BreadcrumbList", "ListItem",
-                "AboutPage"}
+                "AboutPage", "CollectionPage"}
 JSONLD_OFFSITE_URLS = {(SITE_URL + "/about/#randall", "url"): "https://rdegges.com"}
 JSONLD_LINK_KEYS = ("url", "item", "contentUrl", "license", "acquireLicensePage", "sameAs")
 SAMANTHA = SITE_URL + "/about/#samantha"
@@ -288,6 +290,8 @@ def test_jsonld_is_well_formed_on_site_and_self_contained(built, site, parse):
     home, about = built / "index.html", built / urls.output_path(urls.ABOUT)
     comics = sorted((built / "comics").glob("*/index.html"))
     assert site.comics and len(comics) == len(site.comics)
+    topics = sorted((built / "topics").glob("*/index.html"))
+    assert site.topics and len(topics) == len(site.topics)
     assert not any(node_id == SAMANTHA for node_id, _ in JSONLD_OFFSITE_URLS), "no off-site URL for Samantha"
     ids = {}  # target page -> its id= attributes
 
@@ -301,7 +305,7 @@ def test_jsonld_is_well_formed_on_site_and_self_contained(built, site, parse):
         blocks = jsonld_blocks(html)
         # A block the regex misses would skip every check below, so count script tags separately.
         assert len(blocks) == len(parse(path).all("script", type="application/ld+json")), path
-        if path in (home, about) or path in comics:
+        if path in (home, about) or path in comics or path in topics:
             assert blocks, f"{path} has no JSON-LD"
         nodes = [n for b in blocks for n in jsonld_nodes(b)]
         defined = {n["@id"] for n in nodes if "@id" in n and "@type" in n and "name" in n}
@@ -542,7 +546,8 @@ def test_feed_is_linked_and_labelled_feed(built, parse):
 def test_sitemap_robots_and_llms_txt(built, site):
     ns = "{http://www.sitemaps.org/schemas/sitemap/0.9}"
     locs = [l.text for l in ET.parse(built / "sitemap.xml").getroot().iter(f"{ns}loc")]
-    assert len(locs) == len(site.comics) + 3
+    assert len(locs) == len(set(locs)) == len(site.comics) + 4 + len(site.topics)
+    assert {f"{SITE_URL}/topics/", *(f"{SITE_URL}/topics/{t.slug}/" for t in site.topics)} <= set(locs)
     assert f"{SITE_URL}/random/" not in locs
     assert (built / "robots.txt").read_text() == (
         "User-agent: *\n"
@@ -809,3 +814,172 @@ def test_header_shows_her_banner_and_his_wordmark(built, parse):
     assert ".brand .couple { display: var(--randall-only);" in css
     # Randall mode undoes the hidden wordmark for both the switch and the OS dark setting.
     assert '[data-mode="randall"] .brand-text' in css and ':not([data-mode="samantha"]) .brand-text' in css
+
+
+# Topic expectations are read from comics.json directly, not through the model, so a loader or
+# Site.comics_about bug can't hide on both sides of the comparison.
+RAW = json.loads((CONTENT / "comics.json").read_text(encoding="utf-8"))
+
+
+def raw_comics_about(slug):
+    """Comic URLs with this topic, newest first."""
+    tagged = [c for c in RAW["comics"] if slug in c["topics"]]
+    return [f"/comics/{c['slug']}/" for c in sorted(tagged, key=lambda c: (c["date"], c["number"]), reverse=True)]
+
+
+def links_in(html):
+    """(href, text) for every link in an HTML fragment."""
+    return [(href, re.sub(r"<[^>]+>", "", text).strip())
+            for href, text in re.findall(r'<a href="([^"]+)"[^>]*>(.*?)</a>', html, re.S)]
+
+
+def test_every_topic_page_lists_exactly_its_comics_newest_first(built, parse):
+    assert len(RAW["topics"]) == 8
+    for topic in RAW["topics"]:
+        path = built / "topics" / topic["slug"] / "index.html"
+        html = path.read_text()
+        page = parse(path)
+        assert [h for h in page.headings if h[0] == "h1"] == [("h1", topic["title"])], topic["slug"]
+        assert topic["intro_html"] in html, topic["slug"]
+        [shelf] = re.findall(r'<ol class="shelf">(.*?)</ol>', html, re.S)
+        cards = [href for href, _ in links_in(shelf)]
+        assert cards == raw_comics_about(topic["slug"]) and len(cards) >= 3, topic["slug"]
+        assert f"{len(cards)} comics, newest first." in html
+        # Thumbnails, like the archive, not the full comic images.
+        assert all(i["src"].startswith("/images/thumbs/") for i in Html(shelf).all("img")), topic["slug"]
+        url = f"{SITE_URL}/topics/{topic['slug']}/"
+        assert page.all("link", rel="canonical")[0]["href"] == page.meta("og:url") == url
+
+
+def test_topic_intro_shows_less_than_three_as_text(built):
+    html = (built / "topics" / "dating-and-marriage" / "index.html").read_text()
+    [intro] = re.findall(r'<div class="page-lede topic-intro">(.*?)</div>', html, re.S)
+    assert "writes &lt;3 in my cards" in intro and "<3" not in intro
+
+
+def test_topic_descriptions_come_from_the_intro_and_fit_search_results(built, site, parse):
+    for topic in site.topics:
+        path = built / "topics" / topic.slug / "index.html"
+        page = parse(path)
+        description = page.meta("description")
+        assert 0 < len(description) <= 160 and description.rstrip("…") in topic.intro_text, topic.slug
+        assert page.meta("og:description") == page.meta("twitter:description") == description
+        [block] = jsonld_blocks(path.read_text())
+        [collection] = [n for n in block["@graph"] if n["@type"] == "CollectionPage"]
+        assert collection["description"] == description
+    index = parse(built / "topics" / "index.html").meta("description")
+    assert 0 < len(index) <= 160, index
+
+
+def test_topics_index_lists_every_topic_with_its_count(built, parse):
+    html = (built / "topics" / "index.html").read_text()
+    [listing] = re.findall(r'<ul class="topic-list">(.*?)</ul>', html, re.S)
+    items = re.findall(r"<li>(.*?)</li>", listing, re.S)
+    assert len(items) == len(RAW["topics"])
+    for item, topic in zip(items, RAW["topics"]):
+        assert links_in(item) == [(f"/topics/{topic['slug']}/", topic["title"])], topic["slug"]
+        assert f'<p class="count">{len(raw_comics_about(topic["slug"]))} comics</p>' in item, topic["slug"]
+    assert [h for h in parse(built / "topics" / "index.html").headings if h[0] == "h1"] == [("h1", "Comics by topic")]
+
+
+def test_archive_links_to_the_topics(built):
+    html = (built / "archive" / "index.html").read_text()
+    [lede] = re.findall(r'<p class="page-lede">(.*?)</p>', html, re.S)
+    assert links_in(lede) == [(urls.TOPICS, "browse by topic")]
+
+
+def test_every_comic_links_to_each_of_its_topics(built):
+    titles = {t["slug"]: t["title"] for t in RAW["topics"]}
+    for comic in RAW["comics"]:
+        pages = [built / "comics" / comic["slug"] / "index.html"]
+        if comic is RAW["comics"][-1]:
+            pages.append(built / "index.html")
+        for path in pages:
+            [block] = re.findall(r'<ul class="tags" aria-label="Topics">(.*?)</ul>', path.read_text(), re.S)
+            expected = [(f"/topics/{slug}/", titles[slug]) for slug in comic["topics"]]
+            assert links_in(block) == expected and expected, path
+            assert all((built / urls.output_path(href)).is_file() for href, _ in expected), path
+
+
+def test_no_template_or_module_still_reads_tags():
+    # Tags became topics; a leftover reference renders nothing and fails silently.
+    from hardlyfunny.content import Comic
+    assert "tags" not in {f.name for f in dataclasses.fields(Comic)}
+    package = CONTENT.parent / "hardlyfunny"
+    for path in (package / "templates").glob("*.html"):
+        text = path.read_text().replace('class="tags"', "")
+        assert not re.search(r"\btags?\b", text), path
+    for path in package.glob("*.py"):
+        assert not re.search(r'\.tags\b|"tags"', path.read_text()), path
+
+
+def test_randall_labels_on_topic_pages_never_wrap_a_link(built):
+    # site.js relabel() replaces a [data-r] element's text, which would delete any link inside it.
+    for path in [built / "topics" / "index.html", *(built / "topics").glob("*/index.html")]:
+        [main] = re.findall(r'<main id="main" tabindex="-1">(.*?)</main>', path.read_text(), re.S)
+        labelled = re.findall(r'<(\w+)[^>]*\bdata-r="[^"]*"[^>]*>(.*?)</\1>', main, re.S)
+        assert labelled, path
+        assert not [inner for _, inner in labelled if "<a " in inner], path
+
+
+def test_llms_txt_lists_the_topic_pages_and_each_comics_topics(built, site):
+    for name in ("llms.txt", "llms-full.txt"):
+        lines = (built / name).read_text().splitlines()
+        listed = [l for l in lines[lines.index("## Topics") + 1:lines.index("## Comics")] if l]
+        assert listed == [f"- [{t.title}]({SITE_URL}/topics/{t.slug}/): {t.intro_text}" for t in site.topics], name
+        assert f"- [Topics]({SITE_URL}/topics/): the comics grouped by topic" in lines, name
+        for comic in site.comics:
+            [line] = [l for l in lines if l.startswith(f"- [#{comic.number}: ")]
+            assert line.endswith(f" Topics: {', '.join(t.title for t in site.topics_of(comic))}."), name
+
+
+def test_sitemap_dates_each_topic_page_by_its_newest_comic(built):
+    ns = "{http://www.sitemaps.org/schemas/sitemap/0.9}"
+    lastmod = {u.find(f"{ns}loc").text: u.find(f"{ns}lastmod").text
+               for u in ET.parse(built / "sitemap.xml").getroot().iter(f"{ns}url") if u.find(f"{ns}lastmod") is not None}
+    assert lastmod[f"{SITE_URL}/topics/"] == max(c["date"] for c in RAW["comics"])
+    for topic in RAW["topics"]:
+        newest = max(c["date"] for c in RAW["comics"] if topic["slug"] in c["topics"])
+        assert lastmod[f"{SITE_URL}/topics/{topic['slug']}/"] == newest, topic["slug"]
+
+
+def test_topic_link_prefix_stays_out_of_the_accessible_name(built):
+    # "#" / "--tag=" is decoration; the empty alt text after "/" keeps screen readers from
+    # announcing it as part of every topic link.
+    css = (built / "site.css").read_text()
+    assert re.search(r'\.tags a::before \{[^}]*content: var\(--tag-prefix\) / "";', css)
+
+
+def test_comics_without_a_note_show_their_topics_outside_the_bubble(built):
+    for comic in RAW["comics"]:
+        html = (built / "comics" / comic["slug"] / "index.html").read_text()
+        [main] = re.findall(r'<main id="main" tabindex="-1">(.*?)</main>', html, re.S)
+        bubble = re.findall(r'<div class="bubble">(.*?)</section>', main, re.S)
+        assert main.count('aria-label="Topics"') == 1, comic["number"]
+        assert bool(bubble) == bool(comic["note_html"]), comic["number"]
+        if bubble:
+            assert 'aria-label="Topics"' in bubble[0], comic["number"]
+
+
+def test_hostile_topic_titles_are_escaped_everywhere_they_render(tmp_path):
+    # Titles are plain text in comics.json; every output must treat them as text.
+    import shutil
+    from hardlyfunny.build import build
+    content = tmp_path / "content"
+    shutil.copytree(CONTENT, content)
+    data = json.loads((content / "comics.json").read_text(encoding="utf-8"))
+    nasty = 'Café <xss>&amp;</xss> "quotes" ☕'
+    data["topics"][0]["title"] = nasty
+    slug = data["topics"][0]["slug"]
+    (content / "comics.json").write_text(json.dumps(data), encoding="utf-8")
+    out = tmp_path / "site"
+    build(out, content=content, portable=True)
+    escaped = "Café &lt;xss&gt;&amp;amp;&lt;/xss&gt; "
+    comic = next(c for c in data["comics"] if slug in c["topics"])
+    for page in (out / "topics" / slug / "index.html", out / "topics" / "index.html",
+                 out / "comics" / comic["slug"] / "index.html"):
+        html = page.read_text()
+        assert "<xss>" not in html and escaped in html, page
+    assert Html((out / "topics" / slug / "index.html").read_text()).headings[0] == ("h1", nasty)
+    categories = ET.parse(out / "feed" / "index.html").getroot().iter("{http://www.w3.org/2005/Atom}category")
+    assert nasty in {c.get("label") for c in categories}

@@ -6,7 +6,7 @@ import json
 from xml.sax.saxutils import escape as xml_escape
 
 from . import urls
-from .content import Comic, Site
+from .content import Comic, Site, Topic
 
 # Content Signals (contentsignals.org) say what crawlers may do with a page after fetching it.
 # The comic wants to be found, quoted and remembered, so all three are yes.
@@ -75,19 +75,37 @@ def comic_jsonld(site: Site, comic: Comic) -> str:
         "isPartOf": _series(site),
         "inLanguage": "en",
     }
-    if comic.tags:
-        story["keywords"] = ", ".join(comic.tags)
+    if comic.topics:
+        story["keywords"] = ", ".join(t.title for t in site.topics_of(comic))
     if comic.transcript:
         story["text"] = "\n".join(comic.transcript)
     crumbs = [("Home", urls.HOME), ("Archive", urls.ARCHIVE), (site.display_title(comic), urls.comic(comic))]
-    breadcrumbs = {
+    return _dump({"@context": "https://schema.org", "@graph": [story, _breadcrumbs(site, crumbs), *_people(site)]})
+
+
+def _breadcrumbs(site: Site, crumbs: list[tuple[str, str]]) -> dict:
+    return {
         "@type": "BreadcrumbList",
         "itemListElement": [
             {"@type": "ListItem", "position": i, "name": name, "item": urls.absolute(site.url, path)}
             for i, (name, path) in enumerate(crumbs, 1)
         ],
     }
-    return _dump({"@context": "https://schema.org", "@graph": [story, breadcrumbs, *_people(site)]})
+
+
+def topic_jsonld(site: Site, topic: Topic, description: str) -> str:
+    page = urls.absolute(site.url, urls.topic(topic))
+    crumbs = [("Home", urls.HOME), ("Topics", urls.TOPICS), (topic.title, urls.topic(topic))]
+    return _dump({
+        "@context": "https://schema.org",
+        "@graph": [
+            {"@type": "CollectionPage", "@id": page, "name": f"Comics about {topic.title}", "url": page,
+             "description": description, "isPartOf": {"@id": site.url + "/#series"}, "inLanguage": "en"},
+            _breadcrumbs(site, crumbs),
+            _series(site),
+            *_people(site),
+        ],
+    })
 
 
 def home_jsonld(site: Site) -> str:
@@ -124,7 +142,9 @@ def _dump(data: dict) -> str:
 
 def sitemap(site: Site) -> str:
     # Image entries go on comic pages only, so each image is listed once, under its permalink.
-    rows = [(urls.HOME, site.latest.published, ()), (urls.ARCHIVE, site.latest.published, ()), (urls.ABOUT, None, ())]
+    rows = [(urls.HOME, site.latest.published, ()), (urls.ARCHIVE, site.latest.published, ()), (urls.ABOUT, None, ()),
+            (urls.TOPICS, site.latest.published, ())]
+    rows += [(urls.topic(t), next((c.published for c in site.comics_about(t)), None), ()) for t in site.topics]
     rows += [(urls.comic(c), c.published, c.images) for c in site.comics]
     body = "".join(
         f"  <url><loc>{xml_escape(urls.absolute(site.url, path))}</loc>"
@@ -166,15 +186,21 @@ def llms_txt(site: Site, full: bool = False) -> str:
         "## Pages",
         "",
         f"- [Archive]({urls.absolute(site.url, urls.ARCHIVE)}): every comic, newest first",
+        f"- [Topics]({urls.absolute(site.url, urls.TOPICS)}): the comics grouped by topic",
         f"- [About]({urls.absolute(site.url, urls.ABOUT)}): who Samantha, Randall and Scribbles are",
         f"- [Atom feed]({urls.absolute(site.url, urls.FEED)})",
+        "",
+        "## Topics",
+        "",
+        *(f"- [{t.title}]({urls.absolute(site.url, urls.topic(t))}): {t.intro_text}" for t in site.topics),
         "",
         "## Comics",
         "",
     ]
     for c in site.comics:
+        topics = ", ".join(t.title for t in site.topics_of(c))
         lines.append(f"- [#{c.number}: {c.title}]({urls.absolute(site.url, urls.comic(c))}) "
-                     f"({c.published.isoformat()}): {c.alt}")
+                     f"({c.published.isoformat()}): {c.alt} Topics: {topics}.")
         if full:
             if c.transcript:
                 lines += ["", "  Transcript:", *[f"  {t}" for t in c.transcript]]

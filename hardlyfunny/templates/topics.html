@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block main %}
+<h1 class="page-title" data-r="$ ls ./topics">Comics by topic</h1>
+<p class="page-lede">All {{ site.comics | length }} comics, sorted by what they're about. Some fit more than one.</p>
+<ul class="topic-list">
+  {% for topic in site.topics %}
+  <li>
+    <h2><a href="{{ urls.topic(topic) }}">{{ topic.title }}</a></h2>
+    <p class="count">{{ site.comics_about(topic) | length }} comics</p>
+    {{ topic.intro_html | safe }}
+  </li>
+  {% endfor %}
+</ul>
+{% endblock %}

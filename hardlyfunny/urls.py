@@ -2,18 +2,24 @@
 
 from __future__ import annotations
 
-from .content import Comic, Image
+from .content import Comic, Image, Topic
 
 HOME = "/"
 ARCHIVE = "/archive/"
 ABOUT = "/about/"
 RANDOM = "/random/"
+# Not /tag/: the old WordPress tag listings redirect from there.
+TOPICS = "/topics/"
 FEED = "/feed/"
 SITEMAP = "/sitemap.xml"
 
 
 def comic(c: Comic) -> str:
     return f"/comics/{c.slug}/"
+
+
+def topic(t: Topic) -> str:
+    return f"/topics/{t.slug}/"
 
 
 def comic_image(img: Image) -> str:

@@ -174,7 +174,8 @@ def test_redirects_keep_the_query_string():
 
 
 def test_new_urls_are_pages_with_security_headers(site):
-    for path in ["/", urls.ARCHIVE, urls.ABOUT, urls.RANDOM, *(urls.comic(c) for c in site.comics)]:
+    for path in ["/", urls.ARCHIVE, urls.ABOUT, urls.RANDOM, urls.TOPICS, *(urls.topic(t) for t in site.topics),
+                 *(urls.comic(c) for c in site.comics)]:
         status, headers, _ = get(path)
         assert status == 200, path
         assert headers["content-type"].startswith("text/html"), path
