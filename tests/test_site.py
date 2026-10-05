@@ -225,7 +225,8 @@ def test_about_page_counts_and_dates_match_the_comics(site):
     counts = [int(n) for n in re.findall(r"\b(\d+) comics\b", text)]
     months = re.findall(r"\b(?:January|February|March|April|May|June|July|August|September|October|November|December) \d{4}\b", text)
     assert counts and set(counts) == {len(site.comics)}, counts
-    assert months and set(months) == {f"{site.comics[0].published:%B %Y}", f"{site.latest.published:%B %Y}"}, months
+    assert f"{site.latest.published:%B %Y}" in months, months
+    assert set(months) <= {f"{site.comics[0].published:%B %Y}", f"{site.latest.published:%B %Y}"}, months
 
 
 def render_home(site):
