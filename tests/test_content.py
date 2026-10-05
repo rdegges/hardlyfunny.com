@@ -259,6 +259,11 @@ def _topic(slug):
     (lambda cs, ts: (cs, (*ts, _topic("unused"))), r"Topic “unused” has 0 comics\. Every topic needs at least 3"),
     (lambda cs, ts: (_tag_first(cs, 2, "thin"), (*ts, _topic("thin"))), r"Topic “thin” has 2 comics"),
     (lambda cs, ts: (cs, (*ts, ts[0])), r"Topic slug “working-from-home” is used twice"),
+    (lambda cs, ts: ((cs[0], dataclasses.replace(cs[1], topics=("gaming", "holidays", "gaming")), *cs[2:]), ts),
+     r"No\. 2 lists topic “gaming” twice"),
+    (lambda cs, ts: (cs, (dataclasses.replace(ts[0], title=" "), *ts[1:])), r"Topic “working-from-home” needs a title"),
+    (lambda cs, ts: (cs, (dataclasses.replace(ts[0], intro_html="<p> </p>"), *ts[1:])),
+     r"Topic “working-from-home” needs an intro"),
 ])
 def test_validation_catches_topic_mistakes(site, break_it, message):
     with pytest.raises(ContentError, match=message):

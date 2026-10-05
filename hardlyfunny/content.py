@@ -171,6 +171,10 @@ def validate(comics: tuple[Comic, ...], topics: tuple[Topic, ...]) -> None:
             raise ContentError(f"Topic slug “{t.slug}” must be lowercase letters, digits and hyphens.")
         if t.slug in topic_slugs:
             raise ContentError(f"Topic slug “{t.slug}” is used twice. Every topic needs its own.")
+        if not t.title.strip():
+            raise ContentError(f"Topic “{t.slug}” needs a title.")
+        if not strip_tags(t.intro_html).strip():
+            raise ContentError(f"Topic “{t.slug}” needs an intro.")
         topic_slugs.add(t.slug)
     seen: set[str] = set()
     for i, c in enumerate(comics):
@@ -190,6 +194,9 @@ def validate(comics: tuple[Comic, ...], topics: tuple[Topic, ...]) -> None:
             raise ContentError(f"No. {c.number} needs at least one image, and every image needs alt text.")
         if not c.topics:
             raise ContentError(f"No. {c.number} has no topics. Give it at least one slug from the topics list.")
+        if len(set(c.topics)) != len(c.topics):
+            repeated = next(s for s in c.topics if c.topics.count(s) > 1)
+            raise ContentError(f"No. {c.number} lists topic “{repeated}” twice. List each topic once.")
         for slug in c.topics:
             if slug not in topic_slugs:
                 raise ContentError(f"No. {c.number} has topic “{slug}”, which isn't in the topics list.")
