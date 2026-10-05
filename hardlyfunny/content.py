@@ -19,6 +19,9 @@ SAFE_NAME = r"[a-z0-9]+(-[a-z0-9]+)*"
 # A topic page with one or two comics is a thin page that search engines treat as low quality.
 MIN_TOPIC_COMICS = 3
 
+# The frozen WordPress export: the only tags a topic can take over.
+WORDPRESS_EXPORT = Path(__file__).resolve().parent.parent / "archive" / "comics.json"
+
 
 @dataclass(frozen=True)
 class Image:
@@ -63,6 +66,7 @@ class Topic:
     slug: str
     title: str
     intro_html: str
+    wordpress_tags: tuple[str, ...] = ()  # case-folded old tag names whose /tag/ URLs redirect here
 
     @property
     def intro_text(self) -> str:
@@ -163,8 +167,19 @@ class ContentError(ValueError):
     """content/comics.json is inconsistent; the message says what to fix."""
 
 
-def validate(comics: tuple[Comic, ...], topics: tuple[Topic, ...]) -> None:
-    """Catch hand-editing mistakes before they become broken navigation."""
+def wordpress_tags(path: Path = WORDPRESS_EXPORT) -> tuple[tuple[str, ...], ...]:
+    """Each old post's tags, as the WordPress export has them."""
+    return tuple(tuple(c["tags"]) for c in json.loads(path.read_text(encoding="utf-8"))["comics"])
+
+
+def validate(comics: tuple[Comic, ...], topics: tuple[Topic, ...], old_tags: frozenset[str] | None = None) -> None:
+    """Catch hand-editing mistakes before they become broken navigation.
+
+    old_tags: the case-folded tag names a topic may take over; every tag of the WordPress export by default.
+    """
+    if old_tags is None:
+        old_tags = frozenset(t.casefold() for post in wordpress_tags() for t in post)
+    claimed: dict[str, str] = {}
     topic_slugs: set[str] = set()
     for t in topics:
         if not re.fullmatch(SAFE_NAME, t.slug):
@@ -175,6 +190,12 @@ def validate(comics: tuple[Comic, ...], topics: tuple[Topic, ...]) -> None:
             raise ContentError(f"Topic “{t.slug}” needs a title.")
         if not strip_tags(t.intro_html).strip():
             raise ContentError(f"Topic “{t.slug}” needs an intro.")
+        for name in t.wordpress_tags:
+            if name not in old_tags:
+                raise ContentError(f"Topic “{t.slug}” lists WordPress tag “{name}”, which isn't a tag in archive/comics.json. Use the tag's name in lowercase.")
+            if name in claimed:
+                raise ContentError(f"WordPress tag “{name}” is listed under “{claimed[name]}” and again under “{t.slug}”. Its old URL can redirect to only one topic.")
+            claimed[name] = t.slug
         topic_slugs.add(t.slug)
     seen: set[str] = set()
     for i, c in enumerate(comics):
@@ -221,7 +242,7 @@ def load(path: Path) -> Site:
         )
         for c in data["comics"]
     )
-    topics = tuple(Topic(**t) for t in data.get("topics", ()))
+    topics = tuple(Topic(**{**t, "wordpress_tags": tuple(t.get("wordpress_tags", ()))}) for t in data.get("topics", ()))
     validate(comics, topics)
     site = data["site"]
     return Site(
