@@ -1,6 +1,7 @@
 import dataclasses
 import json
 import re
+import shutil
 
 import pytest
 from PIL import Image as PILImage
@@ -147,13 +148,38 @@ def test_validation_catches_hand_editing_mistakes(site, break_it, message):
     "comics/animated.gif",
     "../x.png",
     "comics/../x.png",
+    "",
+    "x.png",  # README: the field is comics/<name>.<ext>, never a bare name
+    "comics/.png",
+    "comics/x.PNG",
+    "comics/x.jpeg",
+    "Comics/x.png",
+    "images/x.png",
+    "/comics/x.png",
+    "comics//x.png",
+    "comics/sub/x.png",
+    "comics\\x.png",
+    "comics/x.png.png",
+    "comics/-x.png",
+    "comics/x-.png",
+    "comics/x--y.png",
+    "comics/x_y.png",
+    "comics/x%20y.png",
+    "comics/x.png?v=2",
+    "comics/x.png#top",
+    "comics/x.png\n",
+    "comics/x.png ",
+    " comics/x.png",
+    "comics/café.png",
+    "comics/\uff11.png",  # fullwidth digit: \d would accept it, [0-9] must not
 ])
 def test_validation_rejects_image_files_that_are_not_url_safe(site, file):
     # These names reach <img src>, the image sitemap, JSON-LD and the feed without percent-encoding.
     second = site.comics[1]
     broken = dataclasses.replace(second, images=(dataclasses.replace(second.image, file=file),))
-    with pytest.raises(ContentError, match=r"No\. 2 image"):
+    with pytest.raises(ContentError, match=r"No\. 2 image") as excinfo:
         validate((site.comics[0], broken, *site.comics[2:]))
+    assert file in str(excinfo.value)
 
 
 def test_every_real_image_file_passes_validation(site):
@@ -166,3 +192,52 @@ def test_archived_links_are_well_formed_wayback_snapshots(site):
     assert archived, "dead links in notes are replaced with Internet Archive snapshots"
     for href in archived:
         assert re.fullmatch(r"https://web\.archive\.org/web/(19|20)\d{12}/https?://\S+", href), href
+
+
+@pytest.mark.parametrize("file", ["comics/a.png", "comics/0.jpg", "comics/404.png", "comics/a-1-b2.jpg"])
+def test_validation_accepts_minimal_url_safe_image_files(site, file):
+    # Boundaries of the rule: one-character names, digits only, hyphen-joined runs, both extensions.
+    second = site.comics[1]
+    ok = dataclasses.replace(second, images=(dataclasses.replace(second.image, file=file),))
+    validate((site.comics[0], ok, *site.comics[2:]))
+
+
+def test_validation_checks_every_image_not_just_the_first(site):
+    # No. 17 is the only multi-image comic; its second panel must be held to the same rule.
+    i = 16
+    c = site.comics[i]
+    assert len(c.images) > 1
+    broken = dataclasses.replace(c, images=(c.images[0], dataclasses.replace(c.images[1], file="comics/Panel 2.png")))
+    with pytest.raises(ContentError, match=r"No\. 17 image") as excinfo:
+        validate((*site.comics[:i], broken, *site.comics[i + 1:]))
+    assert "comics/Panel 2.png" in str(excinfo.value)
+
+
+def test_image_name_check_does_not_mask_the_missing_image_and_alt_text_checks(site):
+    # The new per-image loop runs first; a comic with no images, or a safe name but blank alt,
+    # must still reach the existing "at least one image / alt text" error.
+    second = site.comics[1]
+    for broken in (dataclasses.replace(second, images=()),
+                   dataclasses.replace(second, images=(dataclasses.replace(second.image, alt="  "),))):
+        with pytest.raises(ContentError, match="alt text"):
+            validate((site.comics[0], broken, *site.comics[2:]))
+
+
+def test_build_refuses_unsafe_image_file_before_touching_the_output(tmp_path):
+    # End to end through load(): a traversal path in comics.json must stop the build before
+    # _clear() wipes the previous output or images.py copies anything outside out/images.
+    from hardlyfunny.build import build
+
+    content = tmp_path / "content"
+    shutil.copytree(CONTENT, content)
+    data = json.loads((content / "comics.json").read_text(encoding="utf-8"))
+    data["comics"][1]["images"][0]["file"] = "../../escape.png"
+    (content / "comics.json").write_text(json.dumps(data), encoding="utf-8")
+    out = tmp_path / "site"
+    out.mkdir()
+    (out / "index.html").write_text("previous build")
+
+    with pytest.raises(ContentError, match=r"No\. 2 image"):
+        build(out, content=content)
+    assert (out / "index.html").read_text() == "previous build"
+    assert not (tmp_path / "escape.png").exists()
