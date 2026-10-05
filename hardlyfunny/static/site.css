@@ -278,11 +278,16 @@ main { padding-block: 16px 40px; }
 .about .body::after { content: var(--note-close); display: block; color: var(--muted); }
 .license { margin-top: 30px; text-align: center; }
 .license h2 { font: 600 18px/1.2 var(--display); margin: 0 0 8px; }
+/* Pulled up under the button so it reads as part of it, not as a new paragraph. */
+.license-alt { margin: -6px 0 0; color: var(--muted); font-size: 15px; }
+.license-alt a { overflow-wrap: anywhere; }
 .center { text-align: center; }
 
 /* Footer */
 .site-footer { border-top: 2px dashed var(--line); padding-block: 22px 40px; color: var(--muted); font-size: 14px; text-align: center; }
 .site-footer p { margin: 4px 0; }
+/* Keeps "reserved." from wrapping onto a line of its own on phones in Randall mode. */
+.site-footer .copyright { text-wrap: balance; }
 .keys { margin-top: 14px !important; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 6px 16px; }
 .keys > span { white-space: nowrap; }
 kbd { font: 600 12px/1 var(--display); color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 6px; padding: 3px 6px; }

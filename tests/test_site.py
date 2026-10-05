@@ -371,7 +371,7 @@ Thanks,"""
 def test_about_page_says_how_to_ask_permission(built, site, parse):
     page = parse(built / urls.output_path(urls.ABOUT))
     assert page.all("section", id="license") and ("h2", "Using these comics") in page.headings
-    [link] = [a for a in page.all("a") if a.get("href", "").startswith("mailto:")]
+    [link] = [a for a in page.all("a") if a.get("href", "").startswith("mailto:") and "button" in a.get("class", "")]
     address, _, query = link["href"].removeprefix("mailto:").partition("?")
     assert address == site.license.contact
     # RFC 6068: %20 for spaces (mail clients keep "+" as a literal plus) and CRLF line breaks.
@@ -379,6 +379,28 @@ def test_about_page_says_how_to_ask_permission(built, site, parse):
     fields = dict(pair.split("=", 1) for pair in query.split("&"))
     assert unquote(fields["subject"]) == "Permission to use a Hardly Funny comic"
     assert unquote(fields["body"]) == PERMISSION_BODY.replace("\n", "\r\n")
+
+
+def about_license_section(html):
+    [section] = re.findall(r'<section class="license" id="license".*?</section>', html, re.S)
+    return section
+
+
+def test_about_page_shows_the_address_as_text_under_the_button(built, site):
+    # For visitors with no mail app: a plain mailto (the button carries the subject and body).
+    section = about_license_section((built / urls.output_path(urls.ABOUT)).read_text())
+    contact = site.license.contact
+    line = f'Or write to me at <a href="mailto:{contact}">{contact}</a>.'
+    assert line in section
+    assert section.index("Request permission</a>") < section.index(line)
+
+
+def test_address_line_follows_the_data(site):
+    moved = dataclasses.replace(site, license=License(credit="c", contact="sentinel-contact@example.invalid"))
+    about = environment(moved).get_template("about.html").render(page=Page(path=urls.ABOUT, title="t", description="d"))
+    section = about_license_section(about)
+    assert 'Or write to me at <a href="mailto:sentinel-contact@example.invalid">sentinel-contact@example.invalid</a>.' in section
+    assert site.license.contact not in about
 
 
 def test_footer_copyright_links_to_the_license_on_every_page(built, site):
@@ -404,9 +426,12 @@ def test_footer_copyright_and_permission_link_escape_hostile_data(site):
     assert "<i>Sam</i>" not in footer
     assert f'<a href="{urls.ABOUT}#license">\u00a9 2012\u20132014 &lt;i&gt;Sam&lt;/i&gt; &amp; Co. All rights reserved.</a>' in footer
     about = environment(hostile).get_template("about.html").render(page=Page(path=urls.ABOUT, title="t", description="d"))
-    [link] = [a for a in Html(about).all("a") if a.get("href", "").startswith("mailto:")]
-    assert "onmouseover" not in link
-    assert link["href"].startswith('mailto:x"onmouseover="alert(1)@example.com?subject=')
+    button, plain = [a for a in Html(about).all("a") if a.get("href", "").startswith("mailto:")]
+    for link in (button, plain):
+        assert "onmouseover" not in link
+    assert button["href"].startswith('mailto:x"onmouseover="alert(1)@example.com?subject=')
+    assert plain["href"] == 'mailto:x"onmouseover="alert(1)@example.com'
+    assert '>x&#34;onmouseover=&#34;alert(1)@example.com</a>' in about
 
 
 def test_images_have_alt_text_and_dimensions(built, parse):
