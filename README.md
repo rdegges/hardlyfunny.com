@@ -55,7 +55,7 @@ Internal links (pages, images, CSS) are checked by the test suite on every build
 
 1. Put the image in `content/comics/<slug>.png`.
 2. Add an entry to the end of `content/comics.json`, including `number`, `slug`, `title`, `date`, `images` (with `width`, `height` and `alt`), `transcript`, `note_html` and `tags`.
-3. Run `python -m pytest`. The build also refuses to run if numbers aren't sequential, dates are out of order, a slug is reused or malformed, an image file name isn't URL-safe (`comics/`, then lowercase letters, digits and hyphens, then `.png` or `.jpg`), or an image has no alt text, and the tests check that image sizes match the files.
+3. Run `python -m pytest`. The build also refuses to run if numbers aren't sequential, dates are out of order, a slug is reused or malformed, an image file name isn't URL-safe (`comics/`, then lowercase letters, digits and hyphens, then `.png` or `.jpg`), or an image has no alt text, and the tests check that image sizes match the files. `tests/test_images.py` also checks that every PNG in `content/` has exactly the pixels of its original in `archive/`, which only holds the 82 WordPress-era comics, so a comic added after the archive will fail that test until the test is told where that comic's original lives.
 
 ## Deploying (Cloudflare)
 

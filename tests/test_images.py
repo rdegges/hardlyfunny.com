@@ -15,6 +15,7 @@ from PIL import Image as PILImage
 from hardlyfunny.build import CONTENT, ROOT
 
 ARCHIVE = ROOT / "archive"
+RULE = "every PNG in content/ must have its untouched original in archive/ (see README, Adding a comic)"
 # Chunks that change how a browser renders the pixels. Losing one is a visible change even
 # though the decoded pixels match.
 COLOR_CHUNKS = (b"gAMA", b"cHRM", b"sRGB", b"iCCP")
@@ -38,13 +39,15 @@ def png_pairs() -> list[tuple]:
     archive = {c["number"]: c for c in json.loads((ARCHIVE / "comics.json").read_text())["comics"]}
     pairs = []
     for comic in json.loads((CONTENT / "comics.json").read_text())["comics"]:
-        assert comic["number"] in archive, f"#{comic['number']} is not in archive/comics.json"
+        assert comic["number"] in archive, f"{RULE}: #{comic['number']} is not in archive/comics.json"
         twins = archive[comic["number"]]["images"]
-        assert len(twins) == len(comic["images"]), f"#{comic['number']} image count differs from archive/"
+        assert len(twins) == len(comic["images"]), f"{RULE}: #{comic['number']} image count differs from archive/"
         for img, twin in zip(comic["images"], twins):
             if img["file"].endswith(".png"):
                 pairs.append((CONTENT / img["file"], ARCHIVE / twin["src"]))
     pairs += [(png, ARCHIVE / "brand" / png.name) for png in sorted((CONTENT / "brand").glob("*.png"))]
+    for _, twin in pairs:
+        assert twin.is_file(), f"{RULE}: missing {twin.relative_to(ROOT)}"
     return pairs
 
 
@@ -54,9 +57,8 @@ def test_every_content_png_has_an_archive_twin():
     every_png = sorted(CONTENT.rglob("*.png"))
     assert every_png, "no PNGs under content/"
     assert len(paired) == len(set(paired)), "a content PNG is listed twice"
-    assert sorted(paired) == every_png
-    for _, twin in pairs:
-        assert twin.is_file(), f"missing archive twin {twin.relative_to(ROOT)}"
+    strays = [str(png.relative_to(ROOT)) for png in every_png if png not in paired]
+    assert sorted(paired) == every_png, f"{RULE}: no original for {strays}"
     # Renamed slugs and the one two-image comic, so pairing by name alone can't pass.
     known = {
         "qwerty.png": "014-3.png",
