@@ -41,8 +41,10 @@ python -m pytest                   # checks content, SEO tags, accessibility bas
 | `.github/workflows/ci.yml` | Runs the tests and a build on every PR and push. Deploys `main` to Cloudflare |
 | `package.json`, `cloudflare.config.ts`, `wrangler.config.ts` | Deploy tooling only. The site is built by Python |
 | `archive/` | The untouched WordPress export and its generated descriptions (history, not edited) |
-| `scripts/` | `export_wordpress.py` (WordPress → `archive/`), `migrate_to_content.py` (one-time `archive/` → `content/`) and `check_links.py` (link checker run by CI) |
+| `scripts/` | `export_wordpress.py` (WordPress → `archive/`), `migrate_to_content.py` (one-time `archive/` → `content/`), `compress_pngs.py` (lossless PNG recompression) and `check_links.py` (link checker run by CI) |
 | `index.html`, `designs/` | The design review page and the four clickable mockups it previews |
+
+The PNGs in `content/` are losslessly recompressed (zopflipng or oxipng, whichever is smaller), and `tests/test_images.py` proves each one has the same pixels as its twin in `archive/`. To do it again: `docker run --rm -v "$PWD":/app -w /app python:3.13 sh -c "apt-get update -qq && apt-get install -y -qq zopfli && pip install -q -r requirements.txt pyoxipng && python scripts/compress_pngs.py"`.
 
 ## Link checking
 
@@ -54,7 +56,7 @@ Internal links (pages, images, CSS) are checked by the test suite on every build
 
 1. Put the image in `content/comics/<slug>.png`.
 2. Add an entry to the end of `content/comics.json`, including `number`, `slug`, `title`, `date`, `images` (with `width`, `height` and `alt`), `transcript`, `note_html` and `topics` (one or more slugs from the `topics` list at the top of the file).
-3. Run `python -m pytest`. The build also refuses to run if numbers aren't sequential, dates are out of order, a slug is reused or malformed, an image file name isn't URL-safe (`comics/`, then lowercase letters, digits and hyphens, then `.png` or `.jpg`), an image has no alt text, a comic has no topic or a topic that isn't in the list, a topic has fewer than three comics, or a topic slug is reused or malformed, and the tests check that image sizes match the files.
+3. Run `python -m pytest`. The build also refuses to run if numbers aren't sequential, dates are out of order, a slug is reused or malformed, an image file name isn't URL-safe (`comics/`, then lowercase letters, digits and hyphens, then `.png` or `.jpg`), an image has no alt text, a comic has no topic or a topic that isn't in the list, a topic has fewer than three comics, or a topic slug is reused or malformed, and the tests check that image sizes match the files. `tests/test_images.py` also checks that every PNG in `content/` has exactly the pixels of its original in `archive/`, which only holds the 82 WordPress-era comics, so a comic added after the archive will fail that test until the test is told where that comic's original lives.
 
 ## Deploying (Cloudflare)
 
