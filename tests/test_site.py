@@ -967,6 +967,24 @@ def test_date_line_joins_three_topics_naturally(site):
     assert randall.endswith(f" · in ['{three[0].slug}', '{three[1].slug}', '{three[2].slug}']")
 
 
+def test_date_line_sits_on_its_own_row_under_the_title(built):
+    # .comic-head is a wrapping flex row that spreads its children apart. Without a full-width basis the
+    # date line sits beside a short title on desktop and drops below a long one, so pages disagree.
+    css = (built / "site.css").read_text()
+    [head] = re.findall(r"^\.comic-head \{([^}]*)\}", css, re.M)
+    assert "display: flex" in head and "flex-wrap: wrap" in head
+    [stamp] = re.findall(r"^\.stamp \{([^}]*)\}", css, re.M)
+    assert re.search(r"flex-basis: 100%", stamp), stamp
+    # The rule only works while the date line is a direct child of that header, after the title.
+    pages = [built / "index.html", *(built / "comics").glob("*/index.html")]
+    assert len(pages) == len(RAW["comics"]) + 1
+    for path in pages:
+        [header] = re.findall(r'<header class="comic-head">(.*?)</header>', path.read_text(), re.S)
+        children = re.sub(r"<(div|h1|p)\b[^>]*>.*?</\1>", lambda m: f"<{m[1]}>", header, flags=re.S)
+        assert re.sub(r"\s+", "", children) in ("<div><p>", "<h1><p>"), path
+        assert header.rstrip().endswith("</p>") and header.count('<p class="stamp">') == 1, path
+
+
 def test_randall_list_punctuation_stays_out_of_what_screen_readers_say(built):
     # The brackets and quotes are drawn with empty alt text (checked by randall_punctuation). Her " and "
     # is only visually hidden in Randall mode, never display: none, so screen readers still hear it.
