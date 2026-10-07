@@ -344,8 +344,8 @@ def test_every_feed_spelling_under_a_mapped_tag_lands_on_a_real_page(built, site
                 assert status == 301 and exists(built, dest), path
 
 
-@pytest.mark.skip(reason="PROPOSED CONTRACT: today /tag/gaming/feed/atom/ goes to the topic but "
-                         "/tag/gaming/feed/atom, /feed/rss/ and /feed/rdf/ fall to /tag/* and land on /archive/")
+@pytest.mark.skip(reason="PROPOSED CONTRACT: today /tag/gaming/feed(/), /feed/atom/ and /feed/rss2/ go to /feed/ but "
+                         "/tag/gaming/feed/atom, /feed/rss2, /feed/rss/ and /feed/rdf/ fall to /tag/* and land on /archive/")
 def test_proposed_contract_every_feed_spelling_of_a_tag_lands_in_one_place(built, site):
     for t in site.topics:
         for name in t.wordpress_tags:
