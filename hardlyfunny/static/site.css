@@ -161,7 +161,7 @@ main { padding-block: 16px 40px; }
 .comic-title { font: 600 clamp(26px, 5vw, 34px)/1.15 var(--display); margin: 0; }
 .comic-title a { color: inherit; text-decoration: none; }
 .comic-title a:hover { text-decoration: underline; text-decoration-color: var(--accent); }
-.stamp { color: var(--muted); font-size: 15px; font-variant-numeric: tabular-nums; margin: 0; }
+.stamp { color: var(--muted); font-size: 15px; font-variant-numeric: tabular-nums; margin: 0; flex-basis: 100%; }
 /* On phones the line wraps between topics, never inside one. */
 .topics a { white-space: nowrap; }
 /* Randall mode writes the stamp's topics as a list, ['a', 'b']. The empty alt text keeps the punctuation
