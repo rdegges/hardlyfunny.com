@@ -86,14 +86,84 @@ def test_verify_checks_the_live_domain_after_each_production_deploy():
     assert "continue-on-error" not in verify
 
 
-def test_every_workflow_runs_the_python_the_repo_pins():
-    # .python-version is what local tools and Docker runs read; a workflow left on an older
-    # Python passes CI on a version nobody develops against (links.yml has no tests to notice).
-    pinned = (ROOT / ".python-version").read_text(encoding="utf-8").strip()
-    found = {name: re.findall(r'^\s+python-version:\s*"?([^"\s]+)"?\s*$', text, re.M) for name, text in WORKFLOWS.items()}
-    assert found["ci.yml"] and found["links.yml"], found
-    assert {name: set(versions) for name, versions in found.items() if versions} == {
-        name: {pinned} for name, versions in found.items() if versions}
+def test_every_workflow_is_one_these_checks_read():
+    # WORKFLOWS reads only *.yml; GitHub also runs *.yaml, which would skip every check here.
+    assert sorted((ROOT / ".github" / "workflows").glob("*.yaml")) == []
+
+
+def steps_using(action):
+    """Every workflow step that runs `action`, as (workflow, step text), whichever key comes first."""
+    found = []
+    for name, text in WORKFLOWS.items():
+        for step in re.finditer(r"^( *)- .*\n(?:\1  .*\n)*", text, re.M):
+            if re.search(rf"^ *(?:- )?uses: {re.escape(action)}@", step.group(0), re.M):
+                found.append((name, step.group(0)))
+    # Each `uses:` line must belong to exactly one parsed step, or a step escaped the checks below.
+    assert len(found) == sum(len(re.findall(rf"^ *(?:- )?uses: {re.escape(action)}@", t, re.M)) for t in WORKFLOWS.values())
+    return found
+
+
+def test_every_setup_python_step_reads_the_python_version_file():
+    # .python-version is what local tools and Docker runs read. A step that hard-codes a version
+    # drifts from it on the next bump (links.yml has no tests to notice). Steps are found whether
+    # `uses:` or `name:` comes first, so a step added as `- name: ...` can't slip past.
+    steps = steps_using("actions/setup-python")
+    assert {name for name, _ in steps} >= {"ci.yml", "links.yml"}, steps
+    for name, body in steps:
+        assert re.search(r"^\s+python-version-file: \.python-version$", body, re.M), (name, body)
+    for name, text in WORKFLOWS.items():
+        assert not re.search(r"^\s+python-version:", text, re.M), name
+
+
+def test_every_checkout_leaves_no_github_token_in_the_job():
+    # checkout defaults to persist-credentials: true, which writes the token into .git/config where
+    # `npm ci` install scripts and `npx cf` can read it. No job pushes, so none needs it.
+    steps = steps_using("actions/checkout")
+    assert len(steps) >= 4, steps
+    for name, body in steps:
+        assert re.search(r"^ +persist-credentials: false$", body, re.M), (name, body)
+
+
+def test_every_job_runs_on_one_pinned_ubuntu_image():
+    # ubuntu-latest moves to a new release mid-rollout without a commit; a numbered image only
+    # changes when someone edits it here. All jobs share it so a bump can't miss one.
+    jobs = [(name, j) for name, text in WORKFLOWS.items()
+            for j in re.findall(r"^  [\w-]+:\n", text.split("\njobs:\n", 1)[1], re.M)]
+    images = [(name, i) for name, text in WORKFLOWS.items() for i in re.findall(r"^    runs-on: (.*)$", text, re.M)]
+    assert len(images) == len(jobs) >= 4, (jobs, images)
+    assert all(re.fullmatch(r"ubuntu-\d\d\.\d\d", i) for _, i in images), images
+    assert len({i for _, i in images}) == 1, images
+
+
+def test_each_pinned_sha_carries_one_release_tag():
+    # The comment is how a human (and Dependabot) reads which release a SHA is. One SHA with two
+    # different "# vX" comments means one of them is lying.
+    pins = {}
+    for text in WORKFLOWS.values():
+        for action, sha, tag in re.findall(r"uses: ([\w./-]+)@([0-9a-f]{40}) # (\S+)$", text, re.M):
+            pins.setdefault(action, set()).add((sha, tag))
+    assert pins
+    assert {action: refs for action, refs in pins.items() if len(refs) > 1} == {}
+
+
+def test_every_pinned_action_runs_on_pull_requests():
+    # Dependabot's bump arrives as a PR. A pin used only by a main-only job or step would first
+    # run after merge, in the production deploy path, with nothing having tried the new SHA.
+    tried = set()
+    for name, text in WORKFLOWS.items():
+        on, jobs = text.split("\njobs:\n", 1)
+        if not re.search(r"^  pull_request:", on, re.M):
+            continue
+        # A paths filter could skip the workflow on a PR that only touches .github/.
+        assert not re.search(r"^ +paths(-ignore)?:", on, re.M), name
+        for body in re.findall(r"^  [\w-]+:\n((?:    .*\n|\s*\n)*)", jobs, re.M):
+            if re.search(r"^    if: .*github.event_name == 'push'", body, re.M):
+                continue
+            for step in re.findall(r"^      - .*\n(?:        .*\n)*", body, re.M):
+                if not re.search(r"^ +(?:- )?if: .*github.event_name == 'push'", step, re.M):
+                    tried |= set(re.findall(r"uses: ([\w./-]+@[0-9a-f]{40})", step))
+    used = {u for text in WORKFLOWS.values() for u in re.findall(r"uses: ([\w./-]+@[0-9a-f]{40})", text)}
+    assert used and used <= tried, used - tried
 
 
 def test_each_action_is_pinned_to_one_version_across_workflows():
@@ -104,6 +174,30 @@ def test_each_action_is_pinned_to_one_version_across_workflows():
             pins.setdefault(action, set()).add(ref)
     assert {"actions/checkout", "actions/setup-python", "actions/setup-node"} <= pins.keys(), pins
     assert {action: refs for action, refs in pins.items() if len(refs) > 1} == {}
+
+
+def test_every_action_is_pinned_to_a_commit_sha_with_its_release_tag():
+    # A tag can be moved to other code after review; a full commit SHA can't. The same-line
+    # "# vX.Y.Z" is what Dependabot reads and rewrites when it bumps the SHA.
+    uses = [(name, line) for name, text in WORKFLOWS.items() for line in re.findall(r"^ *(?:- )?uses:.*$", text, re.M)]
+    assert uses
+    bad = [(name, line) for name, line in uses
+           if not re.fullmatch(r" *(?:- )?uses: [\w.-]+/[\w./-]+@[0-9a-f]{40} # v\d+\.\d+\.\d+", line)]
+    assert bad == []
+
+
+def test_dependabot_keeps_the_pinned_actions_current():
+    # SHA pins never move on their own, so without this file they go stale silently.
+    path = ROOT / ".github" / "dependabot.yml"
+    assert path.exists(), "no .github/dependabot.yml"
+    config = path.read_text(encoding="utf-8")
+    assert re.search(r"^version: 2$", config, re.M)
+    entry = re.search(r"^  - package-ecosystem: github-actions\n((?:    .*\n)*)", config, re.M)
+    assert entry, "no github-actions entry"
+    assert re.search(r'^    directory: "/"$', entry.group(1), re.M)
+    assert re.search(r"^      interval: weekly$", entry.group(1), re.M)
+    # One group matching every action, so a release that spans actions arrives as one PR.
+    assert re.search(r'^        patterns: \["\*"\]$', entry.group(1), re.M)
 
 
 def verify_gate():
