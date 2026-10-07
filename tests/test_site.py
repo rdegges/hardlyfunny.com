@@ -829,8 +829,8 @@ def raw_comics_about(slug):
 
 
 def links_in(html):
-    """(href, text) for every link in an HTML fragment."""
-    return [(href, re.sub(r"<[^>]+>", "", text).strip())
+    """(href, text) for every link in an HTML fragment, its text decoded as a reader sees it."""
+    return [(href, unescape(re.sub(r"<[^>]+>", "", text)).strip())
             for href, text in re.findall(r'<a href="([^"]+)"[^>]*>(.*?)</a>', html, re.S)]
 
 

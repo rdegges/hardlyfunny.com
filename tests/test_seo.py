@@ -67,6 +67,7 @@ def test_topic_jsonld_cannot_break_out_of_its_script_element(site):
     assert "<" not in block and ">" not in block and "&" not in block
     assert node(block, "CollectionPage")["name"] == "Comics about </script><!--<b>&</b>"
     assert node(block, "CollectionPage")["description"] == "We <3 & </script>"
+    assert node(block, "BreadcrumbList")["itemListElement"][-1]["name"] == nasty.title
 
 
 
