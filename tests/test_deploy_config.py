@@ -89,7 +89,7 @@ def test_verify_checks_the_live_domain_after_each_production_deploy():
 def test_every_setup_python_step_reads_the_python_version_file():
     # .python-version is what local tools and Docker runs read. A step that hard-codes a version
     # drifts from it on the next bump (links.yml has no tests to notice).
-    steps = {name: re.findall(r"^( *)- uses: actions/setup-python@\S+\n((?:\1  .*\n)*)", text, re.M)
+    steps = {name: re.findall(r"^( *)- uses: actions/setup-python@.*\n((?:\1  .*\n)*)", text, re.M)
              for name, text in WORKFLOWS.items()}
     assert steps["ci.yml"] and steps["links.yml"], steps
     for name, found in steps.items():
@@ -106,6 +106,30 @@ def test_each_action_is_pinned_to_one_version_across_workflows():
             pins.setdefault(action, set()).add(ref)
     assert {"actions/checkout", "actions/setup-python", "actions/setup-node"} <= pins.keys(), pins
     assert {action: refs for action, refs in pins.items() if len(refs) > 1} == {}
+
+
+def test_every_action_is_pinned_to_a_commit_sha_with_its_release_tag():
+    # A tag can be moved to other code after review; a full commit SHA can't. The same-line
+    # "# vX.Y.Z" is what Dependabot reads and rewrites when it bumps the SHA.
+    uses = [(name, line) for name, text in WORKFLOWS.items() for line in re.findall(r"^ *(?:- )?uses:.*$", text, re.M)]
+    assert uses
+    bad = [(name, line) for name, line in uses
+           if not re.fullmatch(r" *(?:- )?uses: [\w.-]+/[\w./-]+@[0-9a-f]{40} # v\d+\.\d+\.\d+", line)]
+    assert bad == []
+
+
+def test_dependabot_keeps_the_pinned_actions_current():
+    # SHA pins never move on their own, so without this file they go stale silently.
+    path = ROOT / ".github" / "dependabot.yml"
+    assert path.exists(), "no .github/dependabot.yml"
+    config = path.read_text(encoding="utf-8")
+    assert re.search(r"^version: 2$", config, re.M)
+    entry = re.search(r"^  - package-ecosystem: github-actions\n((?:    .*\n)*)", config, re.M)
+    assert entry, "no github-actions entry"
+    assert re.search(r'^    directory: "/"$', entry.group(1), re.M)
+    assert re.search(r"^      interval: \w+$", entry.group(1), re.M)
+    # One group matching every action, so a release that spans actions arrives as one PR.
+    assert re.search(r'^        patterns: \["\*"\]$', entry.group(1), re.M)
 
 
 def verify_gate():
