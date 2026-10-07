@@ -86,6 +86,11 @@ def test_verify_checks_the_live_domain_after_each_production_deploy():
     assert "continue-on-error" not in verify
 
 
+def test_every_workflow_is_one_these_checks_read():
+    # WORKFLOWS reads only *.yml; GitHub also runs *.yaml, which would skip every check here.
+    assert sorted((ROOT / ".github" / "workflows").glob("*.yaml")) == []
+
+
 def steps_using(action):
     """Every workflow step that runs `action`, as (workflow, step text), whichever key comes first."""
     found = []
