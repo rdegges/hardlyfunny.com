@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 """Export every Hardly Funny comic out of WordPress.com into a portable archive.
 
+Historical: the WordPress.com site was deleted on 2026-10-06, so the API below no
+longer returns it and this script can't run again. It's kept to show how archive/
+was made.
+
 Pulls posts from the public WordPress.com REST API, downloads the original
 comic images, and writes:
 

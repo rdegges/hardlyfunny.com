@@ -1,6 +1,6 @@
 # hardlyfunny.com
 
-*Hardly Funny* is a webcomic by Samantha Degges about being married to a computer programmer (82 comics, 2012–2014). This repo is its move off WordPress.com to a static site.
+*Hardly Funny* is a webcomic by Samantha Degges about being married to a computer programmer (82 comics, 2012–2014). This repo is the static site that replaced its WordPress.com site in October 2026.
 
 ## Quick start
 
@@ -41,7 +41,7 @@ python -m pytest                   # checks content, SEO tags, accessibility bas
 | `.github/workflows/ci.yml` | Runs the tests and a build on every PR and push. Deploys `main` to Cloudflare |
 | `package.json`, `cloudflare.config.ts`, `wrangler.config.ts` | Deploy tooling only. The site is built by Python |
 | `archive/` | The untouched WordPress export and its generated descriptions (history, not edited) |
-| `scripts/` | `export_wordpress.py` (WordPress → `archive/`), `migrate_to_content.py` (one-time `archive/` → `content/`), `compress_pngs.py` (lossless PNG recompression) and `check_links.py` (link checker run by CI) |
+| `scripts/` | `export_wordpress.py` (WordPress → `archive/`; historical, since the WordPress.com site no longer exists), `migrate_to_content.py` (one-time `archive/` → `content/`), `compress_pngs.py` (lossless PNG recompression) and `check_links.py` (link checker run by CI) |
 | `index.html`, `designs/` | The design review page and the four clickable mockups it previews |
 
 The PNGs in `content/` are losslessly recompressed (zopflipng or oxipng, whichever is smaller), and `tests/test_images.py` proves each one has the same pixels as its twin in `archive/`. To do it again: `docker run --rm -v "$PWD":/app -w /app python:3.14 sh -c "apt-get update -qq && apt-get install -y -qq zopfli && pip install -q -r requirements.txt pyoxipng && python scripts/compress_pngs.py"`.
@@ -70,7 +70,7 @@ Two repository secrets give the job access: `CLOUDFLARE_API_TOKEN` (an account t
 
 `wrangler.config.ts` sets `_site` as the assets directory. `cloudflare.config.ts` names the Worker `hardlyfunny` and makes Cloudflare serve `404.html` for missing pages. The build writes `_headers` (security and cache headers) and `_redirects` (old WordPress URLs) into `_site/`. Cloudflare reads both files as rules and does not serve them as pages.
 
-Cloudflare injects it by default until you choose otherwise in the zone's Speed → Real user monitoring page (Enable Globally, Exclude EU, or Disable completely).
+Cloudflare Web Analytics injects its beacon by default until you choose otherwise in the zone's Speed → Real user monitoring page (Enable Globally, Exclude EU, or Disable completely).
 
 To run the site locally on the Cloudflare runtime, build it first. Then run `npm ci && npx cf dev` in a Node container.
 
@@ -79,17 +79,16 @@ To run the site locally on the Cloudflare runtime, build it first. Then run `npm
 - **`hardlyfunny.com`** is a custom domain on the `hardlyfunny` Worker, set by `domains` in `cloudflare.config.ts`. Cloudflare manages its DNS record (a proxied `AAAA 100::`). Every deploy re-asserts the domain. Removing the `domains` line does not detach it; only the dashboard does (Workers & Pages → `hardlyfunny` → Settings → Domains & Routes).
 - **`www.hardlyfunny.com`** 301s to `https://hardlyfunny.com` with the same path and query. A zone Single Redirect rule does this (Rules → Redirect Rules), on a proxied `AAAA www 100::` record. The rule matches `http.host eq "www.hardlyfunny.com"`, redirects dynamically to `concat("https://hardlyfunny.com", http.request.uri.path)` with status 301, and keeps the query string. `_redirects` cannot match on the host name.
 - **workers.dev and Preview URLs are off.** `workersDev: false` and `previewUrls: false` in `cloudflare.config.ts` make `hardlyfunny.com` the only host that serves the site. `previewUrls` must stay explicit, because leaving it out keeps whatever the dashboard has. `verify` checks that `https://hardlyfunny.randall-degges.workers.dev/` returns 404 with no site page.
-- **The deploy token needs no zone access.** In the rehearsal, Cloudflare refused to attach the domain over hand-made A records (code 100117) with every token scope tried, and after the records were deleted a Workers Scripts Write token was enough. `cf` asks Cloudflare to override existing DNS records when it is not run in a terminal, as in CI, so in a rollback the `domains` removal (step 1) must deploy before the A records come back.
+- **The deploy token needs no zone access.** In the rehearsal, Cloudflare refused to attach the domain over hand-made A records (code 100117) with every token scope tried, and after the records were deleted a Workers Scripts Write token was enough.
 - **Zone settings the site depends on:** Always Use HTTPS on, Bot Fight Mode off, Block AI bots off (the robots.txt Content Signals allow AI crawlers), managed robots.txt off, security level medium, Browser Cache TTL "Respect Existing Headers", Rocket Loader off, Email Address Obfuscation off, zone HSTS (SSL/TLS → Edge Certificates) off because `_headers` sets it, and Crawler Hints (Caching → Configuration) on, so Cloudflare tells IndexNow search engines like Bing when a page changes. Cloudflare Web Analytics is on and adds one beacon script to each HTML page. The runtime tests allow exactly that one tag.
 - **Search engines and site claims.** Google Search Console has a Domain property for `hardlyfunny.com`, verified by a `google-site-verification=…` TXT record on the zone apex. Bing Webmaster Tools imported the site from Search Console, so it has no DNS record of its own. Pinterest claims the site through a `pinterest-site-verification=…` TXT record on the apex. Do not delete either TXT record: the property or claim stops being verified. `sitemap.xml` is submitted to Google and Bing.
 - **A URL without its trailing slash gets a 307, not a 301.** Cloudflare sends `/comics/engineers` and `/comics/engineers/index.html` to `/comics/engineers/` with a 307, and its static assets have no setting to change that. Every link the site writes ends in `/`, and the old WordPress URLs get their own 301s, so these are left as they are.
 
-### Rollback to WordPress.com
+### Undoing a bad deploy
 
-Use this only while the WordPress.com site still exists.
+1. Revert the bad commit on `main` in a pull request. When it merges, CI deploys the reverted build and `verify` must go green.
+2. If the site can't wait for CI, roll back first in the dashboard (Workers & Pages → `hardlyfunny` → Deployments), then still do step 1. The next deploy from `main` republishes whatever `main` holds.
 
-1. In one commit on `main`, remove the `domains` line from `cloudflare.config.ts` and the `domains` assertion (the `domains = re.search(...)` line and the assert after it) from `tests/test_deploy_config.py`. Do not `git revert` the cutover commit. Wait for that commit's CI deploy to finish before step 3. Otherwise a later deploy attaches the domain again.
-2. In the dashboard, detach `hardlyfunny.com` from the `hardlyfunny` Worker.
-3. Create two DNS-only A records for `hardlyfunny.com`: `192.0.78.24` and `192.0.78.25`.
+### WordPress.com is gone
 
-After a rollback, `verify` stays red until the Worker serves the domain again. Rerunning it does not fix anything.
+`hardlyfunny.com` moved to Cloudflare on October 4, 2026, and the WordPress.com site (ID 36687652) was deleted on October 6, 2026. There is no WordPress site to roll back to. A full export from just before the deletion (WXR content, the media library, and the email subscribers) is kept offline, not in this repo, because it contains subscribers' email addresses. `archive/` holds the comics as `scripts/export_wordpress.py` exported them in 2026.
