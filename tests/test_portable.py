@@ -51,7 +51,10 @@ def test_license_links_keep_their_fragment(portable):
 def test_topic_links_work_from_disk(portable):
     # Comic page -> topic page -> topics index -> back to a comic, as relative links.
     comic = (portable / "comics" / "engineers" / "index.html").read_text()
-    assert 'href="../../topics/out-in-public/index.html"' in comic
+    [stamp] = re.findall(r'<p class="stamp">(.*?)</p>', comic, re.S)
+    assert 'href="../../topics/out-in-public/index.html"' in stamp
+    [nav] = re.findall(r'<nav class="site-nav" aria-label="Site">(.*?)</nav>', comic, re.S)
+    assert 'href="../../topics/index.html"' in nav
     topic = (portable / "topics" / "out-in-public" / "index.html").read_text()
     assert 'href="../../topics/index.html"' in topic and 'href="../../comics/engineers/index.html"' in topic
     index = (portable / "topics" / "index.html").read_text()

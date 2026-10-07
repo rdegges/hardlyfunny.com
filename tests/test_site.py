@@ -1097,3 +1097,24 @@ def test_hostile_topic_titles_are_escaped_everywhere_they_render(tmp_path):
     assert Html((out / "topics" / slug / "index.html").read_text()).headings[0] == ("h1", nasty)
     categories = ET.parse(out / "feed" / "index.html").getroot().iter("{http://www.w3.org/2005/Atom}category")
     assert nasty in {c.get("label") for c in categories}
+
+
+def test_hostile_topic_title_round_trips_through_the_date_line(tmp_path):
+    # The title now sits in the link's text and in its data-label, which site.js reads back as the
+    # plain name in Randall mode. Both must decode to exactly the title, with no attribute break-out.
+    import shutil
+    from hardlyfunny.build import build
+    content = tmp_path / "content"
+    shutil.copytree(CONTENT, content)
+    data = json.loads((content / "comics.json").read_text(encoding="utf-8"))
+    nasty = 'Café <xss>&amp;</xss> "quotes" \' onmouseover="x" ☕'
+    data["topics"][0]["title"] = nasty
+    slug = data["topics"][0]["slug"]
+    (content / "comics.json").write_text(json.dumps(data), encoding="utf-8")
+    build(tmp_path / "site", content=content)
+    comic = next(c for c in data["comics"] if slug in c["topics"])
+    stamp = date_line((tmp_path / "site" / "comics" / comic["slug"] / "index.html").read_text())
+    assert "<xss>" not in stamp and "onmouseover" not in [k for a in Html(stamp).all("a") for k in a]
+    [link] = Html(stamp).all("a", href=f"/topics/{slug}/")
+    assert (link["data-label"], link["data-r"]) == (nasty, slug)
+    assert nasty in visible_text(stamp)
