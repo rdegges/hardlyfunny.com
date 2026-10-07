@@ -3,7 +3,8 @@
 import dataclasses
 import json
 import re
-from datetime import date
+from datetime import date, datetime, timezone
+from html import unescape
 from html.parser import HTMLParser
 from urllib import robotparser
 from urllib.parse import unquote, urlparse
@@ -888,17 +889,122 @@ def test_archive_links_to_the_topics(built):
     assert links_in(lede) == [(urls.TOPICS, "browse by topic")]
 
 
-def test_every_comic_links_to_each_of_its_topics(built):
+def date_line(html):
+    [stamp] = re.findall(r'<p class="stamp">(.*?)</p>', html, re.S)
+    return stamp
+
+
+def visible_text(fragment):
+    return re.sub(r"\s+", " ", unescape(re.sub(r"<[^>]+>", "", fragment))).strip()
+
+
+# The two selectors that switch on Randall mode: his side of the switch, and the OS dark setting with JS on.
+RANDALL_MODE = (':root[data-mode="randall"] ', ':root.js:not([data-mode="samantha"]) ')
+
+
+def randall_punctuation(css):
+    """The text site.css draws around the date line's topics in Randall mode, from both mode blocks."""
+    blocks = [dict(re.findall(re.escape(mode) + r'(\.topics(?: \.sep)?::(?:before|after)) \{ content: "([^"]*)" / ""; \}', css))
+              for mode in RANDALL_MODE]
+    assert blocks[0] == blocks[1] and len(blocks[0]) == 3, blocks
+    return blocks[0]
+
+
+def as_randall(stamp, punctuation):
+    """The date line as Randall mode shows it: each [data-r] element's text swapped for its data-r (what
+    site.js relabel() does), and the list punctuation site.css draws in place of her words."""
+    text, swapped = re.subn(r'<(\w+)[^>]*\bdata-r="([^"]*)"[^>]*>[^<]*</\1>', lambda m: m[2], stamp)
+    assert swapped == 2 + stamp.count("<a "), stamp
+    text = re.sub(r'<span class="sep"><span>[^<]*</span></span>', punctuation[".topics .sep::before"], text)
+    text = text.replace('<span class="topics">', punctuation[".topics::before"])
+    assert text.count("</span>") == 1, text
+    return visible_text(text.replace("</span>", punctuation[".topics::after"]))
+
+
+def expected_date_line(comic, titles):
+    day = date.fromisoformat(comic["date"])
+    names = [titles[slug] for slug in comic["topics"]]
+    joined = names[0] if len(names) == 1 else f"{', '.join(names[:-1])} and {names[-1]}"
+    epoch = int(datetime(day.year, day.month, day.day, tzinfo=timezone.utc).timestamp())
+    return (f"No. {comic['number']} · {day:%B} {day.day}, {day.year} · in {joined}",
+            f"comics[{comic['number'] - 1:#x}] · {epoch} · in {comic['topics']}")
+
+
+def test_date_line_links_each_of_the_comics_topics_in_both_modes(built):
+    # Every comic page and the home page: its topics in order, as links to built topic pages.
     titles = {t["slug"]: t["title"] for t in RAW["topics"]}
+    punctuation = randall_punctuation((built / "site.css").read_text())
+    checked = 0
     for comic in RAW["comics"]:
         pages = [built / "comics" / comic["slug"] / "index.html"]
         if comic is RAW["comics"][-1]:
             pages.append(built / "index.html")
         for path in pages:
-            [block] = re.findall(r'<ul class="tags" aria-label="Topics">(.*?)</ul>', path.read_text(), re.S)
+            stamp = date_line(path.read_text())
             expected = [(f"/topics/{slug}/", titles[slug]) for slug in comic["topics"]]
-            assert links_in(block) == expected and expected, path
+            assert links_in(stamp) == expected and expected, path
             assert all((built / urls.output_path(href)).is_file() for href, _ in expected), path
+            links = Html(stamp).all("a")
+            assert [(a["data-r"], a["data-label"]) for a in links] == [(s, titles[s]) for s in comic["topics"]], path
+            samantha, randall = expected_date_line(comic, titles)
+            assert visible_text(stamp) == samantha, path
+            assert as_randall(stamp, punctuation) == randall, path
+            checked += 1
+    assert checked == len(RAW["comics"]) + 1
+
+
+def test_date_line_joins_three_topics_naturally(site):
+    # No comic has three topics yet, so render one: "in A, B and C" and ['a', 'b', 'c'].
+    three = site.topics[:3]
+    latest = dataclasses.replace(site.latest, topics=tuple(t.slug for t in three))
+    stamp = date_line(render_home(dataclasses.replace(site, comics=(*site.comics[:-1], latest))))
+    raw = {"number": latest.number, "date": latest.published.isoformat(), "topics": [t.slug for t in three]}
+    samantha, randall = expected_date_line(raw, {t.slug: t.title for t in three})
+    assert samantha.endswith(f" · in {three[0].title}, {three[1].title} and {three[2].title}")
+    assert visible_text(stamp) == samantha
+    css = (CONTENT.parent / "hardlyfunny" / "static" / "site.css").read_text()
+    assert as_randall(stamp, randall_punctuation(css)) == randall
+    assert randall.endswith(f" · in ['{three[0].slug}', '{three[1].slug}', '{three[2].slug}']")
+
+
+def test_date_line_sits_on_its_own_row_under_the_title(built):
+    # .comic-head is a wrapping flex row that spreads its children apart. Without a full-width basis the
+    # date line sits beside a short title on desktop and drops below a long one, so pages disagree.
+    css = (built / "site.css").read_text()
+    [head] = re.findall(r"^\.comic-head \{([^}]*)\}", css, re.M)
+    assert "display: flex" in head and "flex-wrap: wrap" in head
+    [stamp] = re.findall(r"^\.stamp \{([^}]*)\}", css, re.M)
+    assert re.search(r"flex-basis: 100%", stamp), stamp
+    # The rule only works while the date line is a direct child of that header, after the title.
+    pages = [built / "index.html", *(built / "comics").glob("*/index.html")]
+    assert len(pages) == len(RAW["comics"]) + 1
+    for path in pages:
+        [header] = re.findall(r'<header class="comic-head">(.*?)</header>', path.read_text(), re.S)
+        children = re.sub(r"<(div|h1|p)\b[^>]*>.*?</\1>", lambda m: f"<{m[1]}>", header, flags=re.S)
+        assert re.sub(r"\s+", "", children) in ("<div><p>", "<h1><p>"), path
+        assert header.rstrip().endswith("</p>") and header.count('<p class="stamp">') == 1, path
+
+
+def test_randall_list_punctuation_stays_out_of_what_screen_readers_say(built):
+    # The brackets and quotes are drawn with empty alt text (checked by randall_punctuation). Her " and "
+    # is only visually hidden in Randall mode, never display: none, so screen readers still hear it.
+    css = (built / "site.css").read_text()
+    for mode in RANDALL_MODE:
+        [rule] = re.findall(re.escape(mode) + r"\.topics \.sep > span \{([^}]*)\}", css)
+        assert "clip: rect(0 0 0 0)" in rule and "position: absolute" in rule and "display" not in rule, mode
+    # Without JS the links keep their titles, so the OS dark setting alone must not draw the list.
+    assert ':root:not([data-mode="samantha"]) .topics' not in css
+
+
+def test_topic_pills_are_gone(built):
+    # Topics live in the date line now; no pill list, pill styles or pill prefix should be left behind.
+    css = (built / "site.css").read_text()
+    assert ".tags" not in css and "--tag-prefix" not in css
+    pages = html_pages(built)
+    assert pages
+    for path in pages:
+        html = path.read_text()
+        assert 'class="tags"' not in html and 'aria-label="Topics"' not in html, path
 
 
 def test_no_template_or_module_still_reads_tags():
@@ -907,8 +1013,7 @@ def test_no_template_or_module_still_reads_tags():
     assert "tags" not in {f.name for f in dataclasses.fields(Comic)}
     package = CONTENT.parent / "hardlyfunny"
     for path in (package / "templates").glob("*.html"):
-        text = path.read_text().replace('class="tags"', "")
-        assert not re.search(r"\btags?\b", text), path
+        assert not re.search(r"\btags?\b", path.read_text()), path
     # The one exception: content.wordpress_tags reads the frozen export, so topics can take over old tag URLs.
     export_read = 'tuple(c["tags"]) for c in json.loads(path.read_text(encoding="utf-8"))["comics"]'
     for path in package.glob("*.py"):
@@ -919,13 +1024,51 @@ def test_no_template_or_module_still_reads_tags():
         assert not re.search(r'\.tags\b|"tags"', text), path
 
 
-def test_randall_labels_on_topic_pages_never_wrap_a_link(built):
+class LinksInsideRelabelled(HTMLParser):
+    """Counts [data-r] elements, and records each link that sits inside one."""
+
+    def __init__(self):
+        super().__init__()
+        self.stack, self.relabelled, self.links = [], 0, []
+
+    def handle_starttag(self, tag, attrs):
+        attrs = dict(attrs)
+        self.relabelled += "data-r" in attrs
+        if tag == "a" and any("data-r" in el for _, el in self.stack):
+            self.links.append(attrs.get("href"))
+        if tag not in AncestorAttrs.VOID:
+            self.stack.append((tag, attrs))
+
+    def handle_endtag(self, tag):
+        while self.stack and self.stack.pop()[0] != tag:
+            pass
+
+
+def test_no_relabelled_element_contains_a_link(built):
     # site.js relabel() replaces a [data-r] element's text, which would delete any link inside it.
-    for path in [built / "topics" / "index.html", *(built / "topics").glob("*/index.html")]:
-        [main] = re.findall(r'<main id="main" tabindex="-1">(.*?)</main>', path.read_text(), re.S)
-        labelled = re.findall(r'<(\w+)[^>]*\bdata-r="[^"]*"[^>]*>(.*?)</\1>', main, re.S)
-        assert labelled, path
-        assert not [inner for _, inner in labelled if "<a " in inner], path
+    # A link may carry data-r itself: relabel() then only swaps the link's own words.
+    pages = html_pages(built)
+    assert pages
+    for path in pages:
+        parser = LinksInsideRelabelled()
+        parser.feed(path.read_text())
+        assert parser.relabelled, path
+        assert not parser.links, (path, parser.links)
+
+
+def test_site_nav_links_the_topics_second_on_every_page(built):
+    expected = [(urls.ARCHIVE, "Archive"), (urls.TOPICS, "Topics"), (urls.ABOUT, "About us"), (urls.FEED, "Feed")]
+    topic_pages = {built / "topics" / "index.html", *(built / "topics").glob("*/index.html")}
+    assert len(topic_pages) == len(RAW["topics"]) + 1
+    pages = html_pages(built)
+    assert topic_pages < set(pages)
+    for path in pages:
+        [nav] = re.findall(r'<nav class="site-nav" aria-label="Site">(.*?)</nav>', path.read_text(), re.S)
+        assert links_in(nav) == expected, path
+        links = Html(nav).all("a")
+        assert (links[1]["data-r"], links[1]["data-label"]) == ("ls ./topics", "Topics"), path
+        current = [a["href"] for a in links if a.get("aria-current") == "page"]
+        assert (urls.TOPICS in current) == (path in topic_pages), path
 
 
 def test_llms_txt_lists_the_topic_pages_and_each_comics_topics(built, site):
@@ -948,23 +1091,6 @@ def test_sitemap_dates_each_topic_page_by_its_newest_comic(built):
         newest = max(c["date"] for c in RAW["comics"] if topic["slug"] in c["topics"])
         assert lastmod[f"{SITE_URL}/topics/{topic['slug']}/"] == newest, topic["slug"]
 
-
-def test_topic_link_prefix_stays_out_of_the_accessible_name(built):
-    # "#" / "--tag=" is decoration; the empty alt text after "/" keeps screen readers from
-    # announcing it as part of every topic link.
-    css = (built / "site.css").read_text()
-    assert re.search(r'\.tags a::before \{[^}]*content: var\(--tag-prefix\) / "";', css)
-
-
-def test_comics_without_a_note_show_their_topics_outside_the_bubble(built):
-    for comic in RAW["comics"]:
-        html = (built / "comics" / comic["slug"] / "index.html").read_text()
-        [main] = re.findall(r'<main id="main" tabindex="-1">(.*?)</main>', html, re.S)
-        bubble = re.findall(r'<div class="bubble">(.*?)</section>', main, re.S)
-        assert main.count('aria-label="Topics"') == 1, comic["number"]
-        assert bool(bubble) == bool(comic["note_html"]), comic["number"]
-        if bubble:
-            assert 'aria-label="Topics"' in bubble[0], comic["number"]
 
 
 def test_hostile_topic_titles_are_escaped_everywhere_they_render(tmp_path):
@@ -989,3 +1115,24 @@ def test_hostile_topic_titles_are_escaped_everywhere_they_render(tmp_path):
     assert Html((out / "topics" / slug / "index.html").read_text()).headings[0] == ("h1", nasty)
     categories = ET.parse(out / "feed" / "index.html").getroot().iter("{http://www.w3.org/2005/Atom}category")
     assert nasty in {c.get("label") for c in categories}
+
+
+def test_hostile_topic_title_round_trips_through_the_date_line(tmp_path):
+    # The title now sits in the link's text and in its data-label, which site.js reads back as the
+    # plain name in Randall mode. Both must decode to exactly the title, with no attribute break-out.
+    import shutil
+    from hardlyfunny.build import build
+    content = tmp_path / "content"
+    shutil.copytree(CONTENT, content)
+    data = json.loads((content / "comics.json").read_text(encoding="utf-8"))
+    nasty = 'Café <xss>&amp;</xss> "quotes" \' onmouseover="x" ☕'
+    data["topics"][0]["title"] = nasty
+    slug = data["topics"][0]["slug"]
+    (content / "comics.json").write_text(json.dumps(data), encoding="utf-8")
+    build(tmp_path / "site", content=content)
+    comic = next(c for c in data["comics"] if slug in c["topics"])
+    stamp = date_line((tmp_path / "site" / "comics" / comic["slug"] / "index.html").read_text())
+    assert "<xss>" not in stamp and "onmouseover" not in [k for a in Html(stamp).all("a") for k in a]
+    [link] = Html(stamp).all("a", href=f"/topics/{slug}/")
+    assert (link["data-label"], link["data-r"]) == (nasty, slug)
+    assert nasty in visible_text(stamp)
