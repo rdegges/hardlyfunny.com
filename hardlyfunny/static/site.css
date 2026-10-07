@@ -45,7 +45,6 @@
   --word-shadow: 3px 3px 0 #669933;
   --note-open: "";
   --note-close: "";
-  --tag-prefix: "#";
   --shadow: 0 18px 40px -18px rgba(177, 18, 124, .35);
   --scribbles-x: 0px;
   --scribbles-flip: 1;
@@ -65,7 +64,7 @@
     --r: 3px; --r-sm: 3px;
     --display: "JetBrains Mono", ui-monospace, monospace; --body: "JetBrains Mono", ui-monospace, monospace;
     --word-fill: #ccff99; --word-stroke: transparent; --word-shadow: 0 0 18px rgba(204, 255, 153, .25);
-    --note-open: "/*"; --note-close: "*/"; --tag-prefix: "--tag=";
+    --note-open: "/*"; --note-close: "*/";
     --shadow: 0 0 0 1px #34343a;
     --scribbles-x: 62px; --scribbles-flip: -1;
     --samantha-only: none; --randall-only: block; --brand-flow: row; --brand-gap: 14px;
@@ -78,7 +77,7 @@
   --r: 3px; --r-sm: 3px;
   --display: "JetBrains Mono", ui-monospace, monospace; --body: "JetBrains Mono", ui-monospace, monospace;
   --word-fill: #ccff99; --word-stroke: transparent; --word-shadow: 0 0 18px rgba(204, 255, 153, .25);
-  --note-open: "/*"; --note-close: "*/"; --tag-prefix: "--tag=";
+  --note-open: "/*"; --note-close: "*/";
   --shadow: 0 0 0 1px #34343a;
   --scribbles-x: 62px; --scribbles-flip: -1;
   --samantha-only: none; --randall-only: block; --brand-flow: row; --brand-gap: 14px;
@@ -163,6 +162,22 @@ main { padding-block: 16px 40px; }
 .comic-title a { color: inherit; text-decoration: none; }
 .comic-title a:hover { text-decoration: underline; text-decoration-color: var(--accent); }
 .stamp { color: var(--muted); font-size: 15px; font-variant-numeric: tabular-nums; margin: 0; }
+/* On phones the line wraps between topics, never inside one. */
+.topics a { white-space: nowrap; }
+/* Randall mode writes the stamp's topics as a list, ['a', 'b']. The empty alt text keeps the punctuation
+   out of what screen readers say, and her " and " stays in the page for them. The OS-setting block needs
+   JS too: without it the links keep their titles, and the stamp stays plain words.
+   Keep these two blocks identical. */
+:root[data-mode="randall"] .topics::before { content: "['" / ""; }
+:root[data-mode="randall"] .topics::after { content: "']" / ""; }
+:root[data-mode="randall"] .topics .sep::before { content: "', '" / ""; }
+:root[data-mode="randall"] .topics .sep > span { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+@media (prefers-color-scheme: dark) {
+  :root.js:not([data-mode="samantha"]) .topics::before { content: "['" / ""; }
+  :root.js:not([data-mode="samantha"]) .topics::after { content: "']" / ""; }
+  :root.js:not([data-mode="samantha"]) .topics .sep::before { content: "', '" / ""; }
+  :root.js:not([data-mode="samantha"]) .topics .sep > span { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+}
 .eyebrow { display: block; font: 600 13px/1.2 var(--display); color: var(--accent-ink); letter-spacing: .02em; margin-bottom: 4px; }
 
 .comic-art {
@@ -206,14 +221,6 @@ main { padding-block: 16px 40px; }
 .bubble .body p { margin: 0 0 10px; }
 .bubble .body a, .about .body a { overflow-wrap: anywhere; }
 .bubble .body p:last-child { margin-bottom: 0; }
-.tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0 0; padding: 0; list-style: none; }
-.tags a { display: inline-block; font-size: 13px; padding: 3px 10px; border-radius: var(--r-sm); background: var(--ground); color: var(--accent-ink); text-decoration: none; }
-.tags a:hover { text-decoration: underline; }
-/* The empty alt text keeps the prefix out of the link's accessible name. */
-.tags a::before { content: var(--tag-prefix) / ""; color: var(--muted); }
-/* A comic without a note shows its topics on the page, not in the bubble. */
-.comic > .tags { max-width: 660px; margin: 24px auto 0; justify-content: center; }
-.comic > .tags a { background: var(--surface); }
 
 /* Sharing */
 .share { margin: 30px auto 0; max-width: 660px; text-align: center; }

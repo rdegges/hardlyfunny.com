@@ -6,11 +6,6 @@
 <li><span class="button" aria-disabled="true" data-r="{{ randall }}" data-label="{{ label }}">{{ label }}</span></li>
   {% endif %}
 {% endmacro %}
-{% macro topic_links() %}
-      <ul class="tags" aria-label="Topics">
-        {% for topic in site.topics_of(comic) %}<li><a href="{{ urls.topic(topic) }}">{{ topic.title }}</a></li>{% endfor %}
-      </ul>
-{% endmacro %}
 {% block main %}
 {% set permalink = urls.comic(comic) %}
 {% if home %}
@@ -28,7 +23,10 @@
     {% endif %}
     <p class="stamp">
       <span data-r="comics[0x{{ '%x' % (comic.number - 1) }}]" data-label="Comic number {{ comic.number }}">No. {{ comic.number }}</span> ·
-      <time datetime="{{ comic.published.isoformat() }}" data-r="{{ comic.published | epoch }}" data-label="{{ comic.published | long_date }}">{{ comic.published | long_date }}</time>
+      <time datetime="{{ comic.published.isoformat() }}" data-r="{{ comic.published | epoch }}" data-label="{{ comic.published | long_date }}">{{ comic.published | long_date }}</time> ·
+      {# "in A, B and C". Randall mode shows the slugs as a Python list. site.css draws its brackets, quotes and
+         commas, because relabel() empties a [data-r] element, so none can sit around the links. #}
+      in <span class="topics">{% for topic in site.topics_of(comic) %}{% if not loop.first %}<span class="sep"><span>{{ " and " if loop.last else ", " }}</span></span>{% endif %}<a href="{{ urls.topic(topic) }}" data-r="{{ topic.slug }}" data-label="{{ topic.title }}">{{ topic.title }}</a>{% endfor %}</span>
     </p>
   </header>
 
@@ -72,12 +70,8 @@
     <div class="bubble">
       <h2 id="note-title" data-r="// commit message from samantha">Samantha says…</h2>
       <div class="body">{{ comic.note_html | safe }}</div>
-      {{ topic_links() }}
     </div>
   </section>
-  {% else %}
-  {# No note to sit under: the links stand alone, so every comic still leads to its topics. #}
-  {{ topic_links() }}
   {% endif %}
 
   <section class="share" aria-labelledby="share-title">

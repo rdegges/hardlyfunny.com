@@ -95,7 +95,7 @@ def comic_page(site: Site, comic: Comic, *, home: bool = False) -> Page:
 def topic_page(site: Site, topic: Topic) -> Page:
     description = truncate(topic.intro_text, 160)
     return Page(path=urls.topic(topic), title=f"Comics about {topic.title} - {site.title}", description=description,
-                jsonld=seo.topic_jsonld(site, topic, description))
+                jsonld=seo.topic_jsonld(site, topic, description), nav="topics")
 
 
 # Root-relative references in src/href/data-image attributes, e.g. href="/archive/".
@@ -190,7 +190,7 @@ def build(out: Path, site_url: str | None = None, content: Path = CONTENT, porta
     for topic in site.topics:
         write(out, urls.topic(topic), topic_tpl.render(page=topic_page(site, topic), topic=topic, comics=site.comics_about(topic)))
     write(out, urls.TOPICS, env.get_template("topics.html").render(page=Page(
-        path=urls.TOPICS, title=f"Topics - {site.title}",
+        path=urls.TOPICS, title=f"Topics - {site.title}", nav="topics",
         description=truncate(f"Every {site.title} comic, sorted into {len(site.topics)} topics, "
                              f"from {site.topics[0].title} to {site.topics[-1].title}.", 160))))
     write(out, urls.ABOUT, env.get_template("about.html").render(page=Page(
