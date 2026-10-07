@@ -190,7 +190,7 @@ def test_dependabot_keeps_the_pinned_actions_current():
     entry = re.search(r"^  - package-ecosystem: github-actions\n((?:    .*\n)*)", config, re.M)
     assert entry, "no github-actions entry"
     assert re.search(r'^    directory: "/"$', entry.group(1), re.M)
-    assert re.search(r"^      interval: \w+$", entry.group(1), re.M)
+    assert re.search(r"^      interval: weekly$", entry.group(1), re.M)
     # One group matching every action, so a release that spans actions arrives as one PR.
     assert re.search(r'^        patterns: \["\*"\]$', entry.group(1), re.M)
 
