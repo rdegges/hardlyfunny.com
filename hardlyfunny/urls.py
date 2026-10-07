@@ -23,7 +23,7 @@ def topic(t: Topic) -> str:
 
 
 def comic_image(img: Image) -> str:
-    return "/images/" + img.file  # file is "comics/<slug>.png"
+    return "/images/" + img.file  # file is "comics/<url-safe name>.png" or ".jpg", not always the slug (No. 17 also has first-impressions-2.png)
 
 
 def thumbnail(c: Comic) -> str:

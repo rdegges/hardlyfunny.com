@@ -86,14 +86,16 @@ def test_verify_checks_the_live_domain_after_each_production_deploy():
     assert "continue-on-error" not in verify
 
 
-def test_every_workflow_runs_the_python_the_repo_pins():
-    # .python-version is what local tools and Docker runs read; a workflow left on an older
-    # Python passes CI on a version nobody develops against (links.yml has no tests to notice).
-    pinned = (ROOT / ".python-version").read_text(encoding="utf-8").strip()
-    found = {name: re.findall(r'^\s+python-version:\s*"?([^"\s]+)"?\s*$', text, re.M) for name, text in WORKFLOWS.items()}
-    assert found["ci.yml"] and found["links.yml"], found
-    assert {name: set(versions) for name, versions in found.items() if versions} == {
-        name: {pinned} for name, versions in found.items() if versions}
+def test_every_setup_python_step_reads_the_python_version_file():
+    # .python-version is what local tools and Docker runs read. A step that hard-codes a version
+    # drifts from it on the next bump (links.yml has no tests to notice).
+    steps = {name: re.findall(r"^( *)- uses: actions/setup-python@\S+\n((?:\1  .*\n)*)", text, re.M)
+             for name, text in WORKFLOWS.items()}
+    assert steps["ci.yml"] and steps["links.yml"], steps
+    for name, found in steps.items():
+        for _, body in found:
+            assert re.search(r"^\s+python-version-file: \.python-version$", body, re.M), (name, body)
+        assert not re.search(r"^\s+python-version:", WORKFLOWS[name], re.M), name
 
 
 def test_each_action_is_pinned_to_one_version_across_workflows():

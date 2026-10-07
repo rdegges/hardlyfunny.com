@@ -10,12 +10,14 @@ permissions:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
       - uses: actions/setup-python@v7
         with:
-          python-version: "3.14"
+          python-version-file: .python-version
           cache: pip
           cache-dependency-path: requirements*.txt
       - run: pip install -r requirements-dev.txt
@@ -25,7 +27,7 @@ jobs:
   deploy:
     # Branch protection isn't available on this plan, so `needs: test` is what keeps a red build off the live site.
     needs: test
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     concurrency:
       group: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && 'deploy-production' || format('deploy-dry-run-{0}', github.ref) }}
       cancel-in-progress: false
@@ -33,9 +35,11 @@ jobs:
       CF_SEND_TELEMETRY: "false"
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
       - uses: actions/setup-python@v7
         with:
-          python-version: "3.14"
+          python-version-file: .python-version
           cache: pip
           cache-dependency-path: requirements*.txt
       - run: pip install -r requirements.txt
@@ -58,7 +62,7 @@ jobs:
     # last step fails the job unless tests actually ran.
     needs: deploy
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 20
     concurrency:
       group: verify-production
@@ -67,9 +71,11 @@ jobs:
       HARDLYFUNNY_RUNTIME_URL: https://hardlyfunny.com
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
       - uses: actions/setup-python@v7
         with:
-          python-version: "3.14"
+          python-version-file: .python-version
           cache: pip
           cache-dependency-path: requirements*.txt
       - run: pip install -r requirements-dev.txt
