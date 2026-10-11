@@ -20,6 +20,7 @@ import os
 import re
 import socket
 import sys
+import threading
 import time
 import urllib.error
 import urllib.request
@@ -31,6 +32,10 @@ ROOT = Path(__file__).resolve().parent.parent
 UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15"
 TIMEOUT = 30
 ATTEMPTS = 3
+# TIMEOUT is per socket operation, and urllib tries each of a host's addresses in turn,
+# so a host with many silent addresses (www.ubuntu.com has 14) can stall one URL for
+# over 20 minutes. This caps one URL, retries included, so the job finishes.
+DEADLINE = 60
 
 # Statuses that mean "a script can't tell", not "the page is gone".
 UNVERIFIABLE = {401, 403, 405, 406, 418, 429, 451, 999}
@@ -105,6 +110,26 @@ def check(link: Link) -> Result:
     return Result(link, outcome, detail)
 
 
+def check_within(link: Link, deadline: float = DEADLINE) -> Result:
+    # A daemon thread, because a stuck connect can't be cancelled and must not keep the
+    # process alive after main() returns.
+    done: list[Result] = []
+    failed: list[BaseException] = []
+
+    def run() -> None:
+        try:
+            done.append(check(link))
+        except BaseException as e:
+            failed.append(e)
+
+    worker = threading.Thread(target=run, daemon=True)
+    worker.start()
+    worker.join(deadline)
+    if failed:
+        raise failed[0]  # a bug in the checker must turn the run red, not pass as a timeout
+    return done[0] if done else Result(link, "warn", f"no answer in {deadline:g}s")
+
+
 def report(results: list[Result]) -> None:
     in_actions = os.environ.get("GITHUB_ACTIONS") == "true"
     for r in results:
@@ -130,8 +155,9 @@ def report(results: list[Result]) -> None:
 def main() -> int:
     links = extract()
     unique = {l.url: l for l in links}  # check each URL once
-    with ThreadPoolExecutor(max_workers=8) as pool:
-        by_url = {r.link.url: r for r in pool.map(check, unique.values())}
+    # Even if every URL hits DEADLINE, 16 workers stay inside the job's 10-minute limit.
+    with ThreadPoolExecutor(max_workers=16) as pool:
+        by_url = {r.link.url: r for r in pool.map(check_within, unique.values())}
     results = [Result(l, by_url[l.url].outcome, by_url[l.url].detail) for l in links]
     report(results)
     broken = sum(r.outcome == "fail" for r in results)
