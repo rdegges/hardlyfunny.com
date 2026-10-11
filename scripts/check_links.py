@@ -114,9 +114,19 @@ def check_within(link: Link, deadline: float = DEADLINE) -> Result:
     # A daemon thread, because a stuck connect can't be cancelled and must not keep the
     # process alive after main() returns.
     done: list[Result] = []
-    worker = threading.Thread(target=lambda: done.append(check(link)), daemon=True)
+    failed: list[BaseException] = []
+
+    def run() -> None:
+        try:
+            done.append(check(link))
+        except BaseException as e:
+            failed.append(e)
+
+    worker = threading.Thread(target=run, daemon=True)
     worker.start()
     worker.join(deadline)
+    if failed:
+        raise failed[0]  # a bug in the checker must turn the run red, not pass as a timeout
     return done[0] if done else Result(link, "warn", f"no answer in {deadline:g}s")
 
 

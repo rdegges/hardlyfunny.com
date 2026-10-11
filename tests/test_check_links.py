@@ -160,17 +160,13 @@ def test_every_real_link_hanging_still_fits_the_job_timeout(monkeypatch, hung_fe
 
 
 @pytest.mark.filterwarnings("ignore::pytest.PytestUnhandledThreadExceptionWarning")
-@pytest.mark.xfail(strict=False, reason="PROPOSED CONTRACT: a crash inside check() is reported as a 60 s timeout")
-def test_proposed_contract_a_crash_is_not_reported_as_a_timeout(monkeypatch):
+def test_a_crash_in_the_checker_is_raised_not_reported_as_a_timeout(monkeypatch):
     def boom(url):
         raise RuntimeError("bug in the checker")
 
     monkeypatch.setattr(check_links, "check", lambda link: boom(link.url))
     link = check_links.Link("#1 Test", "https://ok.example/")
     started = time.monotonic()
-    try:
-        result = check_links.check_within(link, deadline=30)
-    except RuntimeError:
-        return  # re-raising, as main() did before check_within, is fine
+    with pytest.raises(RuntimeError):
+        check_links.check_within(link, deadline=30)
     assert time.monotonic() - started < 5  # the dead worker must not cost the full deadline
-    assert "no answer" not in result.detail
