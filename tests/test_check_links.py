@@ -4,6 +4,7 @@ import importlib.util
 import json
 import socket
 import sys
+import threading
 import urllib.error
 
 import pytest
@@ -60,3 +61,18 @@ def test_broken_links_fail_the_run(monkeypatch):
     assert check_links.main() == 1
     del fake["https://gone.example/"]
     assert check_links.main() == 0  # a bot-blocked link warns but doesn't fail
+
+
+def test_a_hung_link_warns_instead_of_stalling_the_run(monkeypatch):
+    stuck = threading.Event()
+
+    def hang(url):
+        stuck.wait()
+        return 200, None
+
+    monkeypatch.setattr(check_links, "fetch", hang)
+    link = check_links.Link("#23 W.o.W.", "http://www.ubuntu.com/")
+    try:
+        assert check_links.check_within(link, deadline=0.2) == check_links.Result(link, "warn", "no answer in 0.2s")
+    finally:
+        stuck.set()

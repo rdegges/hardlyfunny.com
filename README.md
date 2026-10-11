@@ -48,7 +48,7 @@ The PNGs in `content/` are losslessly recompressed (zopflipng or oxipng, whichev
 
 ## Link checking
 
-`.github/workflows/links.yml` runs `scripts/check_links.py` on every pull request, every push to `main`, and every Monday (links die even when nothing changes). It fails on links that are definitely broken (404/410, a domain that no longer resolves) and only warns about links a script can't verify, like Reddit's and YouTube's bot blocking or a server error, which you can check in a browser. Results show as annotations and a summary table on the run. Fix a dead link by pointing it at an Internet Archive snapshot from around the comic's date.
+`.github/workflows/links.yml` runs `scripts/check_links.py` on every pull request, every push to `main`, and every Monday (links die even when nothing changes). It fails on links that are definitely broken (404/410, a domain that no longer resolves) and only warns about links a script can't verify, like Reddit's and YouTube's bot blocking, a server error, or a site that gives no answer within 60 seconds. You can check those in a browser. Results show as annotations and a summary table on the run. Fix a dead link by pointing it at an Internet Archive snapshot from around the comic's date.
 
 Internal links (pages, images, CSS) are checked by the test suite on every build.
 
