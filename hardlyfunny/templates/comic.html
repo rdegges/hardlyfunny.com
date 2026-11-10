@@ -46,6 +46,13 @@
     </ul>
   </nav>
 
+  {# The home page shows the latest comic but leaves its transcript and note to the comic's own page:
+     with both, the two pages were the same text and Google picked one of them as canonical itself. #}
+  {% if home %}
+  {% if comic.transcript or comic.note_html %}
+  <p class="read-more"><a href="{{ permalink }}">Read the transcript{% if comic.note_html %} and Samantha’s note{% endif %}</a></p>
+  {% endif %}
+  {% else %}
   {% if comic.transcript %}
   <details class="transcript">
     <summary><h2>Transcript</h2></summary>
@@ -72,6 +79,7 @@
       <div class="body">{{ comic.note_html | safe }}</div>
     </div>
   </section>
+  {% endif %}
   {% endif %}
 
   <section class="share" aria-labelledby="share-title">

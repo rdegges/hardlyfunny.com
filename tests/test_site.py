@@ -93,6 +93,22 @@ def test_home_page_says_the_comic_is_complete(built, site):
     assert 'class="intro"' not in (built / "comics" / site.latest.slug / "index.html").read_text()
 
 
+
+def test_home_page_shows_the_latest_comic_without_its_transcript_or_note(built, site):
+    # The home page and the latest comic's page used to carry the same text, so
+    # Google treated them as duplicates and picked one canonical itself. The home
+    # page keeps the comic and links to its page for the transcript and note.
+    latest = site.latest
+    home = (built / "index.html").read_text()
+    comic = (built / "comics" / latest.slug / "index.html").read_text()
+    for img in latest.images:
+        assert f'src="{urls.comic_image(img)}"' in home
+    assert 'class="transcript"' not in home and 'class="note"' not in home
+    [link] = re.findall(r'<p class="read-more">(.*?)</p>', home, re.S)
+    assert f'href="{urls.comic(latest)}"' in link
+    assert 'class="transcript"' in comic and 'class="note"' in comic
+    assert 'class="read-more"' not in comic
+
 @pytest.mark.parametrize("key", [
     "og:title", "og:description", "og:url", "og:image", "og:image:alt", "og:type",
     "twitter:card", "twitter:image",
