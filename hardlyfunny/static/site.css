@@ -157,6 +157,7 @@ main { padding-block: 16px 40px; }
 
 /* Comic */
 .intro { text-align: center; color: var(--muted); margin: 10px auto 0; max-width: 56ch; }
+.read-more { text-align: center; margin: 24px auto 0; }
 .comic-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 16px; margin: 18px 0 12px; }
 .comic-title { font: 600 clamp(26px, 5vw, 34px)/1.15 var(--display); margin: 0; }
 .comic-title a { color: inherit; text-decoration: none; }
