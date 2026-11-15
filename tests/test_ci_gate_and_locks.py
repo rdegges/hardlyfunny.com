@@ -80,7 +80,7 @@ def test_workflow_permissions_are_read_only(name):
 
 INSTALLER = re.compile(r"\b(?:pip3?|pipx|uv|poetry|pdm|conda|mamba|easy_install|setup\.py)\b|-m pip\b|\bnpm (?:install|i|ci|add|update)\b|\byarn\b|\bpnpm\b")
 PNG_LOCK_CHECK = (
-    "pip download --require-hashes --no-deps --only-binary :all: --python-version 3.13 --implementation cp "
+    'pip download --require-hashes --no-deps --only-binary ":all:" --python-version 3.13 --implementation cp '
     '--abi cp313 --platform manylinux_2_28_x86_64 -r requirements-png.txt -d "$RUNNER_TEMP/pngcheck"'
 )
 ALLOWED_INSTALL = re.compile(

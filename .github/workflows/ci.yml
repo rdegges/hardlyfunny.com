@@ -23,7 +23,7 @@ jobs:
       - run: pip install --require-hashes -r requirements-dev.txt
       # Proves every hash in requirements-png.txt against PyPI for the Docker image's Python (3.13)
       # without installing anything or running the PNG job. Downloads only; nothing is kept.
-      - run: pip download --require-hashes --no-deps --only-binary :all: --python-version 3.13 --implementation cp --abi cp313 --platform manylinux_2_28_x86_64 -r requirements-png.txt -d "$RUNNER_TEMP/pngcheck"
+      - run: pip download --require-hashes --no-deps --only-binary ":all:" --python-version 3.13 --implementation cp --abi cp313 --platform manylinux_2_28_x86_64 -r requirements-png.txt -d "$RUNNER_TEMP/pngcheck"
       - run: python -m pytest -q
       - run: python -m hardlyfunny build
 

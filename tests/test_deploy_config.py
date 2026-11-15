@@ -421,7 +421,19 @@ def test_ci_checks_the_png_lock_hashes_against_pypi_without_installing_it():
     lines = [line.strip() for line in body.splitlines() if "requirements-png.txt" in line and "run:" in line]
     assert len(lines) == 1, lines
     command = lines[0].split("run: ", 1)[1]
-    assert command.startswith("pip download --require-hashes --no-deps --only-binary :all: ")
+    assert command.startswith('pip download --require-hashes --no-deps --only-binary ":all:" ')
     assert "--python-version 3.13" in command and "--abi cp313" in command
     assert "-r requirements-png.txt" in command
     assert not re.search(r"pip install", command)
+
+
+@pytest.mark.parametrize("name", sorted(WORKFLOWS))
+def test_plain_run_commands_are_valid_yaml_scalars(name):
+    # These tests read workflows as text, so a `run: ... :all: ...` (a colon and a space inside an
+    # unquoted value) passes them all while GitHub rejects the whole file. Quote such a token.
+    for line in WORKFLOWS[name].splitlines():
+        match = re.match(r"\s*(?:- )?run: (?P<value>\S.*)$", line)
+        if not match or match.group("value")[0] in "|>\"'":
+            continue
+        value = match.group("value")
+        assert ": " not in value and not value.endswith(":") and " #" not in value, (name, line)
