@@ -95,10 +95,6 @@ def test_no_workflow_command_installs_anything_but_the_locks():
     assert seen.count("npm ci") == 1 and sum(c.startswith("pip install") for c in seen) == 3, seen
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="README's PNG recompression command runs an unhashed, unpinned `pip install -q pyoxipng`",
-)
 def test_readme_install_commands_are_hash_checked():
     for line in README.splitlines():
         for command in re.findall(r"pip install[^&\"`]*", line):

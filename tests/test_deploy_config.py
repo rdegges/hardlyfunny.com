@@ -326,7 +326,7 @@ def lock_pins(name):
     return pins
 
 
-@pytest.mark.parametrize("name", ["requirements.txt", "requirements-dev.txt"])
+@pytest.mark.parametrize("name", ["requirements.txt", "requirements-dev.txt", "requirements-png.txt"])
 def test_python_locks_pin_every_package_to_one_version_with_hashes(name):
     # `pip install --require-hashes` rejects anything unpinned or unhashed, so this fails the
     # same way before CI does if someone hand-edits a lock.
@@ -334,8 +334,8 @@ def test_python_locks_pin_every_package_to_one_version_with_hashes(name):
 
 
 def test_python_locks_cover_their_input_files_and_agree_with_each_other():
-    prod, dev = lock_pins("requirements.txt"), lock_pins("requirements-dev.txt")
-    for source, lock in (("requirements.in", prod), ("requirements-dev.in", dev)):
+    prod, dev, png = lock_pins("requirements.txt"), lock_pins("requirements-dev.txt"), lock_pins("requirements-png.txt")
+    for source, lock in (("requirements.in", prod), ("requirements-dev.in", dev), ("requirements-png.in", png)):
         wanted = {
             re.match(r"[A-Za-z0-9_.-]+", line).group(0).lower()
             for line in (ROOT / source).read_text(encoding="utf-8").splitlines()
@@ -343,6 +343,24 @@ def test_python_locks_cover_their_input_files_and_agree_with_each_other():
         }
         assert wanted <= lock.keys(), (source, wanted - lock.keys())
     assert {name: version for name, version in dev.items() if name in prod} == prod
+    assert {name: version for name, version in png.items() if name in prod} == prod
+
+
+def test_png_tooling_is_hash_locked_and_documented():
+    # compress_pngs.py imports oxipng, which README's Docker command installs from this lock.
+    assert "pyoxipng" in lock_pins("requirements-png.txt")
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    assert "pip install -q --require-hashes --only-binary :all: -r requirements-png.txt" in readme
+    header = (ROOT / "requirements-png.txt").read_text(encoding="utf-8").splitlines()[1].removeprefix("#").strip()
+    assert header in readme, f"README no longer documents: {header}"
+
+
+def test_colorama_is_kept_only_behind_its_windows_marker_and_documented():
+    # Dependabot's pip-compile run drops the Windows-only pin; the docs say that is expected.
+    dev = (ROOT / "requirements-dev.txt").read_text(encoding="utf-8")
+    assert re.search(r"^colorama==[\d.]+ ; sys_platform == 'win32' \\$", dev, re.M)
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    assert "colorama" in readme and "Dependabot" in readme.split("colorama", 1)[1][:700]
 
 
 def test_every_pip_install_in_ci_checks_hashes_against_a_lock():
