@@ -79,7 +79,13 @@ def test_workflow_permissions_are_read_only(name):
 # --- installs ----------------------------------------------------------------------------
 
 INSTALLER = re.compile(r"\b(?:pip3?|pipx|uv|poetry|pdm|conda|mamba|easy_install|setup\.py)\b|-m pip\b|\bnpm (?:install|i|ci|add|update)\b|\byarn\b|\bpnpm\b")
-ALLOWED_INSTALL = re.compile(r"(?:pip install --require-hashes -r requirements(?:-dev)?\.txt|npm ci)")
+PNG_LOCK_CHECK = (
+    "pip download --require-hashes --no-deps --only-binary :all: --python-version 3.13 --implementation cp "
+    '--abi cp313 --platform manylinux_2_28_x86_64 -r requirements-png.txt -d "$RUNNER_TEMP/pngcheck"'
+)
+ALLOWED_INSTALL = re.compile(
+    r"(?:pip install --require-hashes -r requirements(?:-dev)?\.txt|npm ci|" + re.escape(PNG_LOCK_CHECK) + ")"
+)
 
 
 def test_no_workflow_command_installs_anything_but_the_locks():
@@ -154,7 +160,7 @@ def test_lock_headers_are_the_commands_the_readme_documents():
 # --- Dependabot --------------------------------------------------------------------------
 
 
-@pytest.mark.parametrize("ecosystem", ["github-actions", "pip", "npm"])
+@pytest.mark.parametrize("ecosystem", ["github-actions", "uv", "npm"])
 def test_dependabot_cooldown_has_no_exemptions(ecosystem):
     config = (ROOT / ".github" / "dependabot.yml").read_text(encoding="utf-8")
     entry = re.search(rf"^  - package-ecosystem: {ecosystem}\n((?:    .*\n|\s*\n|  #.*\n)*)", config, re.M)

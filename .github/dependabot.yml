@@ -12,8 +12,11 @@ updates:
         patterns: ["*"]
         update-types: ["minor", "patch"]
 
-  # requirements.in / requirements-dev.in and their hash-pinned locks (Pillow, Jinja2, pytest). The site is built by Python.
-  - package-ecosystem: pip
+  # requirements*.in and their hash-pinned locks (Pillow, Jinja2, pytest, pyoxipng). The locks are made by
+  # `uv pip compile --universal`, so this is the uv ecosystem, not pip: its updater reruns `uv pip compile`
+  # with the lock's own --universal, --generate-hashes and --python-version, which keeps the
+  # Windows-only colorama pin. The pip ecosystem would run pip-tools instead and drop it.
+  - package-ecosystem: uv
     directory: "/"
     schedule:
       interval: weekly

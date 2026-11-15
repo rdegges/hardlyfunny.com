@@ -197,7 +197,7 @@ def dependabot_entry(ecosystem):
     return entry.group(1)
 
 
-@pytest.mark.parametrize("ecosystem", ["github-actions", "pip", "npm"])
+@pytest.mark.parametrize("ecosystem", ["github-actions", "uv", "npm"])
 def test_dependabot_keeps_every_dependency_surface_current(ecosystem):
     # SHA pins never move on their own, and pip and npm only move when asked, so without
     # this file each of them goes stale silently.
@@ -401,3 +401,27 @@ def test_pinned_node_satisfies_the_engines_of_the_deploy_tool():
         for c in clauses
     )
     assert ok, f".node-version {version} is outside cf's engines.node {engines!r}"
+
+
+def test_dependabot_regenerates_the_uv_locks_with_uv_not_pip_tools():
+    # The locks come from `uv pip compile --universal`. Dependabot's uv ecosystem reruns uv with the
+    # lock's own --universal/--generate-hashes/--python-version, which keeps the Windows-only
+    # colorama pin. Its pip ecosystem runs pip-compile, which has no universal mode and drops it.
+    config = (ROOT / ".github" / "dependabot.yml").read_text(encoding="utf-8")
+    assert not re.search(r"^  - package-ecosystem: pip$", config, re.M), "pip-tools would drop colorama from the locks"
+    dependabot_entry("uv")
+    for stem in ("requirements", "requirements-dev", "requirements-png"):
+        header = (ROOT / f"{stem}.txt").read_text(encoding="utf-8")
+        assert "--universal" in header and "--generate-hashes" in header, stem
+
+
+def test_ci_checks_the_png_lock_hashes_against_pypi_without_installing_it():
+    # requirements-png.txt is installed only in a Docker image, so nothing else would notice a bad hash.
+    body = job("test")
+    lines = [line.strip() for line in body.splitlines() if "requirements-png.txt" in line and "run:" in line]
+    assert len(lines) == 1, lines
+    command = lines[0].split("run: ", 1)[1]
+    assert command.startswith("pip download --require-hashes --no-deps --only-binary :all: ")
+    assert "--python-version 3.13" in command and "--abi cp313" in command
+    assert "-r requirements-png.txt" in command
+    assert not re.search(r"pip install", command)

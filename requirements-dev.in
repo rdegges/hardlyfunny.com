@@ -1,3 +1,3 @@
-# colorama (Windows-only, via pytest) is kept by the uv lock but dropped when Dependabot regenerates it; see README.
+# colorama (pytest's Windows-only dependency) stays in the lock behind its marker: the lock is made with --universal and Dependabot's uv ecosystem keeps that flag. See README.
 -r requirements.in
 pytest>=8
