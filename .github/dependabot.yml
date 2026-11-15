@@ -5,6 +5,33 @@ updates:
     directory: "/"
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 7
     groups:
       actions:
         patterns: ["*"]
+        update-types: ["minor", "patch"]
+
+  # requirements.txt and requirements-dev.txt (Pillow, Jinja2, pytest). The site is built by Python.
+  - package-ecosystem: pip
+    directory: "/"
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      python:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+
+  # package.json and package-lock.json (cf and wrangler: deploy tooling only).
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      npm:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]

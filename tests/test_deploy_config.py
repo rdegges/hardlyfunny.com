@@ -186,18 +186,37 @@ def test_every_action_is_pinned_to_a_commit_sha_with_its_release_tag():
     assert bad == []
 
 
-def test_dependabot_keeps_the_pinned_actions_current():
-    # SHA pins never move on their own, so without this file they go stale silently.
+def dependabot_entry(ecosystem):
+    """The lines of one ecosystem's entry in dependabot.yml."""
     path = ROOT / ".github" / "dependabot.yml"
     assert path.exists(), "no .github/dependabot.yml"
     config = path.read_text(encoding="utf-8")
     assert re.search(r"^version: 2$", config, re.M)
-    entry = re.search(r"^  - package-ecosystem: github-actions\n((?:    .*\n)*)", config, re.M)
-    assert entry, "no github-actions entry"
-    assert re.search(r'^    directory: "/"$', entry.group(1), re.M)
-    assert re.search(r"^      interval: weekly$", entry.group(1), re.M)
-    # One group matching every action, so a release that spans actions arrives as one PR.
-    assert re.search(r'^        patterns: \["\*"\]$', entry.group(1), re.M)
+    entry = re.search(rf"^  - package-ecosystem: {ecosystem}\n((?:    .*\n|\s*\n|  #.*\n)*)", config, re.M)
+    assert entry, f"no {ecosystem} entry"
+    return entry.group(1)
+
+
+@pytest.mark.parametrize("ecosystem", ["github-actions", "pip", "npm"])
+def test_dependabot_keeps_every_dependency_surface_current(ecosystem):
+    # SHA pins never move on their own, and pip and npm only move when asked, so without
+    # this file each of them goes stale silently.
+    entry = dependabot_entry(ecosystem)
+    assert re.search(r'^    directory: "/"$', entry, re.M)
+    assert re.search(r"^      interval: weekly$", entry, re.M)
+    # A release younger than a week is where yanked and compromised versions turn up.
+    assert re.search(r"^    cooldown:\n      default-days: 7$", entry, re.M)
+    # One group of minor and patch bumps, so a release that spans packages arrives as one PR.
+    assert re.search(r'^        patterns: \["\*"\]$', entry, re.M)
+    assert re.search(r'^        update-types: \["minor", "patch"\]$', entry, re.M)
+
+
+def test_dependabot_pull_requests_are_not_merged_automatically():
+    # Every dependency bump goes through the same CI and human review as any other change.
+    config = (ROOT / ".github" / "dependabot.yml").read_text(encoding="utf-8")
+    assert not re.search(r"auto-?merge", config, re.I)
+    for name, text in WORKFLOWS.items():
+        assert not re.search(r"auto-?merge|gh pr merge", text, re.I), name
 
 
 def verify_gate():

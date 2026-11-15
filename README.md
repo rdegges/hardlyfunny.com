@@ -40,6 +40,7 @@ python -m pytest                   # checks content, SEO tags, accessibility bas
 | `hardlyfunny/static/_headers` | Cloudflare response headers, copied into the build |
 | `.github/workflows/ci.yml` | Runs the tests and a build on every PR and push. Deploys `main` to Cloudflare |
 | `package.json`, `cloudflare.config.ts`, `wrangler.config.ts` | Deploy tooling only. The site is built by Python |
+| `.github/dependabot.yml` | Weekly updates for GitHub Actions, pip and npm. Minor and patch bumps arrive grouped, one PR per ecosystem. A release must be 7 days old before Dependabot proposes it, except for security updates. Nothing merges automatically |
 | `archive/` | The untouched WordPress export and its generated descriptions (history, not edited) |
 | `scripts/` | `export_wordpress.py` (WordPress → `archive/`; historical, since the WordPress.com site no longer exists), `migrate_to_content.py` (one-time `archive/` → `content/`), `compress_pngs.py` (lossless PNG recompression), `make_x_header.py` (the X profile header) and `check_links.py` (link checker run by CI) |
 | `social/` | Art for the comic's social accounts, kept out of `content/` so the build doesn't publish it. `x-header.png` is the @hardlyfunnycom header, drawn by `python scripts/make_x_header.py` |
