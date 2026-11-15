@@ -309,3 +309,77 @@ def test_subdomain_settings_ignore_comments_and_see_every_copy(block, workers_de
     assert ON in CLOUDFLARE
     assert settings(ts, "workersDev") == workers_dev
     assert settings(ts, "previewUrls") == preview_urls
+
+
+def lock_pins(name):
+    """{package: version} for a hash-locked requirements file; asserts each pin carries hashes."""
+    text = (ROOT / name).read_text(encoding="utf-8")
+    pins = {}
+    for entry in re.split(r"\n(?=\S)", text):
+        entry = entry.strip()
+        if not entry or entry.startswith("#"):
+            continue
+        match = re.match(r"([A-Za-z0-9_.-]+)==([\w.!+-]+)(?: ; [^\\\n]+)? \\\n", entry + "\n")
+        assert match, f"{name}: not an exact pin: {entry.splitlines()[0]}"
+        assert re.search(r"^\s+--hash=sha256:[0-9a-f]{64}", entry, re.M), f"{name}: no hash for {match.group(1)}"
+        pins[match.group(1).lower()] = match.group(2)
+    return pins
+
+
+@pytest.mark.parametrize("name", ["requirements.txt", "requirements-dev.txt"])
+def test_python_locks_pin_every_package_to_one_version_with_hashes(name):
+    # `pip install --require-hashes` rejects anything unpinned or unhashed, so this fails the
+    # same way before CI does if someone hand-edits a lock.
+    assert lock_pins(name)
+
+
+def test_python_locks_cover_their_input_files_and_agree_with_each_other():
+    prod, dev = lock_pins("requirements.txt"), lock_pins("requirements-dev.txt")
+    for source, lock in (("requirements.in", prod), ("requirements-dev.in", dev)):
+        wanted = {
+            re.match(r"[A-Za-z0-9_.-]+", line).group(0).lower()
+            for line in (ROOT / source).read_text(encoding="utf-8").splitlines()
+            if line.strip() and not line.startswith(("#", "-"))
+        }
+        assert wanted <= lock.keys(), (source, wanted - lock.keys())
+    assert {name: version for name, version in dev.items() if name in prod} == prod
+
+
+def test_every_pip_install_in_ci_checks_hashes_against_a_lock():
+    installs = [(name, line.strip()) for name, text in WORKFLOWS.items() for line in text.splitlines() if "pip install" in line]
+    assert len(installs) >= 3, installs
+    for name, line in installs:
+        assert re.search(r"pip install --require-hashes -r requirements(-dev)?\.txt$", line), (name, line)
+
+
+def node_version():
+    version = (ROOT / ".node-version").read_text(encoding="utf-8").strip()
+    assert re.fullmatch(r"\d+\.\d+\.\d+", version), f".node-version must be an exact release, not {version!r}"
+    return tuple(int(part) for part in version.split("."))
+
+
+def test_node_is_pinned_in_a_file_that_setup_node_reads():
+    # `lts/*` moves under the deploy whenever Node cuts an LTS; the pin moves only in a reviewed diff.
+    node_version()
+    steps = steps_using("actions/setup-node")
+    assert steps
+    for name, body in steps:
+        assert re.search(r"^\s+node-version-file: \.node-version$", body, re.M), (name, body)
+    for name, text in WORKFLOWS.items():
+        assert not re.search(r"^\s+node-version:", text, re.M), name
+
+
+def test_pinned_node_satisfies_the_engines_of_the_deploy_tool():
+    import json
+
+    lock = json.loads((ROOT / "package-lock.json").read_text(encoding="utf-8"))
+    engines = lock["packages"]["node_modules/cf"]["engines"]["node"]
+    version = node_version()
+    # Only the `^X.Y.Z || ^A.B.C` shape cf publishes; anything else must be reviewed by hand.
+    clauses = [re.fullmatch(r"\^(\d+)\.(\d+)\.(\d+)", clause.strip()) for clause in engines.split("||")]
+    assert all(clauses), f"cf's engines.node is no longer a list of caret ranges: {engines!r}"
+    ok = any(
+        version[0] == int(c.group(1)) and version >= tuple(int(c.group(i)) for i in (1, 2, 3))
+        for c in clauses
+    )
+    assert ok, f".node-version {version} is outside cf's engines.node {engines!r}"

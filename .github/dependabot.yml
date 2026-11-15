@@ -12,7 +12,7 @@ updates:
         patterns: ["*"]
         update-types: ["minor", "patch"]
 
-  # requirements.txt and requirements-dev.txt (Pillow, Jinja2, pytest). The site is built by Python.
+  # requirements.in / requirements-dev.in and their hash-pinned locks (Pillow, Jinja2, pytest). The site is built by Python.
   - package-ecosystem: pip
     directory: "/"
     schedule:
