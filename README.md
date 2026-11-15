@@ -5,7 +5,7 @@
 ## Quick start
 
 ```sh
-pip install -r requirements-dev.txt
+pip install --require-hashes -r requirements-dev.txt
 python -m hardlyfunny serve        # builds into _site/ and serves http://localhost:8000/
 python -m pytest                   # checks content, SEO tags, accessibility basics, links and the feed
 ```
@@ -40,12 +40,32 @@ python -m pytest                   # checks content, SEO tags, accessibility bas
 | `hardlyfunny/static/_headers` | Cloudflare response headers, copied into the build |
 | `.github/workflows/ci.yml` | Runs the tests and a build on every PR and push. Deploys `main` to Cloudflare |
 | `package.json`, `cloudflare.config.ts`, `wrangler.config.ts` | Deploy tooling only. The site is built by Python |
+| `requirements.in`, `requirements-dev.in`, `requirements-png.in` | The Python dependencies, as ranges. Edit these. `-dev` adds pytest. `-png` adds `pyoxipng` for the PNG recompression above |
+| `requirements.txt`, `requirements-dev.txt`, `requirements-png.txt` | Generated from the `.in` files with every package pinned to one version and its file hashes. CI and the deploy install these with `pip install --require-hashes`, so a package whose bytes changed fails the build. Don't edit by hand; see "Dependencies" below |
+| `.node-version` | The exact Node.js version CI uses to deploy. See "Dependencies" below |
+| `.github/dependabot.yml` | Weekly updates for GitHub Actions, Python (through Dependabot's `uv` ecosystem, which matches how the locks are made) and npm. Minor and patch bumps arrive grouped, one PR per ecosystem. A release must be 7 days old before Dependabot proposes it, except for security updates. Nothing merges automatically |
 | `archive/` | The untouched WordPress export and its generated descriptions (history, not edited) |
 | `scripts/` | `export_wordpress.py` (WordPress → `archive/`; historical, since the WordPress.com site no longer exists), `migrate_to_content.py` (one-time `archive/` → `content/`), `compress_pngs.py` (lossless PNG recompression), `make_x_header.py` (the X profile header) and `check_links.py` (link checker run by CI) |
 | `social/` | Art for the comic's social accounts, kept out of `content/` so the build doesn't publish it. `x-header.png` is the @hardlyfunnycom header, drawn by `python scripts/make_x_header.py` |
 | `index.html`, `designs/` | The design review page and the four clickable mockups it previews |
 
-The PNGs in `content/` are losslessly recompressed (zopflipng or oxipng, whichever is smaller), and `tests/test_images.py` proves each one has the same pixels as its twin in `archive/`. To do it again: `docker run --rm -v "$PWD":/app -w /app python:3.14 sh -c "apt-get update -qq && apt-get install -y -qq zopfli && pip install -q -r requirements.txt pyoxipng && python scripts/compress_pngs.py"`.
+The PNGs in `content/` are losslessly recompressed (zopflipng or oxipng, whichever is smaller), and `tests/test_images.py` proves each one has the same pixels as its twin in `archive/`. To do it again: `docker run --rm -v "$PWD":/app -w /app python:3.13 sh -c "apt-get update -qq && apt-get install -y -qq zopfli && pip install -q --require-hashes --only-binary :all: -r requirements-png.txt && python scripts/compress_pngs.py"`. The tool versions come from `requirements-png.txt`, a hash lock like the others. It is on Python 3.13 because `pyoxipng` publishes no wheels for 3.14 or later yet, and `--only-binary :all:` keeps pip from building it from source. CI also runs `pip download --require-hashes` on `requirements-png.txt`, but only for the manylinux x86_64 cp313 wheel of each package (`pyoxipng` included), the one the Docker image on a Linux x86_64 host installs. The hashes for other platforms (macOS, Windows, arm64, musl) are checked only when `pip install --require-hashes` runs there.
+
+## Dependencies
+
+**Python.** `requirements.in`, `requirements-dev.in` and `requirements-png.in` hold the ranges (`Pillow>=13.0.0`, `pytest>=8`, `pyoxipng`). `requirements.txt`, `requirements-dev.txt` and `requirements-png.txt` are the locks: exact versions plus hashes of every release file, including the packages those pull in. `pip install --require-hashes -r requirements-dev.txt` refuses anything that isn't in the lock. The dev and png locks are built with `requirements.txt` as a constraint, so they never disagree with it. To add or change a dependency, edit the `.in` file, then regenerate the locks with [uv](https://docs.astral.sh/uv/). The commands are in the header of each lock file:
+
+```sh
+uv pip compile requirements.in -o requirements.txt --generate-hashes --universal --python-version 3.14 --no-annotate
+uv pip compile requirements-dev.in -o requirements-dev.txt -c requirements.txt --generate-hashes --universal --python-version 3.14 --no-annotate
+uv pip compile requirements-png.in -o requirements-png.txt -c requirements.txt --generate-hashes --universal --python-version 3.13 --no-annotate
+```
+
+Keep `--python-version` equal to `.python-version` for the first two (the third matches the Docker image the PNG command uses). Add `-U` to take newer versions (the other commands never move a package the first one pinned). Dependabot's `uv` ecosystem pairs each `.in` with its `.txt` and proposes the updated lock (see below).
+
+**colorama and Dependabot.** pytest depends on `colorama`, but only on Windows. The `--universal` locks keep it as `colorama==0.4.6 ; sys_platform == 'win32'` with its hashes, so a `--require-hashes` install works on Windows too. Dependabot is configured with the `uv` ecosystem (not `pip`) for this reason. For a lock whose header has `--universal`, its updater reruns `uv pip compile` and reuses the lock's own `--universal`, `--generate-hashes`, `--no-annotate` and `--python-version`, and puts the original header back (dependabot-core `uv/lib/dependabot/uv/file_updater/compile_file_updater.rb`, which has a spec for preserving `--universal`). Its `pip` ecosystem would run `pip-compile`, which has no universal mode and drops the Windows-only line, so don't switch the entry back to `pip`. Replaying the update on the current locks with those flags reproduces them byte for byte. If a lock ever loses `colorama`, a hash or a header, `tests/` fails the PR; regenerate it with the commands above and push.
+
+**Node.** `.node-version` pins the exact Node.js release (`26.13.1`, a Node 26 "Lithium" LTS security release) that `setup-node` installs in CI, and `package-lock.json` pins the deploy tooling. Dependabot has no ecosystem for `.node-version`, so it only moves when someone changes it. Bump it on purpose: pick a release that has been out for about a week (or a security release), keep it inside the `engines.node` range of `cf` in `package-lock.json` (`^22.23.0 || ^24.22.0 || ^26.12.0`), and check that it exists for `actions/setup-node` in [actions/node-versions](https://github.com/actions/node-versions). `tests/test_deploy_config.py` fails if `.node-version` is not an exact version or falls outside `cf`'s range. Revisit it when a Node release has a security fix and before the Node line you're on leaves LTS.
 
 ## Link checking
 

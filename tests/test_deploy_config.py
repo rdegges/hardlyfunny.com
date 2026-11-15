@@ -186,18 +186,37 @@ def test_every_action_is_pinned_to_a_commit_sha_with_its_release_tag():
     assert bad == []
 
 
-def test_dependabot_keeps_the_pinned_actions_current():
-    # SHA pins never move on their own, so without this file they go stale silently.
+def dependabot_entry(ecosystem):
+    """The lines of one ecosystem's entry in dependabot.yml."""
     path = ROOT / ".github" / "dependabot.yml"
     assert path.exists(), "no .github/dependabot.yml"
     config = path.read_text(encoding="utf-8")
     assert re.search(r"^version: 2$", config, re.M)
-    entry = re.search(r"^  - package-ecosystem: github-actions\n((?:    .*\n)*)", config, re.M)
-    assert entry, "no github-actions entry"
-    assert re.search(r'^    directory: "/"$', entry.group(1), re.M)
-    assert re.search(r"^      interval: weekly$", entry.group(1), re.M)
-    # One group matching every action, so a release that spans actions arrives as one PR.
-    assert re.search(r'^        patterns: \["\*"\]$', entry.group(1), re.M)
+    entry = re.search(rf"^  - package-ecosystem: {ecosystem}\n((?:    .*\n|\s*\n|  #.*\n)*)", config, re.M)
+    assert entry, f"no {ecosystem} entry"
+    return entry.group(1)
+
+
+@pytest.mark.parametrize("ecosystem", ["github-actions", "uv", "npm"])
+def test_dependabot_keeps_every_dependency_surface_current(ecosystem):
+    # SHA pins never move on their own, and pip and npm only move when asked, so without
+    # this file each of them goes stale silently.
+    entry = dependabot_entry(ecosystem)
+    assert re.search(r'^    directory: "/"$', entry, re.M)
+    assert re.search(r"^      interval: weekly$", entry, re.M)
+    # A release younger than a week is where yanked and compromised versions turn up.
+    assert re.search(r"^    cooldown:\n      default-days: 7$", entry, re.M)
+    # One group of minor and patch bumps, so a release that spans packages arrives as one PR.
+    assert re.search(r'^        patterns: \["\*"\]$', entry, re.M)
+    assert re.search(r'^        update-types: \["minor", "patch"\]$', entry, re.M)
+
+
+def test_dependabot_pull_requests_are_not_merged_automatically():
+    # Every dependency bump goes through the same CI and human review as any other change.
+    config = (ROOT / ".github" / "dependabot.yml").read_text(encoding="utf-8")
+    assert not re.search(r"auto-?merge", config, re.I)
+    for name, text in WORKFLOWS.items():
+        assert not re.search(r"auto-?merge|gh pr merge", text, re.I), name
 
 
 def verify_gate():
@@ -290,3 +309,131 @@ def test_subdomain_settings_ignore_comments_and_see_every_copy(block, workers_de
     assert ON in CLOUDFLARE
     assert settings(ts, "workersDev") == workers_dev
     assert settings(ts, "previewUrls") == preview_urls
+
+
+def lock_pins(name):
+    """{package: version} for a hash-locked requirements file; asserts each pin carries hashes."""
+    text = (ROOT / name).read_text(encoding="utf-8")
+    pins = {}
+    for entry in re.split(r"\n(?=\S)", text):
+        entry = entry.strip()
+        if not entry or entry.startswith("#"):
+            continue
+        match = re.match(r"([A-Za-z0-9_.-]+)==([\w.!+-]+)(?: ; [^\\\n]+)? \\\n", entry + "\n")
+        assert match, f"{name}: not an exact pin: {entry.splitlines()[0]}"
+        assert re.search(r"^\s+--hash=sha256:[0-9a-f]{64}", entry, re.M), f"{name}: no hash for {match.group(1)}"
+        pins[match.group(1).lower()] = match.group(2)
+    return pins
+
+
+@pytest.mark.parametrize("name", ["requirements.txt", "requirements-dev.txt", "requirements-png.txt"])
+def test_python_locks_pin_every_package_to_one_version_with_hashes(name):
+    # `pip install --require-hashes` rejects anything unpinned or unhashed, so this fails the
+    # same way before CI does if someone hand-edits a lock.
+    assert lock_pins(name)
+
+
+def test_python_locks_cover_their_input_files_and_agree_with_each_other():
+    prod, dev, png = lock_pins("requirements.txt"), lock_pins("requirements-dev.txt"), lock_pins("requirements-png.txt")
+    for source, lock in (("requirements.in", prod), ("requirements-dev.in", dev), ("requirements-png.in", png)):
+        wanted = {
+            re.match(r"[A-Za-z0-9_.-]+", line).group(0).lower()
+            for line in (ROOT / source).read_text(encoding="utf-8").splitlines()
+            if line.strip() and not line.startswith(("#", "-"))
+        }
+        assert wanted <= lock.keys(), (source, wanted - lock.keys())
+    assert {name: version for name, version in dev.items() if name in prod} == prod
+    assert {name: version for name, version in png.items() if name in prod} == prod
+
+
+def test_png_tooling_is_hash_locked_and_documented():
+    # compress_pngs.py imports oxipng, which README's Docker command installs from this lock.
+    assert "pyoxipng" in lock_pins("requirements-png.txt")
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    assert "pip install -q --require-hashes --only-binary :all: -r requirements-png.txt" in readme
+    header = (ROOT / "requirements-png.txt").read_text(encoding="utf-8").splitlines()[1].removeprefix("#").strip()
+    assert header in readme, f"README no longer documents: {header}"
+
+
+def test_colorama_is_kept_only_behind_its_windows_marker_and_documented():
+    # Dependabot's pip-compile run drops the Windows-only pin; the docs say that is expected.
+    dev = (ROOT / "requirements-dev.txt").read_text(encoding="utf-8")
+    assert re.search(r"^colorama==[\d.]+ ; sys_platform == 'win32' \\$", dev, re.M)
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    assert "colorama" in readme and "Dependabot" in readme.split("colorama", 1)[1][:700]
+
+
+def test_every_pip_install_in_ci_checks_hashes_against_a_lock():
+    installs = [(name, line.strip()) for name, text in WORKFLOWS.items() for line in text.splitlines() if "pip install" in line]
+    assert len(installs) >= 3, installs
+    for name, line in installs:
+        assert re.search(r"pip install --require-hashes -r requirements(-dev)?\.txt$", line), (name, line)
+
+
+def node_version():
+    version = (ROOT / ".node-version").read_text(encoding="utf-8").strip()
+    assert re.fullmatch(r"\d+\.\d+\.\d+", version), f".node-version must be an exact release, not {version!r}"
+    return tuple(int(part) for part in version.split("."))
+
+
+def test_node_is_pinned_in_a_file_that_setup_node_reads():
+    # `lts/*` moves under the deploy whenever Node cuts an LTS; the pin moves only in a reviewed diff.
+    node_version()
+    steps = steps_using("actions/setup-node")
+    assert steps
+    for name, body in steps:
+        assert re.search(r"^\s+node-version-file: \.node-version$", body, re.M), (name, body)
+    for name, text in WORKFLOWS.items():
+        assert not re.search(r"^\s+node-version:", text, re.M), name
+
+
+def test_pinned_node_satisfies_the_engines_of_the_deploy_tool():
+    import json
+
+    lock = json.loads((ROOT / "package-lock.json").read_text(encoding="utf-8"))
+    engines = lock["packages"]["node_modules/cf"]["engines"]["node"]
+    version = node_version()
+    # Only the `^X.Y.Z || ^A.B.C` shape cf publishes; anything else must be reviewed by hand.
+    clauses = [re.fullmatch(r"\^(\d+)\.(\d+)\.(\d+)", clause.strip()) for clause in engines.split("||")]
+    assert all(clauses), f"cf's engines.node is no longer a list of caret ranges: {engines!r}"
+    ok = any(
+        version[0] == int(c.group(1)) and version >= tuple(int(c.group(i)) for i in (1, 2, 3))
+        for c in clauses
+    )
+    assert ok, f".node-version {version} is outside cf's engines.node {engines!r}"
+
+
+def test_dependabot_regenerates_the_uv_locks_with_uv_not_pip_tools():
+    # The locks come from `uv pip compile --universal`. Dependabot's uv ecosystem reruns uv with the
+    # lock's own --universal/--generate-hashes/--python-version, which keeps the Windows-only
+    # colorama pin. Its pip ecosystem runs pip-compile, which has no universal mode and drops it.
+    config = (ROOT / ".github" / "dependabot.yml").read_text(encoding="utf-8")
+    assert not re.search(r"^  - package-ecosystem: pip$", config, re.M), "pip-tools would drop colorama from the locks"
+    dependabot_entry("uv")
+    for stem in ("requirements", "requirements-dev", "requirements-png"):
+        header = (ROOT / f"{stem}.txt").read_text(encoding="utf-8")
+        assert "--universal" in header and "--generate-hashes" in header, stem
+
+
+def test_ci_checks_the_png_lock_hashes_against_pypi_without_installing_it():
+    # requirements-png.txt is installed only in a Docker image, so nothing else would notice a bad hash.
+    body = job("test")
+    lines = [line.strip() for line in body.splitlines() if "requirements-png.txt" in line and "run:" in line]
+    assert len(lines) == 1, lines
+    command = lines[0].split("run: ", 1)[1]
+    assert command.startswith('pip download --require-hashes --no-deps --only-binary ":all:" ')
+    assert "--python-version 3.13" in command and "--abi cp313" in command
+    assert "-r requirements-png.txt" in command
+    assert not re.search(r"pip install", command)
+
+
+@pytest.mark.parametrize("name", sorted(WORKFLOWS))
+def test_plain_run_commands_are_valid_yaml_scalars(name):
+    # These tests read workflows as text, so a `run: ... :all: ...` (a colon and a space inside an
+    # unquoted value) passes them all while GitHub rejects the whole file. Quote such a token.
+    for line in WORKFLOWS[name].splitlines():
+        match = re.match(r"\s*(?:- )?run: (?P<value>\S.*)$", line)
+        if not match or match.group("value")[0] in "|>\"'":
+            continue
+        value = match.group("value")
+        assert ": " not in value and not value.endswith(":") and " #" not in value, (name, line)
