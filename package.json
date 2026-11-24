@@ -3,6 +3,6 @@
   "type": "module",
   "devDependencies": {
     "cf": "^1.0.0-beta.30",
-    "wrangler": "^4.160.1"
+    "wrangler": "^4.163.0"
   }
 }
